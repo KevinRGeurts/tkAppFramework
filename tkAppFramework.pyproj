@@ -4,14 +4,16 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b52e8dc1-afa8-456b-ae2c-5fad5a78dc43</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>
-    </StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>tkAppFramework</Name>
     <RootNamespace>tkAppFramework</RootNamespace>
+    <TestFramework>unittest</TestFramework>
+    <UnitTestPattern>test*.py</UnitTestPattern>
+    <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="main.py" />
     <Compile Include="ObserverPatternBase.py" />
     <Compile Include="test_ObserverPatternBase.py" />
     <Compile Include="test_tkViewManager.py" />
