@@ -37,7 +37,7 @@ class tkViewManager(ttk.Frame, Observer):
     def register_subject(self, subject = None, update_handler = None):
         """
         Register a subject (child widget) and the callable to handle subject updates.
-        :parameter subject: The child widget subject, an object of type Subject and type ti.Widget
+        :parameter subject: The child widget subject, an object of type Subject and type tk.Widget
         :parameter update_handler: The callable function to handle updates for the subject
         :return: None
         """

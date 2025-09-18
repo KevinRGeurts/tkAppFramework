@@ -2,7 +2,7 @@
 import tkinter as tk
 
 # Local
-from tkApp import tkApp
+from test_tkApp import TesttkApp
 
 
 if __name__ == '__main__':
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     
     # Create and configure the app
     root = tk.Tk()
-    myapp = tkApp(root, title='base application')
+    myapp = TesttkApp(root, title='test application')
 
     # Start the app's event loop running
     myapp.mainloop()

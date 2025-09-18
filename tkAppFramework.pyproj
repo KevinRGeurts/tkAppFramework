@@ -27,9 +27,16 @@
     <Compile Include="main.py" />
     <Compile Include="ObserverPatternBase.py" />
     <Compile Include="test_ObserverPatternBase.py" />
+    <Compile Include="test_tkApp.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_tkViewManager.py" />
     <Compile Include="tkApp.py" />
     <Compile Include="tkViewManager.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE.txt" />
+    <Content Include="README.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

@@ -2,8 +2,6 @@
 import tkinter as tk
 from tkinter import ttk
 
-from tkViewManager import tkViewManager
-
 # local imports
 
 
@@ -11,10 +9,12 @@ class tkApp(ttk.Frame):
     """
     Abstract base class for application built using tkinter.
     Concrete implementation child class must:
-        (1) Implement _setup_child_widgets()
+        (1) Implement _createViewManager() factory method to create and return a tkViewManager instance.
     Concrete implementation child class likely will:
         (2) Extend __init__() to create and initialize any required business logic objects for menubar selections
-        (3) Define and implement handler functions for menu bar, beyond OnExit 
+        (3) Define and implement handler functions for menu bar, beyond OnExit
+    Concreate implementation child class may:
+        (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
     def __init__(self, parent, title = '', menu_dict = {}) -> None:
         """
@@ -80,8 +80,23 @@ class tkApp(ttk.Frame):
 
     def _setup_child_widgets(self):
         """
-        Abstract utility function to be called by __init__ to set up the child widgets of the app.
-        Must be implemented by children. Will raise NotImplementedError if called.
+        Utility function to be called by __init__ to set up the child widgets of the app.
+        This function calls the factory method createViewManager() to create a tkViewManager instance for the app.
+        It is expected that the tkViewManager will create all other widgets of the app. If this is not the case
+        then this method should be extended by the child class.
+        :return: None
+        """
+        self._view_manager = self._createViewManager()
+        self._view_manager.grid(column=0, row=0, sticky='NWES') # Grid-1
+        self.columnconfigure(0, weight=1) # Grid-1
+        self.rowconfigure(0, weight=1) # Grid-1
+        return None
+
+    def _createViewManager(self):
+        """
+        This is an abstract factory method called to create and return a tkViewManager instance.
+        Must be implemented by children to create a child of tkViewManager.
+        Will raise NotImplementedError if called.
         """
         raise NotImplementedError
         return None
@@ -89,6 +104,7 @@ class tkApp(ttk.Frame):
     def onFileExit(self):
         """
         Method called when menu item File | Exit is selected.
+        :return: None
         """
         self.master.destroy()
         return None
