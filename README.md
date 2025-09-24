@@ -2,7 +2,9 @@
 
 Source code: [GitHub](https://github.com/KevinRGeurts/tkAppFramework)
 ---
-tkAppFramework is a Python library that facilitates the creation of a GUI application using tkinter.
+tkAppFramework is a Python library that facilitates the creation of a GUI application using tkinter. It provides
+a base application class (tkApp), a base view manager class (tkViewManager), and a base class so that GUI widgets
+managed by the view manager can act as observed subjects (Subject) in the Observer design pattern.
 
 ## tkApp class
 
