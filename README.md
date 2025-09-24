@@ -13,41 +13,43 @@ tkApp is an abstract base class from which concrete tkinter applications can be 
 Concrete implementation child classes must:
 - Implement the factory method _createViewManager() to create and return a tkViewManager instance,
   which will create and manage the widgets of the application.
+  
 Concrete implementation child classes likely will:
 - Extend __init__() to create and initialize any required business logic objects.
 - Define and implement handler functions for menubar selections, beyond OnExit.
+
 Concreate implementation child classes may:
 - Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets.
 
 ## tkViewManager class
 
-tkViewManager is an abstract base class from which concrete view mangers for tkinter applicationws can be derived.
-Concrete child implementations create widgets for tkApp concreate child implementations and handle the interactions
+tkViewManager is an abstract base class from which concrete view mangers for tkinter applications can be derived.
+Concrete child implementations create widgets for tkApp concrete child implementations and handle the interactions
 between widgets.
 
-The tkViewManager class follows the mediator design pattern and acts as Observer. tkViewManager is also a ttk.Frame.
+The tkViewManager class follows the Mediator design pattern and acts as Observer. tkViewManager is also a ttk.Frame.
 
 Concrete implementation child classes must:
-- Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
+- Implement the method _CreateWidgets(), which is called by ```__init__(...)``` to create and set up the child widgets
   of the tkViewManager widget.
-- Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+- Define and implement handler functions for widget updates, e.g., ```def handle_x_widget_update(self):```.
 Notes:
-- Handler functions are registered with the tkViewManager via register_subject(...), typically after each widget is created in _CreateWidgets. 
-- Handler functions are automatically called from the update(...) method when a subject (child widget) notifies the tkViewManager by calling notify() on itself.
+- Handler functions are registered with the tkViewManager via ```register_subject(...)```, typically after each widget is created in ```_CreateWidgets()```. 
+- Handler functions are automatically called from the ```update(...)``` method when a subject (child widget) notifies the tkViewManager by calling ```notify()``` on itself.
 
 ## Observer / Subject classes
 
 The tkAppFramework also includes base classes for implementing the Observer design pattern. As described above,
 tkViewManager is an Observer. Concrete child implementations of tkViewManager will typically observe one or more
-child widgets, which are typically child implementations of tkinter label frames and also Subjects.
+child widgets, which are typically child implementations of tkinter.Labelframes and also Subjects.
 
 ### Observer class
 Observer is a base class for all objects that will be an Observer in an Observer design pattern.
-All Observer child classes must implement the update(...) method.
+All Observer child classes must implement the ```update(...)``` method.
 
 ### Subject class
 Subject is a base class for all objects that will be a Subject in an Observer design pattern.
-Subjects should attach(...) and detach(...) Observers, and notify() them of changes in state.
+Subjects should ```attach(...)``` and ```detach(...)``` Observers, and ```notify()``` them of changes in state.
 
 ## Usage
 The code below shows a minimalist concrete implementation of tkApp and tkViewManager. The app is created and
