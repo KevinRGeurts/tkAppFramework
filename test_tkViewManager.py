@@ -1,3 +1,8 @@
+"""
+This module provides unit tests for tkViewManager.
+"""
+
+
 # Standard
 import unittest
 import tkinter as tk
@@ -6,6 +11,7 @@ from tkinter import ttk
 # Local
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
+
 
 class TestWidget(ttk.LabelFrame, Subject):
     """
@@ -63,9 +69,6 @@ class Test_tkViewManager(unittest.TestCase):
         cw.attach(vm)
         vm.register_subject(cw,vm.handle_test_widget_update)
         self.assertRaises(NotImplementedError, vm.update, cw)
-
-
-
 
 
 if __name__ == '__main__':

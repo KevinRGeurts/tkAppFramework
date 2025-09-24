@@ -1,3 +1,26 @@
+"""
+Defines the abstract base class tkApp, from which concrete tkinter applications can be derived.
+
+Concrete implementation child classes must:
+    (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
+        which will create and manage the widgets of the application.
+Concrete implementation child classes likely will:
+    (2) Extend __init__() to create and initialize any required business logic objects
+    (3) Define and implement handler functions for menubar selections, beyond OnExit
+Concreate implementation child classes may:
+    (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+
+Exported Classes:
+    tkApp -- Interface (abstract base) class for tkinter applications. tkApp is a ttk.Frame.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+"""
+
+
 # standard imports
 import tkinter as tk
 from tkinter import ttk
@@ -7,12 +30,12 @@ from tkinter import ttk
 
 class tkApp(ttk.Frame):
     """
-    Abstract base class for application built using tkinter.
+    Abstract base class for applications built using tkinter.
     Concrete implementation child class must:
         (1) Implement _createViewManager() factory method to create and return a tkViewManager instance.
     Concrete implementation child class likely will:
-        (2) Extend __init__() to create and initialize any required business logic objects for menubar selections
-        (3) Define and implement handler functions for menu bar, beyond OnExit
+        (2) Extend __init__() to create and initialize any required business logic objects
+        (3) Define and implement handler functions for menu bar selections, beyond OnExit
     Concreate implementation child class may:
         (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
@@ -22,6 +45,7 @@ class tkApp(ttk.Frame):
         :parameter menu_dict: A dictionary describing the app's menubar:
             {menu text string : handler callable or another menu_dict if there is a cascade}
             If menu_dict is empty, then the menubar will only have File|Exit which will call OnExit.
+            If menu_dict is not empty, then an Exit item will not be added automatically.
         """
         super().__init__(parent)
         self.grid(column=0, row=0, sticky='NWES') # Grid-0
@@ -81,7 +105,7 @@ class tkApp(ttk.Frame):
     def _setup_child_widgets(self):
         """
         Utility function to be called by __init__ to set up the child widgets of the app.
-        This function calls the factory method createViewManager() to create a tkViewManager instance for the app.
+        This function calls the factory method _createViewManager() to create a tkViewManager instance for the app.
         It is expected that the tkViewManager will create all other widgets of the app. If this is not the case
         then this method should be extended by the child class.
         :return: None

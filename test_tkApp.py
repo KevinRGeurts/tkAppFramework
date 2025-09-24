@@ -1,3 +1,8 @@
+"""
+This module provides unit tests for tkApp class.
+"""
+
+
 # Standard
 import unittest
 import tkinter as tk

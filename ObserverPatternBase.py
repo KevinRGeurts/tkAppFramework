@@ -1,10 +1,25 @@
 """
 This module provides Observer and Subject classes that can be a parent of classes that implement an Observer design pattern.
+
+Exported Classes:
+    Observer -- Base class for all objects that will be an Observer in an Observer design pattern.
+        All Observer child classes must implement the update(...) method.
+    Subject -- Base class for all objects that will be a Subject in an Observer design pattern.
+        Subjects should attach(...) and detach(...) Observers, and notify() them of changes in state.
+
+Exported Exceptions:
+    None
+ 
+Exported Functions:
+    None
 """
+
 
 class Observer:
     """
     Base class for all objects that will be an Object in an Observer design pattern.
+
+    Child classes must implement the update(...) method.
     """
     def __init__(self):
         pass

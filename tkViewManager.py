@@ -1,3 +1,30 @@
+"""
+Defines the abstract base class tkViewManager. Concrete child implementations create widgets for tkApp concreate child implementations
+and handle the interactions between widgets.
+
+Class follows the mediator design pattern and acts as Observer. tkViewManager is a ttk.Frame.
+
+Concrete implementation child classes must:
+    (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
+        of the tkViewManager widget.
+    (2) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+        Note:
+            (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
+                after each widget is created in _CreateWidgets. 
+            (b) Handler functions are automatically called from the update(...) method when a subject (child widget)
+                notifies the tkViewManager by calling notify() on itself.
+
+Exported Classes:
+    tkViewManager -- Interface (abstract base) class for view managers of tkinter applications.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+"""
+
+
 # Standard imports
 import tkinter as tk
 from tkinter import ttk
@@ -8,12 +35,24 @@ from ObserverPatternBase import Observer, Subject
 
 class tkViewManager(ttk.Frame, Observer):
     """
-    Class follows mediator design pattern. Acts as Observer, and is a base class for classes that handle the interactions
-    between a tkinter app's widgets.
+    Defines the abstract base class tkViewManager. Concrete child implementations create widgets for tkApp concreate child implementations
+    and handle the interactions between widgets.
+
+    Class follows the mediator design pattern and acts as Observer. tkViewManager is a ttk.Frame.
+
+    Concrete implementation child classes must:
+        (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
+            of the tkViewManager widget.
+        (2) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+            Note:
+                (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
+                    after each widget is created in _CreateWidgets. 
+                (b) Handler functions are automatically called from the update(...) method when a subject (child widget)
+                    notifies the tkViewManager by calling notify() on itself.
     """
     def __init__(self, parent) -> None:
         """
-        :parameter parent: The parent widget of this widget, The tkinter App
+        :parameter parent: The parent widget of this widget, the tkinter App
         """
         ttk.Frame.__init__(self, parent)
         Observer.__init__(self)
@@ -59,6 +98,8 @@ class tkViewManager(ttk.Frame, Observer):
     def _CreateWidgets(self):
         """
         Abstract utility function to be called by __init__ to set up the child widgets of the tkViewManager widget.
+        register_subject(...) should be called for each child widget that is a Subject, to register the widget
+        and a handler function for updates from that widget.
         Must be implemented by children. Will raise NotImplementedError if called.
         :return None:
         """

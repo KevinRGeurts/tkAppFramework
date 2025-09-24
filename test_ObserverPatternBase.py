@@ -1,8 +1,15 @@
+"""
+This module provides unit tests for:
+    (1) Subject and (2) Observer classes
+"""
+
+
 # Standard imports
 import unittest
 
 # Local imports
 from ObserverPatternBase import Subject, Observer
+
 
 class Test_Subject(unittest.TestCase):
     def test_attach_notify_detach(self):
@@ -23,6 +30,7 @@ class Test_Subject(unittest.TestCase):
         obs = Observer()
         sub = Subject()
         self.assertRaises(ValueError, sub.detach, obs)
+
 
 class Test_Observer(unittest.TestCase):
     def test_update(self):
