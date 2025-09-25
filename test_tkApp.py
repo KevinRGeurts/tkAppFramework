@@ -9,21 +9,8 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local
-from tkApp import tkApp
-from test_tkViewManager import TesttkViewManager
-
-
-class TesttkApp(tkApp):
-    """
-    Class is a very simple child of tkApp, intended only to provide an implementation of _createViewManager(...) factory method,
-    to facilitate unit testing.
-    """
-    def _createViewManager(self):
-        """
-        Concrete Implementation, which returns a TesttkViewManager instance.
-        :return: tkViewManager instance that will be the app's view manager
-        """
-        return TesttkViewManager(self)
+from dummy_AppModelViewMgr import TesttkApp, TesttkViewManager
+from model import Model
 
 
 class Test_tkApp(unittest.TestCase):
@@ -31,7 +18,9 @@ class Test_tkApp(unittest.TestCase):
         root = tk.Tk()
         app = TesttkApp(root, title='Test App')
         self.assertEqual(root.title(), 'Test App')
-        self.assertEqual(TesttkViewManager, type(app._view_manager))
+        self.assertIsInstance(app._view_manager, TesttkViewManager)
+        self.assertIsInstance(app.getModel(), Model)
+        self.assertIs(app.getModel(), app._model)
         self.assertIsNone(app.onFileExit())
 
 

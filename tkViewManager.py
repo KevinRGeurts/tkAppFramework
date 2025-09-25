@@ -7,7 +7,8 @@ Class follows the mediator design pattern and acts as Observer. tkViewManager is
 Concrete implementation child classes must:
     (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
         of the tkViewManager widget.
-    (2) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+    (2) Implement the handler bunction handle_model_update() to handle updates from the model.
+    (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
         Note:
             (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
                 after each widget is created in _CreateWidgets. 
@@ -31,6 +32,7 @@ from tkinter import ttk
 
 # Local imports
 from ObserverPatternBase import Observer, Subject
+from model import Model
 
 
 class tkViewManager(ttk.Frame, Observer):
@@ -43,7 +45,8 @@ class tkViewManager(ttk.Frame, Observer):
     Concrete implementation child classes must:
         (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
             of the tkViewManager widget.
-        (2) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+        (2) Implement the handler bunction handle_model_update() to handle updates from the model.
+        (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
             Note:
                 (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
                     after each widget is created in _CreateWidgets. 
@@ -52,13 +55,17 @@ class tkViewManager(ttk.Frame, Observer):
     """
     def __init__(self, parent) -> None:
         """
-        :parameter parent: The parent widget of this widget, the tkinter App
+        :parameter parent: The parent widget of this widget, the tkinter App, which hereafter will be
+                           accessed as self.master.
         """
         ttk.Frame.__init__(self, parent)
         Observer.__init__(self)
 
         # Maintain a dictionary of Key=subject (child widget), Value=update handler callable
         self._subjects = {}
+
+        # Register the (data and business logic) model as a subject
+        self.register_subject(subject=self.getModel(), update_handler=self.handle_model_update)
 
         self._CreateWidgets()
 
@@ -75,13 +82,13 @@ class tkViewManager(ttk.Frame, Observer):
         
     def register_subject(self, subject = None, update_handler = None):
         """
-        Register a subject (child widget) and the callable to handle subject updates.
-        :parameter subject: The child widget subject, an object of type Subject and type tk.Widget
+        Register a subject (child widget or model) and the callable to handle subject updates.
+        :parameter subject: The child widget or model subject, an object of type Subject and type (tk.Widget of Model)
         :parameter update_handler: The callable function to handle updates for the subject
         :return: None
         """
         assert(isinstance(subject, Subject))
-        assert(isinstance(subject, tk.Widget))
+        assert(isinstance(subject, tk.Widget) or isinstance(subject, Model))
         assert(callable(update_handler))
         self._subjects[subject]=update_handler
         return None
@@ -116,5 +123,21 @@ class tkViewManager(ttk.Frame, Observer):
         # Call the updater for the subject argument after looking it up in the _subjects dictionary.
         self._subjects[subject]()
         return None
+
+    def handle_model_update(self):
+        """
+        Handler function called when the model notifies the tkViewManager of a change in state.
+        Must be implemented by children. Will raise NotImplementedError if called.
+        :return None:
+        """
+        raise NotImplementedError
+        return None
+
+    def getModel(self):
+        """
+        Accessor method to return the model of the app.
+        :return: The model of the app, instance of Model
+        """
+        return self.master.getModel()
 
    

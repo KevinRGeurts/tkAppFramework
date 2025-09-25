@@ -4,8 +4,8 @@ Defines the abstract base class tkApp, from which concrete tkinter applications 
 Concrete implementation child classes must:
     (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
         which will create and manage the widgets of the application.
+    (2) Implement _createModel() factory method to create and return a Model instance.
 Concrete implementation child classes likely will:
-    (2) Extend __init__() to create and initialize any required business logic objects
     (3) Define and implement handler functions for menubar selections, beyond OnExit
 Concreate implementation child classes may:
     (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
@@ -33,8 +33,8 @@ class tkApp(ttk.Frame):
     Abstract base class for applications built using tkinter.
     Concrete implementation child class must:
         (1) Implement _createViewManager() factory method to create and return a tkViewManager instance.
+        (2) Implement _createModel() factory method to create and return a Model instance.
     Concrete implementation child class likely will:
-        (2) Extend __init__() to create and initialize any required business logic objects
         (3) Define and implement handler functions for menu bar selections, beyond OnExit
     Concreate implementation child class may:
         (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
@@ -62,13 +62,26 @@ class tkApp(ttk.Frame):
             file_menu_dict['Exit']=self.onFileExit
             menu_dict['File']=file_menu_dict
         self._setup_menubar(menu_dict)
+
+        # Create and initialize the model of the app
+        self._model = self._createModel()
         
-        # Create and setup the child widgets of the app
+        # Create and setup the child widgets of the app, including the view manager self._view_manager
         self._setup_child_widgets()
+
+        # Attach view manager as observer of model
+        self._model.attach(self._view_manager) 
 
         # If the user X's the main window, make sure we clean up 
         parent.protocol("WM_DELETE_WINDOW", self.onFileExit)
 
+    def getModel(self):
+        """
+        Accessor method to return the model of the app.
+        :return: The model of the app, instance of Model
+        """
+        return self._model
+        
     def _setup_menubar(self, menu_dict={}):
         """
         Utility function to be called by __init__ to set up the menu bar of the app.
@@ -120,6 +133,15 @@ class tkApp(ttk.Frame):
         """
         This is an abstract factory method called to create and return a tkViewManager instance.
         Must be implemented by children to create a child of tkViewManager.
+        Will raise NotImplementedError if called.
+        """
+        raise NotImplementedError
+        return None
+
+    def _createModel(self):
+        """
+        This is an abstract factory method called to create and return a Model instance.
+        Must be implemented by children to create a child of Model
         Will raise NotImplementedError if called.
         """
         raise NotImplementedError

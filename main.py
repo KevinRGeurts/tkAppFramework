@@ -26,6 +26,7 @@ from tkinter import ttk
 from tkApp import tkApp
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
+from model import Model
 
 
 class DemoWidget(ttk.LabelFrame, Subject):
@@ -121,6 +122,12 @@ class DemotkApp(tkApp):
         :return: tkViewManager instance that will be the app's view manager
         """
         return DemotkViewManager(self)
+
+    def _createModel(self):
+        """
+        Concrete Implementation, which returns a base Model().
+        """
+        return Model()
 
 
 if __name__ == '__main__':
