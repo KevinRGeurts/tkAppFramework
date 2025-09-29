@@ -13,10 +13,11 @@ tkApp is an abstract base class from which concrete tkinter applications can be 
 Concrete implementation child classes must:
 - Implement the factory method _createViewManager() to create and return a tkViewManager instance,
   which will create and manage the widgets of the application.
+- Implement the factory method _createModel() to create and return a Model instance.
   
 Concrete implementation child classes likely will:
-- Extend __init__() to create and initialize any required business logic objects.
-- Define and implement handler functions for menubar selections, beyond OnExit.
+- Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
+- Define and implement handler functions for menubar selections, beyond OnFileExit and OnHelpAbout.
 
 Concreate implementation child classes may:
 - Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets.
@@ -148,7 +149,7 @@ class DemotkViewManager(tkViewManager):
 
 class DemotkApp(tkApp):
     """
-    Provide an implementation of _createViewManager(...) factory method.
+    Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def _createViewManager(self):
         """
@@ -156,6 +157,12 @@ class DemotkApp(tkApp):
         :return: tkViewManager instance that will be the app's view manager
         """
         return DemotkViewManager(self)
+
+    def _createModel(self):
+        """
+        Concrete Implementation, which returns a base Model().
+        """
+        return Model()
 
 
 # Create and configure the app

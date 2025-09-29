@@ -6,9 +6,10 @@ Concrete implementation child classes must:
         which will create and manage the widgets of the application.
     (2) Implement _createModel() factory method to create and return a Model instance.
 Concrete implementation child classes likely will:
-    (3) Define and implement handler functions for menubar selections, beyond OnExit
+    (3) Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
+    (4) Define and implement handler functions for menubar selections, beyond OnFileExit and OnHelpAbout
 Concreate implementation child classes may:
-    (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+    (5) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
 
 Exported Classes:
     tkApp -- Interface (abstract base) class for tkinter applications. tkApp is a ttk.Frame.
@@ -22,12 +23,23 @@ Exported Functions:
 
 
 # standard imports
+from collections import namedtuple
 import tkinter as tk
 from tkinter import ttk
+from tkinter.messagebox import showinfo
 
 # local imports
 
 
+# Named tuple to hold the "About" information of the app.
+AppAboutInfo = namedtuple('AppAboutInfo', ['name', 'version', 'copyright', 'author', 'license', 'source'],
+                          defaults = {'name':'my app', 'version':'X.X', 'copyright':'20XX', 'author':'John Q. Public', 'license':'MIT License', 'source':'github url'})
+
+
+# TODO: Refctor the way the menubar is created, so that File|Exit and Help|About are always present. If the
+# user provides a non-empty menu_dict, and it contains File|Exit or Help|About, then use the user's handler.
+# If the user provides an empty menu_dict, or a non-empty menu_dict that does not contain File|Exit or Help|About,
+# then add those items with the default handlers.
 class tkApp(ttk.Frame):
     """
     Abstract base class for applications built using tkinter.
@@ -35,19 +47,28 @@ class tkApp(ttk.Frame):
         (1) Implement _createViewManager() factory method to create and return a tkViewManager instance.
         (2) Implement _createModel() factory method to create and return a Model instance.
     Concrete implementation child class likely will:
-        (3) Define and implement handler functions for menu bar selections, beyond OnExit
+        (3) Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
+        (4) Define and implement handler functions for menu bar selections, beyond OnFileExit and OnHelpAbout
     Concreate implementation child class may:
-        (4) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+        (5) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
-    def __init__(self, parent, title = '', menu_dict = {}) -> None:
+    def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo()) -> None:
         """
         :parameter title: The title of the application, to appear on the app's main window, string
         :parameter menu_dict: A dictionary describing the app's menubar:
             {menu text string : handler callable or another menu_dict if there is a cascade}
-            If menu_dict is empty, then the menubar will only have File|Exit which will call OnExit.
-            If menu_dict is not empty, then an Exit item will not be added automatically.
+            If menu_dict is empty, then the menubar will only have File|Exit which will call OnFileExit,
+                and Help|About... which will call OnHelpAbout.
+            If menu_dict is not empty, then File|Exit and Help|About items will not be added automatically.
+        :parameter app_info: An AppAboutInfo named tuple with the app's "About" information:
+            (name, version, copyright, author, license, source), all fields provided as strings
+            Example:
+            ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
         """
         super().__init__(parent)
+
+        self._appInfo = app_info
+
         self.grid(column=0, row=0, sticky='NWES') # Grid-0
         # Weights control the relative "stretch" of each column and row as the frame is resized
         parent.columnconfigure(0, weight=1) # Grid-0
@@ -57,10 +78,13 @@ class tkApp(ttk.Frame):
 
         # Create and setup a menubar for the app
         if len(menu_dict)==0:
-            # menu_dict is empty, so just set up File | Exit by default
+            # menu_dict is empty, so just set up File | Exit and Help | About by default
             file_menu_dict={}
             file_menu_dict['Exit']=self.onFileExit
+            help_menu_dict={}
+            help_menu_dict['About...']=self.onHelpAbout
             menu_dict['File']=file_menu_dict
+            menu_dict['Help']=help_menu_dict
         self._setup_menubar(menu_dict)
 
         # Create and initialize the model of the app
@@ -146,6 +170,16 @@ class tkApp(ttk.Frame):
         """
         raise NotImplementedError
         return None
+
+    def getAboutInfo(self):
+        """
+        Method to be called to get the "About" information of the app.
+        :return: AppAboutInfo named tuple with the app's "About" information:
+            (name, version, copyright, author, license, source), all fields returned as strings
+            Example:
+            ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
+        """
+        return self._appInfo
         
     def onFileExit(self):
         """
@@ -153,6 +187,20 @@ class tkApp(ttk.Frame):
         :return: None
         """
         self.master.destroy()
+        return None
+
+    def onHelpAbout(self):
+        """
+        Method called when menu item Help | About is selected.
+        :return: None
+        """
+        msg = self._appInfo.name + '\n'
+        msg += 'version ' + self._appInfo.version + '\n'
+        msg += 'Copyright (c) ' + self._appInfo.copyright + ' by ' + self._appInfo.author + '\n'
+        msg += 'Licensed under the ' + self._appInfo.license + '\n'
+        msg += 'Source: ' + self._appInfo.source
+        dialog_title = 'About ' + self._appInfo.name
+        showinfo(title=dialog_title, message=msg, parent=self.master)
         return None
         
         

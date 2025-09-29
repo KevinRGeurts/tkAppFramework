@@ -114,7 +114,7 @@ class DemotkViewManager(tkViewManager):
 
 class DemotkApp(tkApp):
     """
-    Provide an implementation of _createViewManager(...) factory method.
+    Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def _createViewManager(self):
         """
