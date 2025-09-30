@@ -17,9 +17,12 @@ Concrete implementation child classes must:
   
 Concrete implementation child classes likely will:
 - Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
-- Define and implement handler functions for menubar selections, beyond OnFileExit and OnHelpAbout.
+- Pass menu_dict into super.__init__() to set up the app's menubar.
+- Pass file_types into super.__init__() to set up the file types for file dialogs.
+- Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
+  OnFileSaveAs, OnFileExit, and OnHelpAbout.
 
-Concreate implementation child classes may:
+Concrete implementation child classes may:
 - Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets.
 
 ## tkViewManager class

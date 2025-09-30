@@ -6,10 +6,13 @@ Concrete implementation child classes must:
         which will create and manage the widgets of the application.
     (2) Implement _createModel() factory method to create and return a Model instance.
 Concrete implementation child classes likely will:
-    (3) Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
-    (4) Define and implement handler functions for menubar selections, beyond OnFileExit and OnHelpAbout
+    (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
+    (4) Pass menu_dict into super.__init__() to set up the app's menubar.
+    (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
+    (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
+        OnFileSaveAs, OnFileExit, and OnHelpAbout.
 Concreate implementation child classes may:
-    (5) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+    (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
 
 Exported Classes:
     tkApp -- Interface (abstract base) class for tkinter applications. tkApp is a ttk.Frame.
@@ -45,14 +48,18 @@ AppAboutInfo = namedtuple('AppAboutInfo', ['name', 'version', 'copyright', 'auth
 class tkApp(ttk.Frame):
     """
     Abstract base class for applications built using tkinter.
-    Concrete implementation child class must:
-        (1) Implement _createViewManager() factory method to create and return a tkViewManager instance.
+    Concrete implementation child classes must:
+        (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
+            which will create and manage the widgets of the application.
         (2) Implement _createModel() factory method to create and return a Model instance.
-    Concrete implementation child class likely will:
-        (3) Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
-        (4) Define and implement handler functions for menu bar selections, beyond OnFileExit and OnHelpAbout
-    Concreate implementation child class may:
-        (5) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+    Concrete implementation child classes likely will:
+        (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
+        (4) Pass menu_dict into super.__init__() to set up the app's menubar.
+        (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
+        (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
+            OnFileSaveAs, OnFileExit, and OnHelpAbout.
+    Concreate implementation child classes may:
+        (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
     def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[]) -> None:
         """
@@ -167,6 +174,7 @@ class tkApp(ttk.Frame):
         This is an abstract factory method called to create and return a tkViewManager instance.
         Must be implemented by children to create a child of tkViewManager.
         Will raise NotImplementedError if called.
+        :return: An instance of a concrete implementation child class of tkViewManager
         """
         raise NotImplementedError
         return None
@@ -176,6 +184,7 @@ class tkApp(ttk.Frame):
         This is an abstract factory method called to create and return a Model instance.
         Must be implemented by children to create a child of Model
         Will raise NotImplementedError if called.
+        :return: An instance of a concrete implementation child class of Model
         """
         raise NotImplementedError
         return None
@@ -262,13 +271,8 @@ class tkApp(ttk.Frame):
         showinfo(title=dialog_title, message=msg, parent=self.master)
         return None
 
-# TODO: Provide OnFileOpen and OnFileSave methods, and add File|Open... and File|Save... menu items.
-# These functions will launch the standard file save and file open dialogs to get a file name or path or
-# some such representation. The actual reading and writing will be delegated to the model, which will need
-# to provide read and write methods. These read and write methods should hopefully take as argument
-# a file-like object, so that the model does not need to know if the file is on disk, in memory, a socket, ...
-# The app should have a default file extension.
-        
+
+
         
 
 
