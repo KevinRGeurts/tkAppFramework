@@ -24,9 +24,11 @@ Exported Functions:
 
 # standard imports
 from collections import namedtuple
+import os
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
+from tkinter import filedialog
 
 # local imports
 
@@ -52,7 +54,7 @@ class tkApp(ttk.Frame):
     Concreate implementation child class may:
         (5) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
-    def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo()) -> None:
+    def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[]) -> None:
         """
         :parameter title: The title of the application, to appear on the app's main window, string
         :parameter menu_dict: A dictionary describing the app's menubar:
@@ -64,10 +66,14 @@ class tkApp(ttk.Frame):
             (name, version, copyright, author, license, source), all fields provided as strings
             Example:
             ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
+        :parameter file_types: A list of file types for saving and opening, of this format:
+            [('Description1', '*.ext1'), ('Description2', '*.ext2'), ...]
         """
         super().__init__(parent)
 
         self._appInfo = app_info
+        self._fileTypes = list(file_types) # List of file extensions for file dialogs
+        self._savePath = '' # Path of last save, empty string if never saved
 
         self.grid(column=0, row=0, sticky='NWES') # Grid-0
         # Weights control the relative "stretch" of each column and row as the frame is resized
@@ -80,6 +86,9 @@ class tkApp(ttk.Frame):
         if len(menu_dict)==0:
             # menu_dict is empty, so just set up File | Exit and Help | About by default
             file_menu_dict={}
+            file_menu_dict['Open...']=self.onFileOpen
+            file_menu_dict['Save']=self.onFileSave
+            file_menu_dict['Save As...']=self.onFileSaveAs
             file_menu_dict['Exit']=self.onFileExit
             help_menu_dict={}
             help_menu_dict['About...']=self.onHelpAbout
@@ -180,7 +189,53 @@ class tkApp(ttk.Frame):
             ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
         """
         return self._appInfo
-        
+    
+    def onFileOpen(self):
+        """
+        Respond to a File|Open menu selection by using the tkFileDialog for open to get the path,
+        then opening that path for read, and calling the model's readModelFromFile(...) method.
+        """
+        initial_dir = None
+        if len(self._savePath)>0:
+            initial_dir = os.path.dirname(self._savePath)
+        else:
+            initial_dir = os.getcwd()
+        # Pop up tkFileDialog for open
+        response = filedialog.askopenfilename(defaultextension=self._fileTypes[0][1], filetypes=self._fileTypes,
+                                              initialdir=initial_dir, title='Select file to open')
+        if len(response)>0: # User did not cancel
+            with open(response) as f:
+                self._model.readModelFromFile(f, os.path.splitext(response)[1])
+                self._savePath = response
+
+    def onFileSave(self):
+        """
+        Respond to a File|Save menu selection by opening self._savePath for write, and
+        calling the model's writeModelToFile(...) method.
+        """
+        if len(self._savePath)==0:
+            with open(self._savePath, mode='w') as f:
+                self._model.writeModelToFile(f, os.path.splitext(self._savePath)[1])
+
+    def onFileSaveAs(self):
+        """
+        Respond to a File|Save As menu selection by using the tkFileDialog for save to get the path,
+        then opening that path for write, and calling the model's writeModelToFile(...) method.
+        """
+        initial_dir = None
+        if len(self._savePath)>0:
+            initial_dir = os.path.dirname(self._savePath)
+        else:
+            initial_dir = os.getcwd()
+        # Pop up tkFileDialog for save
+        response = filedialog.asksaveasfilename(defaultextension=self._fileTypes[0][1], filetypes=self._fileTypes,
+                                                initialdir=initial_dir, title='Select file to save as')
+        if len(response)>0: # User did not cancel
+            with open(response, mode='w') as f:
+                self._model.writeModelToFile(f, os.path.splitext(response)[1])
+                self._savePath = response
+
+
     def onFileExit(self):
         """
         Method called when menu item File | Exit is selected.
@@ -189,6 +244,10 @@ class tkApp(ttk.Frame):
         self.master.destroy()
         return None
 
+    # TODO: Investigate if instead of showinfo(...) we can create a pop-up dialog that contains a
+    # tkinter.Text widget, so that the app's "About" information can be "rich" formatted text.
+    # This would allow clickable hyperlink for source, bold, italic, etc. Requires investigation of 
+    # ability to auto tag text in the widget.
     def onHelpAbout(self):
         """
         Method called when menu item Help | About is selected.
@@ -202,6 +261,13 @@ class tkApp(ttk.Frame):
         dialog_title = 'About ' + self._appInfo.name
         showinfo(title=dialog_title, message=msg, parent=self.master)
         return None
+
+# TODO: Provide OnFileOpen and OnFileSave methods, and add File|Open... and File|Save... menu items.
+# These functions will launch the standard file save and file open dialogs to get a file name or path or
+# some such representation. The actual reading and writing will be delegated to the model, which will need
+# to provide read and write methods. These read and write methods should hopefully take as argument
+# a file-like object, so that the model does not need to know if the file is on disk, in memory, a socket, ...
+# The app should have a default file extension.
         
         
 

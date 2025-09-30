@@ -3,9 +3,12 @@ Defines the abstract base class Model, from which classes representing the data 
 should be derived.
 
 Concrete implementation child classes must:
-    (1) ...
+    (0) ...
 Concrete implementation child classes likely will:
-    (2) ...
+    (1) Implement readModelFromFile() method for reading model data from a file-like object.
+        (a) Before reading from a file, the model may need to clear exsisting data.    
+        (b) After reading from a file, the model should call self.notify() to inform observers of changes.
+    (2) Implement readModelFromFile() and writeModelToFile() methods for reading from and writing to files.
 Concreate implementation child classes may:
     (3) ...
 
@@ -31,10 +34,42 @@ class Model(Subject):
     """
     Model is the abstract base class from which classes representing the data and business logic of an application
     should be derived.
+
+    Concrete implementation child classes must:
+        (0) ...
+    Concrete implementation child classes likely will:
+        (1) Implement readModelFromFile() method for reading model data from a file-like object.
+            (a) Before reading from a file, the model may need to clear exsisting data.    
+            (b) After reading from a file, the model should call self.notify() to inform observers of changes.
+        (2) Implement readModelFromFile() and writeModelToFile() methods for reading from and writing to files.
+    Concreate implementation child classes may:
+        (3) ...
     """
     def __init__(self) -> None:
         """Initialize the Model."""
         super().__init__()
         # Initialize model data here
+
+    def readModelFromFile(self, file, filetype) -> None:
+        """
+        Abstract method for reading the model data from a file-like object. Must be implemented by
+        subclasses to be useful, as otherwise will raise NotImplementedError if called.
+        :parameter file: A file-like object from which to read the model data.
+        :parameter filetype: A string indicating the type of file (e.g., 'json', 'xml', etc.).
+        :return: None
+        """
+        raise NotImplementedError("Subclasses must implement readModelFromFile(...) method.")
+
+    def writeModelToFile(self, file, filetype) -> None:
+        """
+        Abstract method for Writing the model data to a file-like object. Must be implemented by
+        subclasses to be useful, as otherwise will raise NotImplementedError if called.
+        :parameter file: A file-like object to which to write the model data.
+        :parameter filetype: A string indicating the type of file (e.g., 'json', 'xml', etc.).
+        :return: None
+        """
+        raise NotImplementedError("Subclasses must implement writeModelToFile(...) method.")
+
+
 
 
