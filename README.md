@@ -3,27 +3,28 @@
 Source code: [GitHub](https://github.com/KevinRGeurts/tkAppFramework)
 ---
 tkAppFramework is a Python library that facilitates the creation of a GUI application using tkinter. It provides
-a base application class (tkApp), a base view manager class (tkViewManager), and a base class so that GUI widgets
-managed by the view manager can act as observed subjects (Subject) in the Observer design pattern.
+a base application class (tkApp), a base view manager class (tkViewManager), a base data and business logic
+class (Model), and a base class so that GUI widget managed by the view manager can act as observed subjects (Subject)
+in the Observer design pattern.
 
 ## tkApp class
 
 tkApp is an abstract base class from which concrete tkinter applications can be derived.
 
 Concrete implementation child classes must:
-- Implement the factory method _createViewManager() to create and return a tkViewManager instance,
+- Implement the factory method ```_createViewManager()``` to create and return a tkViewManager instance,
   which will create and manage the widgets of the application.
-- Implement the factory method _createModel() to create and return a Model instance.
+- Implement the factory method ```_createModel()``` to create and return a Model instance.
   
 Concrete implementation child classes likely will:
-- Pass AboutAppInfo named tuple into __init__() to set up the app's About dialog.
-- Pass menu_dict into super.__init__() to set up the app's menubar.
-- Pass file_types into super.__init__() to set up the file types for file dialogs.
-- Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
-  OnFileSaveAs, OnFileExit, and OnHelpAbout.
+- Pass AboutAppInfo named tuple into ```__init__()``` to set up the app's About dialog.
+- Pass menu_dict parameter into ```super.__init__()``` to set up the app's menubar.
+- Pass file_types parameter into ```super.__init__()``` to set up the file types for file dialogs.
+- Define and implement handler functions for menubar selections, beyond ```OnFileOpen```, ```OnFileSave```,
+  ```OnFileSaveAs```, ```OnFileExit```, and ```OnHelpAbout```.
 
 Concrete implementation child classes may:
-- Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets.
+- Extend ```_setup_child_widgets()``` if the tkViewManager does not create all of the app's widgets.
 
 ## tkViewManager class
 
@@ -34,12 +35,24 @@ between widgets.
 The tkViewManager class follows the Mediator design pattern and acts as Observer. tkViewManager is also a ttk.Frame.
 
 Concrete implementation child classes must:
-- Implement the method _CreateWidgets(), which is called by ```__init__(...)``` to create and set up the child widgets
+- Implement the method ```_CreateWidgets()```, which is called by ```__init__(...)``` to create and set up the child widgets
   of the tkViewManager widget.
 - Define and implement handler functions for widget updates, e.g., ```def handle_x_widget_update(self):```.
 Notes:
 - Handler functions are registered with the tkViewManager via ```register_subject(...)```, typically after each widget is created in ```_CreateWidgets()```. 
 - Handler functions are automatically called from the ```update(...)``` method when a subject (child widget) notifies the tkViewManager by calling ```notify()``` on itself.
+
+## Model class
+
+Model is an abstract base class Model, from which classes representing the data and business logic of an application
+can be derived.
+
+Concrete implementation child classes likely will:
+- Implement ```readModelFromFile()``` method for reading model data from a file-like object.
+    Notes:
+    - Before reading from a file, the model may need to clear exsisting data.    
+    - After reading from a file, the model should call self.notify() to inform observers of changes.
+- Implement ```writeModelToFile()``` method for writing model data to a file-like object.
 
 ## Observer / Subject classes
 
@@ -56,15 +69,35 @@ Subject is a base class for all objects that will be a Subject in an Observer de
 Subjects should ```attach(...)``` and ```detach(...)``` Observers, and ```notify()``` them of changes in state.
 
 ## Usage
+
 The code below shows a minimalist concrete implementation of tkApp and tkViewManager. The app is created and
 launched.
 
 ```python
 import tkinter as tk
 from tkinter import ttk
-from tkApp import tkApp
+from tkApp import tkApp, AppAboutInfo
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
+from model import Model
+
+
+class DemoModel(Model):
+    """
+    A concrete implementation of Model for the demo application.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._count = 0
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        self._count = value
+        self.notify()        
 
 
 class DemoWidget(ttk.LabelFrame, Subject):
@@ -122,7 +155,8 @@ class DemoWidget(ttk.LabelFrame, Subject):
 
 class DemotkViewManager(tkViewManager):
     """
-    Provide an implementation of _CreateWidgets(...).
+    Provide an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
+    and the demo widget.
     """
     def _CreateWidgets(self):
         """
@@ -141,12 +175,22 @@ class DemotkViewManager(tkViewManager):
         self.rowconfigure(0, weight=1)
         return None
 
-    def handle_demo_widget_update(self):
+    def handle_model_update(self):
         """
-        Handle updates from the demo widget:
+        Handle updates from the model.
         :return None:
         """
-        print('Received update notification from DemoWidget')
+        print(f"Model count of button clicks is {self.getModel().count}")
+        return None
+    
+    def handle_demo_widget_update(self):
+        """
+        Handle updates from the demo widget.
+        :return None:
+        """
+        # Inform the model that the demo widget's state has changed (that is, the button was clicked),
+        # so that the model can maintain a count of the button clicks / state changes.
+        self.getModel().count += 1
         return None
 
 
@@ -154,6 +198,11 @@ class DemotkApp(tkApp):
     """
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
+    def __init__(self, parent):
+        info = AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
+                            license='MIT License', source='GitHub')
+        super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
+
     def _createViewManager(self):
         """
         Concrete Implementation, which returns a DemotkViewManager instance.
@@ -163,18 +212,26 @@ class DemotkApp(tkApp):
 
     def _createModel(self):
         """
-        Concrete Implementation, which returns a base Model().
+        Concrete Implementation, which returns a DemoModel().
+        :return: DemoModel instance that will be the app's model
         """
-        return Model()
+        return DemoModel()
 
 
-# Create and configure the app
+# Get Tcl interpreter up and running and get the root widget
 root = tk.Tk()
-myapp = DemotkApp(root, title='Demo Application')
-
-# Start the app's event loop running
-myapp.mainloop()
+# Create the demo app
+app = DemotkApp(root)
+# Start the metronome app's event loop running
+app.mainloop()
 ```
+
+To run the demo app, type ```python main.py``` in a terminal window.
+
+## Unittests
+
+Unittests for the tkAppFramework are in the project directory, with filenames starting with test_. To run the unittests,
+type ```python -m unittest discover -v``` in a terminal window in the project directory.
 
 ## License
 MIT License. See the LICENSE file for details

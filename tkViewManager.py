@@ -7,8 +7,8 @@ Class follows the mediator design pattern and acts as Observer. tkViewManager is
 Concrete implementation child classes must:
     (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
         of the tkViewManager widget.
-    (2) Implement the handler bunction handle_model_update() to handle updates from the model.
-    (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+    (2) Implement the handler function handle_model_update() to handle updates from the model.
+    (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self).
         Note:
             (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
                 after each widget is created in _CreateWidgets. 
@@ -46,7 +46,7 @@ class tkViewManager(ttk.Frame, Observer):
         (1) Implement the method _CreateWidgets(), which is called by __init__ to create and set up the child widgets
             of the tkViewManager widget.
         (2) Implement the handler bunction handle_model_update() to handle updates from the model.
-        (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):.
+        (3) Define and implement handler functions for widget updates, e.g., def handle_x_widget_update(self):
             Note:
                 (a) Handler functions are registered with the tkViewManager via register_subject(...), typically
                     after each widget is created in _CreateWidgets. 

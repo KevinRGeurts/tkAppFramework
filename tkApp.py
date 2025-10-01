@@ -4,14 +4,15 @@ Defines the abstract base class tkApp, from which concrete tkinter applications 
 Concrete implementation child classes must:
     (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
         which will create and manage the widgets of the application.
-    (2) Implement _createModel() factory method to create and return a Model instance.
+    (2) Implement _createModel() factory method to create and return a Model instance, which 
+        holds the data and business logic of the application.
 Concrete implementation child classes likely will:
     (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
     (4) Pass menu_dict into super.__init__() to set up the app's menubar.
     (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
     (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
         OnFileSaveAs, OnFileExit, and OnHelpAbout.
-Concreate implementation child classes may:
+Concrete implementation child classes may:
     (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
 
 Exported Classes:
@@ -51,14 +52,15 @@ class tkApp(ttk.Frame):
     Concrete implementation child classes must:
         (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
             which will create and manage the widgets of the application.
-        (2) Implement _createModel() factory method to create and return a Model instance.
+        (2) Implement _createModel() factory method to create and return a Model instance, which 
+            holds the data and business logic of the application.
     Concrete implementation child classes likely will:
         (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
         (4) Pass menu_dict into super.__init__() to set up the app's menubar.
         (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
         (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
             OnFileSaveAs, OnFileExit, and OnHelpAbout.
-    Concreate implementation child classes may:
+    Concrete implementation child classes may:
         (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
     def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[]) -> None:
@@ -66,14 +68,18 @@ class tkApp(ttk.Frame):
         :parameter title: The title of the application, to appear on the app's main window, string
         :parameter menu_dict: A dictionary describing the app's menubar:
             {menu text string : handler callable or another menu_dict if there is a cascade}
-            If menu_dict is empty, then the menubar will only have File|Exit which will call OnFileExit,
-                and Help|About... which will call OnHelpAbout.
-            If menu_dict is not empty, then File|Exit and Help|About items will not be added automatically.
+            If menu_dict is empty, then the menubar will only have:
+                (a) File|Open... which will call OnFileOpen
+                (b) File|Save which will call OnFileSave
+                (c) File|Save As... which will call OnFileSaveAs
+                (d) File|Exit which will call OnFileExit
+                (e) Help|About... which will call OnHelpAbout
+            If menu_dict is not empty, then the above items will not be added to the menubar automatically.
         :parameter app_info: An AppAboutInfo named tuple with the app's "About" information:
             (name, version, copyright, author, license, source), all fields provided as strings
             Example:
             ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
-        :parameter file_types: A list of file types for saving and opening, of this format:
+        :parameter file_types: A list of file type tuples for saving and opening, in this format:
             [('Description1', '*.ext1'), ('Description2', '*.ext2'), ...]
         """
         super().__init__(parent)
@@ -203,6 +209,7 @@ class tkApp(ttk.Frame):
         """
         Respond to a File|Open menu selection by using the tkFileDialog for open to get the path,
         then opening that path for read, and calling the model's readModelFromFile(...) method.
+        :return: None
         """
         initial_dir = None
         if len(self._savePath)>0:
@@ -216,20 +223,25 @@ class tkApp(ttk.Frame):
             with open(response) as f:
                 self._model.readModelFromFile(f, os.path.splitext(response)[1])
                 self._savePath = response
+        return None
 
     def onFileSave(self):
         """
         Respond to a File|Save menu selection by opening self._savePath for write, and
-        calling the model's writeModelToFile(...) method.
+        calling the model's writeModelToFile(...) method. If self._savePath is '',
+        because there has not been a previous open or save as, then do nothing.
+        :return: None
         """
-        if len(self._savePath)==0:
+        if len(self._savePath)>0:
             with open(self._savePath, mode='w') as f:
                 self._model.writeModelToFile(f, os.path.splitext(self._savePath)[1])
+        return None
 
     def onFileSaveAs(self):
         """
         Respond to a File|Save As menu selection by using the tkFileDialog for save to get the path,
         then opening that path for write, and calling the model's writeModelToFile(...) method.
+        :return: None
         """
         initial_dir = None
         if len(self._savePath)>0:
@@ -243,7 +255,7 @@ class tkApp(ttk.Frame):
             with open(response, mode='w') as f:
                 self._model.writeModelToFile(f, os.path.splitext(response)[1])
                 self._savePath = response
-
+        return None
 
     def onFileExit(self):
         """

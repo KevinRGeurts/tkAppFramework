@@ -2,15 +2,11 @@
 Defines the abstract base class Model, from which classes representing the data and business logic of an application
 should be derived.
 
-Concrete implementation child classes must:
-    (0) ...
 Concrete implementation child classes likely will:
     (1) Implement readModelFromFile() method for reading model data from a file-like object.
         (a) Before reading from a file, the model may need to clear exsisting data.    
         (b) After reading from a file, the model should call self.notify() to inform observers of changes.
-    (2) Implement readModelFromFile() and writeModelToFile() methods for reading from and writing to files.
-Concreate implementation child classes may:
-    (3) ...
+    (2) Implement writeModelToFile() method for writing model data to a file-like object.
 
 Exported Classes:
     Model -- Interface (abstract base) class for classes representing the data and business logic
@@ -35,15 +31,13 @@ class Model(Subject):
     Model is the abstract base class from which classes representing the data and business logic of an application
     should be derived.
 
-    Concrete implementation child classes must:
-        (0) ...
+    Model is a Subject in the Observer design pattern.
+
     Concrete implementation child classes likely will:
         (1) Implement readModelFromFile() method for reading model data from a file-like object.
             (a) Before reading from a file, the model may need to clear exsisting data.    
             (b) After reading from a file, the model should call self.notify() to inform observers of changes.
-        (2) Implement readModelFromFile() and writeModelToFile() methods for reading from and writing to files.
-    Concreate implementation child classes may:
-        (3) ...
+        (2) Implement writeModelToFile() method for writing model data to a file-like object.
     """
     def __init__(self) -> None:
         """Initialize the Model."""
@@ -59,6 +53,7 @@ class Model(Subject):
         :return: None
         """
         raise NotImplementedError("Subclasses must implement readModelFromFile(...) method.")
+        return None
 
     def writeModelToFile(self, file, filetype) -> None:
         """
@@ -69,6 +64,7 @@ class Model(Subject):
         :return: None
         """
         raise NotImplementedError("Subclasses must implement writeModelToFile(...) method.")
+        return None
 
 
 

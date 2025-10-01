@@ -23,10 +23,28 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local
-from tkApp import tkApp
+from tkApp import tkApp, AppAboutInfo
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
 from model import Model
+
+
+class DemoModel(Model):
+    """
+    A concrete implementation of Model for the demo application.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._count = 0
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        self._count = value
+        self.notify()        
 
 
 class DemoWidget(ttk.LabelFrame, Subject):
@@ -84,7 +102,8 @@ class DemoWidget(ttk.LabelFrame, Subject):
 
 class DemotkViewManager(tkViewManager):
     """
-    Provide an implementation of _CreateWidgets(...).
+    Provide an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
+    and the demo widget.
     """
     def _CreateWidgets(self):
         """
@@ -103,12 +122,22 @@ class DemotkViewManager(tkViewManager):
         self.rowconfigure(0, weight=1)
         return None
 
-    def handle_demo_widget_update(self):
+    def handle_model_update(self):
         """
-        Handle updates from the demo widget:
+        Handle updates from the model.
         :return None:
         """
-        print('Received update notification from DemoWidget')
+        print(f"Model count of button clicks is {self.getModel().count}")
+        return None
+    
+    def handle_demo_widget_update(self):
+        """
+        Handle updates from the demo widget.
+        :return None:
+        """
+        # Inform the model that the demo widget's state has changed (that is, the button was clicked),
+        # so that the model can maintain a count of the button clicks / state changes.
+        self.getModel().count += 1
         return None
 
 
@@ -116,6 +145,11 @@ class DemotkApp(tkApp):
     """
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
+    def __init__(self, parent):
+        info = AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
+                            license='MIT License', source='GitHub')
+        super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
+
     def _createViewManager(self):
         """
         Concrete Implementation, which returns a DemotkViewManager instance.
@@ -125,9 +159,10 @@ class DemotkApp(tkApp):
 
     def _createModel(self):
         """
-        Concrete Implementation, which returns a base Model().
+        Concrete Implementation, which returns a DemoModel().
+        :return: DemoModel instance that will be the app's model
         """
-        return Model()
+        return DemoModel()
 
 
 if __name__ == '__main__':
@@ -138,7 +173,7 @@ if __name__ == '__main__':
     
     # Create and configure the app
     root = tk.Tk()
-    myapp = DemotkApp(root, title='Demo Application')
+    myapp = DemotkApp(root)
 
     # Start the app's event loop running
     myapp.mainloop()
