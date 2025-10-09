@@ -27,9 +27,9 @@ Concrete implementation child classes may:
 - Extend ```_setup_child_widgets()``` if the tkViewManager does not create all of the app's widgets.
 - Extend logging setup in ```_setup_logging(...)``` if application specific logging is desired.
 
-A logger named 'tkApp_logger' is created and configured in _setup_logging(...), which is called by __init__(...).
+A logger named 'tkApp_logger' is created and configured in _setup_logging(...), which is called by ```__init__(...)```.
 It logs to stderr through a stream handler. Default logging level is logging.INFO, but can be set by passing
-log_level into __init__(...). The 'tkApp_logger' logger can be used by concrete implementation child classes of tkApp.
+log_level into ```__init__(...)```. The 'tkApp_logger' logger can be used by concrete implementation child classes of tkApp.
 
 ## tkViewManager class
 
