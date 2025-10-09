@@ -373,7 +373,7 @@ class tkHelpApp(tkApp):
         :parameter help_file: Path to the help file to be opened and displayed initially, string
         """
         info = AppAboutInfo(name='Help Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
-                                  license='MIT License', source='insert GitHub url here')
+                                  license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
         menu_dictionary = {'File':{'Exit':self.onFileExit},
                            'Help':{'About...':self.onHelpAbout}}
         super().__init__(parent, title="Help Application", menu_dict=menu_dictionary, app_info=info)
