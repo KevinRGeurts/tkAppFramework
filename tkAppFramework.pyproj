@@ -24,9 +24,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dummy_AppModelViewMgr.py">
+    <Compile Include="dummy_AppViewMgr.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="HelpModel.py" />
     <Compile Include="main.py" />
     <Compile Include="model.py">
       <SubType>Code</SubType>
@@ -41,11 +42,16 @@
     </Compile>
     <Compile Include="test_tkViewManager.py" />
     <Compile Include="tkApp.py" />
+    <Compile Include="tkHelpViewManager.py" />
     <Compile Include="tkViewManager.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Help\HelpFile.txt" />
     <Content Include="LICENSE.txt" />
     <Content Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Help\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

@@ -21,10 +21,15 @@ Concrete implementation child classes likely will:
 - Pass menu_dict parameter into ```super.__init__()``` to set up the app's menubar.
 - Pass file_types parameter into ```super.__init__()``` to set up the file types for file dialogs.
 - Define and implement handler functions for menubar selections, beyond ```OnFileOpen```, ```OnFileSave```,
-  ```OnFileSaveAs```, ```OnFileExit```, and ```OnHelpAbout```.
+  ```OnFileSaveAs```, ```OnFileExit```, ```OnViewHelp```, and ```OnHelpAbout```.
 
 Concrete implementation child classes may:
 - Extend ```_setup_child_widgets()``` if the tkViewManager does not create all of the app's widgets.
+- Extend logging setup in ```_setup_logging(...)``` if application specific logging is desired.
+
+A logger named 'tkApp_logger' is created and configured in _setup_logging(...), which is called by __init__(...).
+It logs to stderr through a stream handler. Default logging level is logging.INFO, but can be set by passing
+log_level into __init__(...). The 'tkApp_logger' logger can be used by concrete implementation child classes of tkApp.
 
 ## tkViewManager class
 

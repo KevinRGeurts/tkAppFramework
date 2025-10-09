@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local
-from dummy_AppModelViewMgr import TestWidget, TesttkApp
+from dummy_AppViewMgr import TestWidget, TesttkApp
 
 
 class Test_tkViewManager(unittest.TestCase):

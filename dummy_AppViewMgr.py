@@ -1,9 +1,9 @@
 """
-This module contains dummy implementatons of tkApp and tkViewManager to facilitate testing.
+This module contains dummy implementatons of tkApp (TesttkApp) and tkViewManager (TesttkViewManager)
+and a TestWidget, to facilitate testing.
 """
 
 # Standard
-import tkinter as tk
 from tkinter import ttk
 
 # Local

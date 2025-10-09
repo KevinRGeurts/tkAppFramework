@@ -23,11 +23,10 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local
-from tkApp import tkApp, AppAboutInfo
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
 from model import Model
-
+import tkApp
 
 class DemoModel(Model):
     """
@@ -141,13 +140,13 @@ class DemotkViewManager(tkViewManager):
         return None
 
 
-class DemotkApp(tkApp):
+class DemotkApp(tkApp.tkApp):
     """
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def __init__(self, parent):
-        info = AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
-                            license='MIT License', source='GitHub')
+        info = tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
+                                  license='MIT License', source='GitHub', help_file='.\\Help\\HelpFile.txt')
         super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
 
     def _createViewManager(self):

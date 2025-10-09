@@ -6,10 +6,9 @@ This module provides unit tests for tkApp class.
 # Standard
 import unittest
 import tkinter as tk
-from tkinter import ttk
 
 # Local
-from dummy_AppModelViewMgr import TesttkApp, TesttkViewManager
+from dummy_AppViewMgr import TesttkApp, TesttkViewManager
 from model import Model
 from tkApp import AppAboutInfo
 

@@ -11,9 +11,10 @@ Concrete implementation child classes likely will:
     (4) Pass menu_dict into super.__init__() to set up the app's menubar.
     (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
     (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
-        OnFileSaveAs, OnFileExit, and OnHelpAbout.
+        OnFileSaveAs, OnFileExit, OnViewHelp, and OnHelpAbout.
 Concrete implementation child classes may:
     (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+    (8) Extend logging setup in _setup_logging(...) if application specific logging is desired.
 
 Exported Classes:
     tkApp -- Interface (abstract base) class for tkinter applications. tkApp is a ttk.Frame.
@@ -23,23 +24,49 @@ Exported Exceptions:
  
 Exported Functions:
     None
+
+Logging:
+    A logger named 'tkApp_logger' is created and configured in _setup_logging(...), which is called by __init__(...).
+    It logs to stderr through a stream handler. Default logging level is logging.INFO, but can be set by passing
+    log_level into __init__(...). The 'tkApp_logger' logger can be used by concrete implementation child classes of tkApp.
 """
 
 
 # standard imports
 from collections import namedtuple
 import os
+import logging
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo
 from tkinter import filedialog
+from multiprocessing import Process
 
 # local imports
+from tkHelpViewManager import tkHelpViewManager
+from HelpModel import HelpModel
+
+
+# This function cannot be a method of tkApp, do to Process using pickle.
+def _launch_help_app(help_file = ''):
+    """
+    Launch tkinter app for displaying online help.
+    :parameter help_file: Path to the help file to be opened and displayed initially, string
+    :return: None
+    """
+    # Create and configure the app
+    root = tk.Tk()
+    myapp = tkHelpApp(root, help_file)
+
+    # Start the app's event loop running
+    myapp.mainloop()
+    return None
 
 
 # Named tuple to hold the "About" information of the app.
-AppAboutInfo = namedtuple('AppAboutInfo', ['name', 'version', 'copyright', 'author', 'license', 'source'],
-                          defaults = {'name':'my app', 'version':'X.X', 'copyright':'20XX', 'author':'John Q. Public', 'license':'MIT License', 'source':'github url'})
+AppAboutInfo = namedtuple('AppAboutInfo', ['name', 'version', 'copyright', 'author', 'license', 'source', 'help_file'],
+                          defaults = {'name':'my app', 'version':'X.X', 'copyright':'20XX', 'author':'John Q. Public',
+                                      'license':'MIT License', 'source':'github url', 'help_file':''})
 
 
 # TODO: Refctor the way the menubar is created, so that File|Exit and Help|About are always present. If the
@@ -63,7 +90,8 @@ class tkApp(ttk.Frame):
     Concrete implementation child classes may:
         (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
-    def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[]) -> None:
+    def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[],
+                 log_level = logging.INFO) -> None:
         """
         :parameter title: The title of the application, to appear on the app's main window, string
         :parameter menu_dict: A dictionary describing the app's menubar:
@@ -81,6 +109,7 @@ class tkApp(ttk.Frame):
             ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
         :parameter file_types: A list of file type tuples for saving and opening, in this format:
             [('Description1', '*.ext1'), ('Description2', '*.ext2'), ...]
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
         super().__init__(parent)
 
@@ -97,13 +126,14 @@ class tkApp(ttk.Frame):
 
         # Create and setup a menubar for the app
         if len(menu_dict)==0:
-            # menu_dict is empty, so just set up File | Exit and Help | About by default
+            # menu_dict is empty, so just set up File | [Open, Save, Save As, Exit] and Help | [View Help, About] by default
             file_menu_dict={}
             file_menu_dict['Open...']=self.onFileOpen
             file_menu_dict['Save']=self.onFileSave
             file_menu_dict['Save As...']=self.onFileSaveAs
             file_menu_dict['Exit']=self.onFileExit
             help_menu_dict={}
+            help_menu_dict['View Help...']=self.onViewHelp
             help_menu_dict['About...']=self.onHelpAbout
             menu_dict['File']=file_menu_dict
             menu_dict['Help']=help_menu_dict
@@ -116,10 +146,20 @@ class tkApp(ttk.Frame):
         self._setup_child_widgets()
 
         # Attach view manager as observer of model
-        self._model.attach(self._view_manager) 
+        self._model.attach(self._view_manager)
+        
+        # Process running the HelpApp
+        self._help_process = None
 
         # If the user X's the main window, make sure we clean up 
         parent.protocol("WM_DELETE_WINDOW", self.onFileExit)
+
+        # Set up logging for this app
+        self._setup_logging(log_level)
+        
+        # Get the logger 'tkApp_logger'
+        logger = logging.getLogger('tkApp_logger')
+        logger.debug(f"Starting {self._appInfo.name} version {self._appInfo.version}")
 
     def getModel(self):
         """
@@ -262,7 +302,24 @@ class tkApp(ttk.Frame):
         Method called when menu item File | Exit is selected.
         :return: None
         """
+        # Get the logger 'tkApp_logger'
+        logger = logging.getLogger('tkApp_logger')
+
+        if self._help_process:
+            logger.debug(f"Help Process {self._help_process.name} is alive={self._help_process.is_alive()}")
+
         self.master.destroy()
+        return None
+
+    def onViewHelp(self):
+        """
+        Method called when menu item Help | View Help is selected. Launch help app to view help.
+        :return: None
+        """
+        if not self._help_process or not self._help_process.is_alive():
+            # Help app is not running, so launch it
+            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':self._appInfo.help_file})
+            self._help_process.start()
         return None
 
     # TODO: Investigate if instead of showinfo(...) we can create a pop-up dialog that contains a
@@ -283,8 +340,58 @@ class tkApp(ttk.Frame):
         showinfo(title=dialog_title, message=msg, parent=self.master)
         return None
 
+    def _setup_logging(self, log_level=logging.INFO):
+        """
+        This method configures logging.
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        :return: None
+        """
+        # Create a logger with name 'tkApp_logger'. This is NOT the root logger, which is one level up from here, and has no name.
+        logger = logging.getLogger('tkApp_logger')
+        # This is the threshold level for the logger itself, before it will pass to any handlers, which can have their own threshold.
+        # Should be able to control here what the stream handler receives and thus what ends up going to stderr.
+        # Use this key for now:
+        #   DEBUG = debug messages sent to this logger will end up on stderr
+        #   INFO = info messages sent to this logger will end up on stderr
+        logger.setLevel(log_level)
+        # Set up this highest level below root logger with a stream handler
+        sh = logging.StreamHandler()
+        # Set the threshold for the stream handler itself, which will come into play only after the logger threshold is met.
+        sh.setLevel(log_level)
+        # Add the stream handler to the logger
+        logger.addHandler(sh)
+            
+        return None
 
 
+class tkHelpApp(tkApp):
+    """
+    Class represent help application built using tkinter, leveraging tkApp framework.
+    """
+    def __init__(self, parent, help_file='') -> None:
+        """
+        :parameter help_file: Path to the help file to be opened and displayed initially, string
+        """
+        info = AppAboutInfo(name='Help Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
+                                  license='MIT License', source='insert GitHub url here')
+        menu_dictionary = {'File':{'Exit':self.onFileExit},
+                           'Help':{'About...':self.onHelpAbout}}
+        super().__init__(parent, title="Help Application", menu_dict=menu_dictionary, app_info=info)
+        self._model.help_file = help_file
+        
+    def _createViewManager(self):
+        """
+        Factory method to create the view manager for the app.
+        """
+        return tkHelpViewManager(self)
+
+    def _createModel(self):
+        """
+        Factory method to create the model for the app.
+        :return: The model for the app, HelpModel
+        """
+        model = HelpModel()
+        return model
         
 
 
