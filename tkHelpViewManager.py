@@ -1,3 +1,20 @@
+"""
+This module defines the tkHelpViewManager class. It is a concrete implementation of tkViewManager.
+It acts as a Mediator and an Observer, and handles the interactions between the help viewer application's widgets.
+
+Exported Classes:
+    tkHelplViewManager -- Concrete implementation of tkViewManager.
+                          Acts as a Mediator and an Observer, and handles the interactions between
+                          the help viewer application's widgets.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+"""
+
+
 # Standard imports
 import tkinter as tk
 from tkinter import ttk
@@ -9,7 +26,7 @@ from ObserverPatternBase import Subject
 
 class tkHelpViewManager(tkViewManager):
     """
-    Concrete implementation of tkViewManager. Acts as Observer, and handles the interactions between help viewer window's widgets.
+    Concrete implementation of tkViewManager. Acts as Observer, and handles the interactions between help viewer application's widgets.
     """
     def __init__(self, parent) -> None:
         """
@@ -50,6 +67,8 @@ class tkHelpViewManager(tkViewManager):
         return None
 
 
+# TODO: Assess whether or not this widget needs to keep as a member the path to the help content file,
+# since this can be obtained from the HelpModel through the tkHelpViewManager and tkHelpApp.
 class HelpTextWidget(ttk.Labelframe, Subject):
     """
     Class represents a tkinter label frame, the widget contents of which allow viewing of help topic content.

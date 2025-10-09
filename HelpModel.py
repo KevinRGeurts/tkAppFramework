@@ -1,5 +1,14 @@
 """
-This module provides the HelpModel class, which represents the "business logic" of an application for viewing help.
+This module provides the HelpModel class, which represents the "business logic" of an application for viewing help
+
+Exported Classes:
+    HelpModel -- This class represents the help content, and is a Model in the MVC pattern.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None.
 """
 
 # standard imports
