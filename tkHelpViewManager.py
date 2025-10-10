@@ -110,5 +110,6 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         if len(help_file)>0:
             with open(help_file, 'r') as f:
                 self._txt_content.insert(tk.INSERT, f.read())
+            self._txt_content.config(state='disabled')
         return None
 
