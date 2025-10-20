@@ -21,12 +21,17 @@ Exported Functions:
 # Standard
 import tkinter as tk
 from tkinter import ttk
+import logging
 
 # Local
+from tkSimulatorApp import tkSimulatorApp
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
 from model import Model
 import tkApp
+from sim_adapter import SimulatorAdapter
+from UserQueryCommand import askForFloat, UserQueryCommandMenu
+import UserQueryReceiver
 
 class DemoModel(Model):
     """
@@ -163,18 +168,101 @@ class DemotkApp(tkApp.tkApp):
         """
         return DemoModel()
 
+class DemoSimulator:
+    """
+    This class is a very simple simulator. In a loop, until terminated, it asks the user for a floating point
+    value, squares the value, and logs it.
+    """
+    def __init__(self, log_level=logging.INFO):
+        """
+        All that needs to be done is to set up logging.
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        """
+        # Create a logger with name 'demo_simulator_logger'. This is NOT the root logger, which is one level up from here, and has no name.
+        logger = logging.getLogger('demo_simulator_logger')
+        # This is the threshold level for the logger itself, before it will pass to any handlers, which can have their own threshold.
+        # Should be able to control here what the stream handler receives and thus what ends up going to stderr.
+        # Use this key for now:
+        #   DEBUG = debug messages sent to this logger will end up on stderr
+        #   INFO = info messages sent to this logger will end up on stderr
+        logger.setLevel(log_level)
+        # Set up this highest level below root logger with a stream handler
+        sh = logging.StreamHandler()
+        # Set the threshold for the stream handler itself, which will come into play only after the logger threshold is met.
+        sh.setLevel(log_level)
+        # Add the stream handler to the logger
+        logger.addHandler(sh)
+
+    def go(self):
+        """
+        Execute a simulation.
+        :return: None
+        """
+        logger = logging.getLogger('demo_simulator_logger')
+        while True:
+            try:
+                response = askForFloat('Enter a value to square.')
+            except UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
+                break
+            squared = response * response
+            logger.info(f"The square of {response} is {squared}.")
+        return None
+
+class DemoSimulatorAdapter(SimulatorAdapter):
+    """
+    Adapter to wrap DemoSimulator object.
+    """
+    def __init__(self, out_queue=None):
+        """
+        """
+        super().__init__(DemoSimulator(), 'demo_simulator_logger', out_queue)
+
+    def run(self):
+        """
+        Launch a simulation.
+        :return: None
+        """
+        self.simulator.go()
+        return None
+    
+
 
 if __name__ == '__main__':
     
     """
-    Create and launch tkinter-based DemotkApp.
+    Create and launch, at user's choice:
+        (1) tkinter-based DemotkApp, or
+        (2) tkinter-based tkSimulatorApp with DemoSimulator object
     """
-    
-    # Create and configure the app
-    root = tk.Tk()
-    myapp = DemotkApp(root)
 
-    # Start the app's event loop running
-    myapp.mainloop()
+    # Since the global UserQueryReceiver is a tkUserQueryReceiver, we have to construct a local one for the console
+    receiver = UserQueryReceiver.ConsoleUserQueryReceiver()
+    command = UserQueryCommandMenu(receiver,
+                                   'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app'})
+    response = command.Execute()
+
+    match response:
+        case 'd':
+    
+            # DemotkApp
+
+            # Create and configure the app
+            root = tk.Tk()
+            myapp = DemotkApp(root)
+
+            # # Start the app's event loop running
+            myapp.mainloop()
+
+        case 's':
+
+            # tkSimulatorApp
+
+            root = tk.Tk()
+            simapp = tkSimulatorApp(root)
+            svm = simapp._view_manager
+            simapp.getModel().sim_adapter = DemoSimulatorAdapter(svm._sim_event_queue)
+            simapp.mainloop()
+
+
 
      

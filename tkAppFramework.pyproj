@@ -5,8 +5,7 @@
     <ProjectGuid>b52e8dc1-afa8-456b-ae2c-5fad5a78dc43</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>main.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <SearchPath>..\UserResponseCollector</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>tkAppFramework</Name>
@@ -33,6 +32,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ObserverPatternBase.py" />
+    <Compile Include="SimulatorModel.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="sim_adapter.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_Model.py">
       <SubType>Code</SubType>
     </Compile>
@@ -43,15 +48,21 @@
     <Compile Include="test_tkViewManager.py" />
     <Compile Include="tkApp.py" />
     <Compile Include="tkHelpViewManager.py" />
+    <Compile Include="tkSimulatorApp.py" />
+    <Compile Include="tkSimulatorViewManager.py" />
+    <Compile Include="tkUserQueryReceiver.py" />
     <Compile Include="tkViewManager.py" />
+    <Compile Include="UserQueryWidget.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Documentation\Developer_Documentation.txt" />
     <Content Include="Help\HelpFile.txt" />
     <Content Include="LICENSE.txt" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Help\" />
+    <Folder Include="Documentation\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
