@@ -42,7 +42,16 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="test_ObserverPatternBase.py" />
+    <Compile Include="test_SimulatorModel.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="test_sim_adapter.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_tkApp.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="test_tkSimulatorApp.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="test_tkViewManager.py" />
@@ -57,6 +66,7 @@
   <ItemGroup>
     <Content Include="Documentation\Developer_Documentation.txt" />
     <Content Include="Help\HelpFile.txt" />
+    <Content Include="Help\SimApp_HelpFile.txt" />
     <Content Include="LICENSE.txt" />
     <Content Include="README.md" />
   </ItemGroup>

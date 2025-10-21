@@ -32,4 +32,21 @@ Relationships between objects:
     '<<QueryingThreadTerminationRequest>>' into the response queue of the tkUserQueryReceiver object. When the tkUserQueryReceiver object
 	pulls this response from it's queue, it raises a UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError exception.
 	Since this exception is in the thread of the simulator (as opposed to the thread of the tkSimulatorApp), it will abruptly
-	terminate the simulator, unless the simulator catches it and handles it, which it should. 
+	terminate the simulator, unless the simulator catches it and handles it, which it should.
+
+
+*** 10/21/25: tkApp storing menu build info so later menu items can be disabled ***
+
+As we proceed down through cascades towqrds the actual commmand, there is a tkinter.Menu() object that we can store.
+The actual command is not associated with a unique object, but should be accessible through the Menu object's entryconfig(...) method,
+at least by using an index number, and maybe by using the menu_label string. So in order to later by able to use
+entryconfig(...) to disable/enable menu commands, we need a dictionary like as follows, where we want to access and then disable
+File | Start Simulation
+
+_menuWids = {'File':(File_menu_obj, {'Start Simulation':(None, index_on_file_menu_obj)})}
+
+Later, when you need to use entryconfig(...) on Start Simulation command:
+
+_menuWids['File'][0].entryconfig(_menuWids['File'][1]['Start Simulation'][1], state=DISABLED)
+
+

@@ -24,10 +24,14 @@ class tkSimulatorApp(tkApp):
     logging to send output caught by tkSimulatorViewManager.
     """
     def __init__(self, parent) -> None:
+        """
+        :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
+        """
         info = AppAboutInfo(name='Simulator Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
-                                  license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
+                                  license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
+                                  help_file='.\\Help\\SimApp_HelpFile.txt')
         menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
-                           'Help':{'About...':self.onHelpAbout}}
+                           'Help':{'View Help...':self.onViewHelp, 'About...':self.onHelpAbout}}
         super().__init__(parent, title="Simulator Application", menu_dict=menu_dictionary, app_info=info)
 
         # Thread on which the Simulator will be run
@@ -88,12 +92,12 @@ class tkSimulatorApp(tkApp):
             self._sim_thread.start()
             # Start processing of the tkSimulatorViewManager's simulator event queue
             self._view_manager.SimulatorOutputEventHandler()
-            # TODO: Will need to enhance tkApp to maintain a nested dictionary of menu entries.
-            # enable File | End Simulator, since we now have a currently running game
-            # self._menu_file.entryconfig('End Simulator', state='normal')
-            # disable File | Start Simlator and File | Load Simulator menu items, since we don't want more than one simulator currently running.
-            # self._menu_file.entryconfig('Start Simulator', state='disabled') 
-            # self._menu_file.entryconfig('Load Simulator', state='disabled') 
+            # TODO: The way entryconfig() is used is so cryptic, it cries out for a helper function, which
+            # should be defined at the tkApp level.
+            # enable File | End Simulator, since we now have a currently running simulation
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.NORMAL)
+            # disable File | Start Simlator menu item, since we don't want more than one simulator currently running.
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.DISABLED)
         else:
             # Do nothing.
             pass
@@ -132,11 +136,10 @@ class tkSimulatorApp(tkApp):
         if self._sim_thread:
             self._query_widget.reset_wdigets()
             self.request_simulator_end()
-            # # Disable File | End Simulator menu item, since no simulator will now be running
-            # self._menu_file.entryconfig('End Simulator', state='disabled')
-            # # enable File | Start Simulator and File | Load Simulator menu items, since now we have no running game
-            # self._menu_file.entryconfig('Start Simulator', state='normal') 
-            # self._menu_file.entryconfig('Load Simulator', state='normal')
+            # Disable File | End Simulator menu item, since no simulator will now be running
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
+            # enable File | Start Simulator, since now we have no running simlator
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.NORMAL)
         else:
             pass
 

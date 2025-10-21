@@ -6,6 +6,7 @@ from queue import Queue
 
 # Local imports
 from tkViewManager import tkViewManager
+from ObserverPatternBase import Subject
 
 class tkSimulatorViewManager(tkViewManager):
     """
@@ -63,6 +64,8 @@ class tkSimulatorViewManager(tkViewManager):
         :return None:
         """
         self._info_widget = SimulatorShowInfoWidget(self)
+        self.register_subject(self._info_widget, self.handle_info_widget_update)
+        self._info_widget.attach(self)
         self._info_widget.grid(column=1, row=4, columnspan=2, sticky='NWES') # Grid-2 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(4, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
@@ -71,7 +74,17 @@ class tkSimulatorViewManager(tkViewManager):
     def handle_model_update(self):
         """
         Handler function called when the SimulatorModel object notifies the tkSimulatorViewManager of a change in state.
-        Currently does nothing. But implementation is required.
+        Currently does nothing.
+        :return None:
+        """
+        # Do nothing
+        # TODO: Determine if this should do something.
+        return None
+
+    def handle_info_widget_update(self):
+        """
+        Handler function called when the SimulatorShowInfoWidget object notifies the tkSimulatorViewManager of a change in state.
+        Currently does nothing.
         :return None:
         """
         # Do nothing
@@ -79,13 +92,14 @@ class tkSimulatorViewManager(tkViewManager):
         return None
 
 
-class SimulatorShowInfoWidget(ttk.Labelframe):
+class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
     """
     Class represents a tkinter label frame, the widget contents of which will display simulator output to the user
     during a simulation.
     """
     def __init__(self, parent) -> None:
         super().__init__(parent, text='Simulation Output')
+        Subject.__init__(self)
         
        # Create a text widget which will display all the logging.info messages received from the simulator
        
@@ -117,5 +131,7 @@ class SimulatorShowInfoWidget(ttk.Labelframe):
         self._txt_info.yview_moveto(1.0)
         # Set state to DISABLED so the user can't add or change content
         self._txt_info['state']=tk.DISABLED
+        # Let observers know that state has changed
+        self.notify()
         return None
 

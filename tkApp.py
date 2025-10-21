@@ -93,6 +93,7 @@ class tkApp(ttk.Frame):
     def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[],
                  log_level = logging.INFO) -> None:
         """
+        :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         :parameter title: The title of the application, to appear on the app's main window, string
         :parameter menu_dict: A dictionary describing the app's menubar:
             {menu text string : handler callable or another menu_dict if there is a cascade}
@@ -116,6 +117,20 @@ class tkApp(ttk.Frame):
         self._appInfo = app_info
         self._fileTypes = list(file_types) # List of file extensions for file dialogs
         self._savePath = '' # Path of last save, empty string if never saved
+        
+        # self._menuConfigDict is a dictionary of the following form, provided here as an example:        
+        #   self._menuConfigDict = {'File':(File_menu_obj, {'Start Simulation':(None, 0_index_on_file_menu_obj)})}
+        # key is always a string that exactly matches a menu item. value is always a tuple. If we have a cascade,
+        # then the tuple is (menu_object, cascade_menu_dictionary). If we have a menu command, then the tuple is
+        # (None, 0-based_index_of_command_on_menu_object)
+        # This dictionary is populated when self._setup_menubar() is called, and it can be used, for example,
+        # to enable and disable menu items, like thus:
+        # self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulation'][1], state=DISABLED)
+        # Note that when getting the object to call entryconfig() on, the tuple index at the end will always be [0], whereas
+        # an previous tuple indices would be [1].
+        # And, when getting the menu index to use in the entryconfig() call, all tuple indices should be [1]
+        # TODO: Using the dictionary to call entryconfig() is so cryptic that a helper function would be nice.
+        self._menuConfigDict = {}
 
         self.grid(column=0, row=0, sticky='NWES') # Grid-0
         # Weights control the relative "stretch" of each column and row as the frame is resized
@@ -160,6 +175,7 @@ class tkApp(ttk.Frame):
         # Get the logger 'tkApp_logger'
         logger = logging.getLogger('tkApp_logger')
         logger.debug(f"Starting {self._appInfo.name} version {self._appInfo.version}")
+        logger.debug(f"Menu configuration dictionary: {self._menuConfigDict}")
 
     def getModel(self):
         """
@@ -177,28 +193,41 @@ class tkApp(ttk.Frame):
         """
         self._menubar = tk.Menu(self.master)
         self.master['menu'] = self._menubar
-        self._setup_menu(menu_dict, self._menubar)
+        self._setup_menu(menu_dict, self._menubar, self._menuConfigDict)
         return None
 
-    def _setup_menu(self, menu_dict={}, add_to_menu=None):
+    def _setup_menu(self, menu_dict={}, add_to_menu=None, config_dict={}):
         """
         Utility function to be called by _setup_menubar(...) to set up one cascade menu. Designed to be called
         recursively as needed.
         :parameter menu_dict: A dictionary describing a cascade menu:
             {menu text string : handler callable or another menu_dict if there is another cascade}
         :parameter add_to_menu: The cascade menu object to which the next cascade or action should be added
+        :parameter config_dict: The nested dictionary within self._menuConfigDict to which the next cascade or
+                                action should be added
         :return: None
         """
+        index = 0
         for menu_label in menu_dict:
             menu_action = menu_dict[menu_label]
             if type(menu_action) is dict:
+                index += 1
                 # Set up a cascade
                 menu_obj=tk.Menu(add_to_menu)
                 add_to_menu.add_cascade(menu=menu_obj, label=menu_label)
-                self._setup_menu(menu_action, menu_obj)
+                # For later access to menu command, store in self._menuConfigDict
+                # a new entry for key=menu_label, with tuple (menu_obj, new empty {}) as the value
+                cascade_dict = {}
+                config_dict[menu_label] = (menu_obj, cascade_dict)
+                # Recurse downward into the new cascade    
+                self._setup_menu(menu_action, menu_obj, cascade_dict)
             else:
                 assert(callable(menu_action))
                 add_to_menu.add_command(label=menu_label, command=menu_action)
+                # For later access to menu command, store in self._menuConfigDict
+                # a new entry for key=menu_label, with tuple (None, index_on_add_to_menu)
+                config_dict[menu_label] = (None, index)
+                index += 1
         return None
 
     def _setup_child_widgets(self):
