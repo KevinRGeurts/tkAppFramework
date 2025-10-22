@@ -259,8 +259,7 @@ if __name__ == '__main__':
 
             root = tk.Tk()
             simapp = tkSimulatorApp(root)
-            svm = simapp._view_manager
-            simapp.getModel().sim_adapter = DemoSimulatorAdapter(svm._sim_event_queue)
+            simapp.getModel().sim_adapter = DemoSimulatorAdapter(simapp.sim_output_queue)
             simapp.mainloop()
 
 

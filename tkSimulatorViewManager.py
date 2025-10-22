@@ -31,6 +31,10 @@ class tkSimulatorViewManager(tkViewManager):
         self._queue_access_timeout = 1
         parent.master.bind('<<SimulatorOutputEvent>>', self.SimulatorOutputEventHandler)
 
+    @property
+    def sim_output_queue(self):
+        return self._sim_event_queue
+
     def reset_widgets_for_new_simulation(self):
         """
         Utility function called to put child widgets in appropriate state ahead of a new simulation.

@@ -72,6 +72,10 @@ class tkSimulatorApp(tkApp):
         self.rowconfigure(1, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
 
         return None
+
+    @property
+    def sim_output_queue(self):
+        return self._view_manager.sim_output_queue
         
     def onExit(self):
         """

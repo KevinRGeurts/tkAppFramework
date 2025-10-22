@@ -77,16 +77,16 @@ class tkUserQueryViewManager(tkViewManager):
         self.register_subject(self._query_response_send_widget, self.handle_query_response_send_widget_update)
         self._query_response_send_widget.attach(self)
         self._query_response_send_widget.grid(column=2, row=0) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(2, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(2, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
         
         # QueryResponseToolsWidget - For launching "tools" that help the user fill in the QueryResponseEntryWidget under different circumstances.
         self._query_response_tools_widget = QueryResponseToolsWidget(self)
         self.register_subject(self._query_response_tools_widget, self.handle_query_response_tools_widget_update)
         self._query_response_tools_widget.attach(self)
-        self._query_response_tools_widget.grid(column=3, row=3) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(3, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self._query_response_tools_widget.grid(column=3, row=0) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(3, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
         
         self.reset_widgets()
 
@@ -192,7 +192,7 @@ class QueryPromptWidget(ttk.Labelframe, Subject):
         Subject.__init__(self)
 
         # Message widget for showing the query prompt text, that is, the text descibing what query the user is responding too
-        self._msg_query = tk.Message(self, relief=tk.RIDGE)
+        self._msg_query = tk.Message(self, relief=tk.RIDGE, aspect=1000)
         self._msg_query.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
@@ -226,7 +226,7 @@ class QueryResponseEntryWidget(ttk.Labelframe, Subject):
         Subject.__init__(self)
 
         # Query response Entry widget, that is, the entry widget where the user types in their response to the query
-        self._ent_response = ttk.Entry(self)
+        self._ent_response = ttk.Entry(self, width=50)
         self._ent_response.grid(column=1, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
@@ -234,6 +234,22 @@ class QueryResponseEntryWidget(ttk.Labelframe, Subject):
         self._ent_response_txt = tk.StringVar()
         # Tell the Entry widget to match this variable.
         self._ent_response["textvariable"] = self._ent_response_txt
+        # Set up a horizontal scroll bar
+        self._ent_scroll_hor = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.onScrollHorizontal)
+        self._ent_scroll_hor.grid(column=1, row=1, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._ent_response['xscrollcommand'] = self._ent_scroll_hor.set
+
+    # See: https://tkdocs.com/shipman/entry-scrolling.html
+    def onScrollHorizontal(self, *L):
+        """
+        Handle horizontal scrolling of query response entry widget.
+        """
+        op, howMany = L[0], L[1]
+        if op == 'scroll':
+            units = L[2]
+            self._ent_response.xview_scroll(howMany, units)
+        elif op == 'moveto':
+            self._ent_response.xview_moveto(howMany)
 
     def get_state(self):
         """
