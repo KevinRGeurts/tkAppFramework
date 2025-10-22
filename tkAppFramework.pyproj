@@ -61,7 +61,7 @@
     <Compile Include="tkSimulatorViewManager.py" />
     <Compile Include="tkUserQueryReceiver.py" />
     <Compile Include="tkViewManager.py" />
-    <Compile Include="UserQueryWidget.py" />
+    <Compile Include="tkUserQueryViewManager.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\Developer_Documentation.txt" />

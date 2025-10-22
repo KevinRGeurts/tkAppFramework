@@ -10,7 +10,7 @@ import tkSimulatorViewManager
 import tkUserQueryReceiver
 # -- End Leave --
 from tkApp import tkApp, AppAboutInfo
-from UserQueryWidget import UserQueryWidget
+from tkUserQueryViewManager import tkUserQueryViewManager
 from tkSimulatorViewManager import tkSimulatorViewManager
 from SimulatorModel import SimulatorModel
 
@@ -53,14 +53,16 @@ class tkSimulatorApp(tkApp):
 
     def _setup_child_widgets(self):
         """
-        Utility function of tkApp class extended here to set up UserQueryWidget. 
+        Utility function of tkApp class extended here to set up tkUserQueryViewManager. 
         :return: None
         """
         super()._setup_child_widgets()
 
-        # Setup for UserQueryWidget
-        self._query_widget = UserQueryWidget(self)
-        self._query_widget.grid(column=0, row=0, sticky='NWES') # Grid-1 in Documentation\UI_WireFrame.pptx
+        # Setup for tkUserQueryViewManager
+        self._query_view_manager = tkUserQueryViewManager(self)
+        # Attach view manager as observer of model, because tkViewManager.onDestroy() will attempt detach
+        self.getModel().attach(self._query_view_manager)
+        self._query_view_manager.grid(column=0, row=0, sticky='NWES') # Grid-1 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
 
@@ -134,7 +136,7 @@ class tkSimulatorApp(tkApp):
         Method called when menu item File | End Simulator is selected.
         """
         if self._sim_thread:
-            self._query_widget.reset_wdigets()
+            self._query_view_manager.reset_widgets()
             self.request_simulator_end()
             # Disable File | End Simulator menu item, since no simulator will now be running
             self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
