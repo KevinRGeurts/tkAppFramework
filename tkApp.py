@@ -69,7 +69,7 @@ AppAboutInfo = namedtuple('AppAboutInfo', ['name', 'version', 'copyright', 'auth
                                       'license':'MIT License', 'source':'github url', 'help_file':''})
 
 
-# TODO: Refctor the way the menubar is created, so that File|Exit and Help|About are always present. If the
+# TODO: Refactor the way the menubar is created, so that File|Exit and Help|About are always present. If the
 # user provides a non-empty menu_dict, and it contains File|Exit or Help|About, then use the user's handler.
 # If the user provides an empty menu_dict, or a non-empty menu_dict that does not contain File|Exit or Help|About,
 # then add those items with the default handlers.

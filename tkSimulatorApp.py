@@ -155,8 +155,12 @@ class tkSimulatorApp(tkApp):
         """
         Utility method that places a termination request in the response queue of the tkUserResponseCollector.
         """
-        # TODO: Consider changing this so that instead a request to end the simulator is sent to the query widget, and it sends the requrired response
-        # to the tkUserResponseCollector. This strikes me as the App getting involved in the business of the query widget.
+        # Note: Had considered changing this so that instead a request to end the simulator is sent to
+        # self._query_view_manager, and it sends the requrired response to the tkUserQueryReceiver, because
+        # this may seem like the App getting involved in the business of the query view manager, and that the app
+        # should not need to import tkUserQueryReceiver at allow. However, it is the app, and not the query view
+        # manager that knows that the simulator is running on self._sim_thread, and needs to be requested to shut down
+        # like this. So elected to leave this as is.
         
         # Don't do anything if self._sim_thread = None, because there is no running simulator to end.
         

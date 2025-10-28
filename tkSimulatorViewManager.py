@@ -102,7 +102,7 @@ class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
     during a simulation.
     """
     def __init__(self, parent) -> None:
-        super().__init__(parent, text='Simulation Output')
+        super().__init__(parent, text='Simulation Output', takefocus=0)
         Subject.__init__(self)
         
        # Create a text widget which will display all the logging.info messages received from the simulator

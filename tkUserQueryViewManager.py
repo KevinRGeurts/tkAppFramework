@@ -13,8 +13,6 @@ import tkUserQueryReceiver
 from tkViewManager import tkViewManager
 from ObserverPatternBase import Subject
 
-# TODO: UserQueryWidget should be IS-A tkViewManager, and all it's child widgets should be IS-A Subject.
-
 # TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
 # as a tkViewManager, it is a tkinter.ttk.Frame. Do we need to find a way to have a Query text label to help the
 # user understand the purpose of the child widgets?
@@ -166,6 +164,11 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_prompt_widget.set_state(item.prompt_text)
         # Activate the QueryResponseSendWidget
         self._query_response_send_widget.disable_query_response_send(False)
+        # Activate the QueryResponseToolsWidget
+        self._query_response_tools_widget.disable_query_response_tools(False)
+        # Activate the QueryResponseEntryWidget, and request that it be given focus (if the app has focus)
+        self._query_response_entry_widget.disable_query_response_entry(False)
+        self._query_response_entry_widget.focus_set()
 
         return None
 
@@ -175,7 +178,9 @@ class tkUserQueryViewManager(tkViewManager):
         """
         self._query_prompt_widget.set_state('--')
         self._query_response_entry_widget.set_state('')
+        self._query_response_entry_widget.disable_query_response_entry(True)
         self._query_response_send_widget.disable_query_response_send(True)
+        self._query_response_tools_widget.disable_query_response_tools(True)
         return None
 
 
@@ -192,7 +197,7 @@ class QueryPromptWidget(ttk.Labelframe, Subject):
         Subject.__init__(self)
 
         # Message widget for showing the query prompt text, that is, the text descibing what query the user is responding too
-        self._msg_query = tk.Message(self, relief=tk.RIDGE, aspect=1000)
+        self._msg_query = tk.Message(self, relief=tk.RIDGE, aspect=1000, takefocus=0)
         self._msg_query.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
@@ -226,7 +231,7 @@ class QueryResponseEntryWidget(ttk.Labelframe, Subject):
         Subject.__init__(self)
 
         # Query response Entry widget, that is, the entry widget where the user types in their response to the query
-        self._ent_response = ttk.Entry(self, width=50)
+        self._ent_response = ttk.Entry(self, width=50, takefocus=1)
         self._ent_response.grid(column=1, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
@@ -295,7 +300,7 @@ class QueryResponseSendWidget(ttk.Labelframe, Subject):
         Subject.__init__(self)
 
         # Enter button
-        self._btn_enter = ttk.Button(self, text='Enter', command=self.OnEnterButton)
+        self._btn_enter = ttk.Button(self, text='Enter', command=self.OnEnterButton, takefocus=1)
         self._btn_enter.grid(column=2, row=0) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(2, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
@@ -338,7 +343,7 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         # Tools menu button - The menu choices here select "tools" that help the user fill in the QueryResponseEntryWidget text
         # under different circumstances. Example, if the user is asked for a file path to save to, they can use the tools menu button
         # to launch a file save dialog.
-        self._mbtn_tools = ttk.Menubutton(self, text='Tools')
+        self._mbtn_tools = ttk.Menubutton(self, text='Tools', takefocus=1)
         self._mbtn_tools.grid(column=3, row=3) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(3, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
