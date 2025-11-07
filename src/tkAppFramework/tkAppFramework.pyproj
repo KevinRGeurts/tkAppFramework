@@ -5,15 +5,14 @@
     <ProjectGuid>b52e8dc1-afa8-456b-ae2c-5fad5a78dc43</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>main.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <SearchPath>..\..\tests</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>tkAppFramework</Name>
     <RootNamespace>tkAppFramework</RootNamespace>
     <TestFramework>unittest</TestFramework>
     <UnitTestPattern>test*.py</UnitTestPattern>
-    <UnitTestRootDirectory>.</UnitTestRootDirectory>
+    <UnitTestRootDirectory>..\..\tests</UnitTestRootDirectory>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -40,23 +39,6 @@
     <Compile Include="sim_adapter.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="test_Model.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="test_ObserverPatternBase.py" />
-    <Compile Include="test_SimulatorModel.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="test_sim_adapter.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="test_tkApp.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="test_tkSimulatorApp.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="test_tkViewManager.py" />
     <Compile Include="tkApp.py" />
     <Compile Include="tkHelpViewManager.py" />
     <Compile Include="tkSimulatorApp.py" />
@@ -69,8 +51,6 @@
     <Content Include="Documentation\Developer_Documentation.txt" />
     <Content Include="Help\HelpFile.txt" />
     <Content Include="Help\SimApp_HelpFile.txt" />
-    <Content Include="LICENSE.txt" />
-    <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Help\" />
