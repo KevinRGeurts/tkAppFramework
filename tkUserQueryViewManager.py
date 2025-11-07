@@ -7,7 +7,7 @@ from queue import Queue
 
 # Local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserQueryReceiver correctly changes values of globals in UserQueryReceiver --
-import UserQueryReceiver
+import UserResponseCollector.UserQueryReceiver
 import tkUserQueryReceiver
 # -- End Leave --
 from tkViewManager import tkViewManager
@@ -121,7 +121,7 @@ class tkUserQueryViewManager(tkViewManager):
             # Create QueryResponse object
             query_response=tkUserQueryReceiver.QueryResponse(query_response=response, query_ID=self._current_query_info.query_ID)
             # Place QueryResponse object in tkUserResponseCollector's response queue
-            UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(query_response)
+            UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(query_response)
 
             self.reset_widgets()
 

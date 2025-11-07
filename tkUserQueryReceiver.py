@@ -10,9 +10,9 @@ from queue import Queue
 # from pathlib import Path
 
 # Local
-import UserQueryReceiver
+import UserResponseCollector.UserQueryReceiver
 
-class UserQueryReceiverBadResponseError(UserQueryReceiver.UserQueryReceiverError):
+class UserQueryReceiverBadResponseError(UserResponseCollector.UserQueryReceiver.UserQueryReceiverError):
     """
     Custom exception to be raised when the tkinter-based app returns a raw response that cannot be successfully converted to
     a processed response.
@@ -38,7 +38,7 @@ QueryInfo = namedtuple('QueryInfo', ['prompt_text', 'query_ID'])
 QueryResponse = namedtuple('QueryResponse', ['query_response','query_ID'])
 
 
-class tkUserQueryReceiver(UserQueryReceiver.UserQueryReceiver):
+class tkUserQueryReceiver(UserResponseCollector.UserQueryReceiver.UserQueryReceiver):
     """
     Following the Command design pattern, this is a concrete implementation of a UserQueryReceiver, that a concrete UserQueryCommand object
     can use to obtain raw responses from the user through a tkInter based GUI. The workflow is:
@@ -55,7 +55,7 @@ class tkUserQueryReceiver(UserQueryReceiver.UserQueryReceiver):
         :parameter query_queue_callback: Calleable object (e.g., tkinter_wdiget.put_item_in_queue(item, timeout=)) that will place a query message
         in the queury queue.
         """
-        UserQueryReceiver.UserQueryReceiver.__init__(self)
+        UserResponseCollector.UserQueryReceiver.UserQueryReceiver.__init__(self)
         # Sanity check the arguments to make sure they are callable. This does not guarantee they are bound methods, e.g., a class is callable
         # for construction. But it is better than nothing.
         if query_event_callback: assert(callable(query_event_callback))
@@ -97,7 +97,7 @@ class tkUserQueryReceiver(UserQueryReceiver.UserQueryReceiver):
         # Check if response is the string '<<QueryingThreadTerminationRequest>>'
         if response.query_response == '<<QueryingThreadTerminationRequest>>':
             # Raise exception
-            raise UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError(f"tkinter app has requested that querying thread terminate.")
+            raise UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError(f"tkinter app has requested that querying thread terminate.")
 
         # Assert that the query_ID of the response matches the query_ID of the request
         assert(response.query_ID == str(query_ID))
@@ -143,12 +143,12 @@ class tkUserQueryReceiver(UserQueryReceiver.UserQueryReceiver):
 
 
 # Replace the global (intended to be private), single instance, with an object of the new subclass
-UserQueryReceiver._instance = tkUserQueryReceiver()
+UserResponseCollector.UserQueryReceiver._instance = tkUserQueryReceiver()
 
 # Replace the global prebound method(s)
-UserQueryReceiver.UserQueryReceiver_GetCommandReceiver = UserQueryReceiver._instance.GetCommandReceiver
+UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver = UserResponseCollector.UserQueryReceiver._instance.GetCommandReceiver
 
 # Create a global prebound method for setup
-tkUserQueryReceiver_setup = UserQueryReceiver._instance.setup
+tkUserQueryReceiver_setup = UserResponseCollector.UserQueryReceiver._instance.setup
 
 

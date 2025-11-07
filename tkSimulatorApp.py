@@ -5,7 +5,7 @@ from threading import Thread
 
 # local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserResponseCollector correctly changes values of globals in UserResponseCollector --
-import UserQueryReceiver
+import UserResponseCollector.UserQueryReceiver
 import tkSimulatorViewManager
 import tkUserQueryReceiver
 # -- End Leave --
@@ -166,7 +166,7 @@ class tkSimulatorApp(tkApp):
         
         if self._sim_thread:
             end_sim_response = tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
-            UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
+            UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
             self._sim_thread = None
         else:
             pass

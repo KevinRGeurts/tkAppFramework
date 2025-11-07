@@ -30,8 +30,8 @@ from ObserverPatternBase import Subject
 from model import Model
 import tkApp
 from sim_adapter import SimulatorAdapter
-from UserQueryCommand import askForFloat, UserQueryCommandMenu
-import UserQueryReceiver
+from UserResponseCollector.UserQueryCommand import askForFloat, UserQueryCommandMenu
+import UserResponseCollector.UserQueryReceiver
 
 class DemoModel(Model):
     """
@@ -202,7 +202,7 @@ class DemoSimulator:
         while True:
             try:
                 response = askForFloat('Enter a value to square.')
-            except UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
+            except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
             squared = response * response
             logger.info(f"The square of {response} is {squared}.")
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     """
 
     # Since the global UserQueryReceiver is a tkUserQueryReceiver, we have to construct a local one for the console
-    receiver = UserQueryReceiver.ConsoleUserQueryReceiver()
+    receiver = UserResponseCollector.UserQueryReceiver.ConsoleUserQueryReceiver()
     command = UserQueryCommandMenu(receiver,
                                    'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app'})
     response = command.Execute()
