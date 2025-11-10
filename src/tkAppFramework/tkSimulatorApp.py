@@ -6,13 +6,13 @@ from threading import Thread
 # local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserResponseCollector correctly changes values of globals in UserResponseCollector --
 import UserResponseCollector.UserQueryReceiver
-import tkSimulatorViewManager
-import tkUserQueryReceiver
+import tkAppFramework.tkSimulatorViewManager
+import tkAppFramework.tkUserQueryReceiver
 # -- End Leave --
-from tkApp import tkApp, AppAboutInfo
-from tkUserQueryViewManager import tkUserQueryViewManager
-from tkSimulatorViewManager import tkSimulatorViewManager
-from SimulatorModel import SimulatorModel
+from tkAppFramework.tkApp import tkApp, AppAboutInfo
+from tkAppFramework.tkUserQueryViewManager import tkUserQueryViewManager
+from tkAppFramework.tkSimulatorViewManager import tkSimulatorViewManager
+from tkAppFramework.SimulatorModel import SimulatorModel
 
 
 class tkSimulatorApp(tkApp):
@@ -165,7 +165,7 @@ class tkSimulatorApp(tkApp):
         # Don't do anything if self._sim_thread = None, because there is no running simulator to end.
         
         if self._sim_thread:
-            end_sim_response = tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
+            end_sim_response = tkAppFramework.tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
             UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
             self._sim_thread = None
         else:

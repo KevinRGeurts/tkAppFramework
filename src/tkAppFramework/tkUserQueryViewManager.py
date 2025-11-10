@@ -8,10 +8,10 @@ from queue import Queue
 # Local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserQueryReceiver correctly changes values of globals in UserQueryReceiver --
 import UserResponseCollector.UserQueryReceiver
-import tkUserQueryReceiver
+import tkAppFramework.tkUserQueryReceiver
 # -- End Leave --
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
 
 # TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
 # as a tkViewManager, it is a tkinter.ttk.Frame. Do we need to find a way to have a Query text label to help the
@@ -37,7 +37,7 @@ class tkUserQueryViewManager(tkViewManager):
         self._current_query_info = None
 
         # Set up tkUserResponseCollector so it has the correct callbacks
-        tkUserQueryReceiver.tkUserQueryReceiver_setup(query_event_callback=self.event_generate, query_queue_callback=self.put_query_info_in_queue)
+        tkAppFramework.tkUserQueryReceiver.tkUserQueryReceiver_setup(query_event_callback=self.event_generate, query_queue_callback=self.put_query_info_in_queue)
 
         self.bind('<<TkinterAppQueryEvent>>', self.TkAppQueryEventHandler)
 
@@ -119,7 +119,7 @@ class tkUserQueryViewManager(tkViewManager):
         response = self._query_response_entry_widget.get_state()
         if len(response)>0:
             # Create QueryResponse object
-            query_response=tkUserQueryReceiver.QueryResponse(query_response=response, query_ID=self._current_query_info.query_ID)
+            query_response=tkAppFramework.tkUserQueryReceiver.QueryResponse(query_response=response, query_ID=self._current_query_info.query_ID)
             # Place QueryResponse object in tkUserResponseCollector's response queue
             UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(query_response)
 

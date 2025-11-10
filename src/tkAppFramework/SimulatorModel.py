@@ -15,9 +15,8 @@ Exported Functions:
 # standard imports
 
 # local imports
-from model import Model
-from sim_adapter import SimulatorAdapter
-import sim_adapter
+from tkAppFramework.model import Model
+from tkAppFramework.sim_adapter import SimulatorAdapter
 
 
 class SimulatorModel(Model):

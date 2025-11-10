@@ -14,7 +14,7 @@ Exported Functions:
 # standard imports
 
 # local imports
-from model import Model
+from tkAppFramework.model import Model
 
 
 class HelpModel(Model):

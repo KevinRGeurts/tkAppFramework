@@ -8,10 +8,10 @@ import unittest
 import tkinter as tk
 
 # Local
-from tkSimulatorApp import tkSimulatorApp
-from tkSimulatorViewManager import tkSimulatorViewManager
-from SimulatorModel import SimulatorModel
-from tkApp import AppAboutInfo
+from tkAppFramework.tkSimulatorApp import tkSimulatorApp
+from tkAppFramework.tkSimulatorViewManager import tkSimulatorViewManager
+from tkAppFramework.SimulatorModel import SimulatorModel
+from tkAppFramework.tkApp import AppAboutInfo
 
 
 class Test_tkSimulatorApp(unittest.TestCase):
@@ -22,8 +22,8 @@ class Test_tkSimulatorApp(unittest.TestCase):
         self.assertIsInstance(simapp._view_manager, tkSimulatorViewManager)
         self.assertIsInstance(simapp.getModel(), SimulatorModel)
         info = AppAboutInfo(name='Simulator Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
-                           license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework'
-                           help_file='.\\Help\\SimApp_HelpFile.txt')
+                           license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
+                           help_file='.\\Help\\tkAppFramework\\SimApp_HelpFile.txt')
         self.assertTupleEqual(simapp.getAboutInfo(), info)
         self.assertIsNone(simapp.onFileExit())
 

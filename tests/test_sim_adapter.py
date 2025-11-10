@@ -7,7 +7,7 @@ This module provides unit tests for the SimulatorAdapter class.
 import unittest
 
 # Local
-from sim_adapter import SimulatorAdapter
+from tkAppFramework.sim_adapter import SimulatorAdapter
 
 
 class Test_SimulatorAdapter(unittest.TestCase):

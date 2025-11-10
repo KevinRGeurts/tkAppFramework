@@ -43,8 +43,8 @@ from tkinter import filedialog
 from multiprocessing import Process
 
 # local imports
-from tkHelpViewManager import tkHelpViewManager
-from HelpModel import HelpModel
+from tkAppFramework.tkHelpViewManager import tkHelpViewManager
+from tkAppFramework.HelpModel import HelpModel
 
 
 # This function cannot be a method of tkApp, do to Process using pickle.

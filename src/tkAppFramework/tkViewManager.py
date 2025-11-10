@@ -31,8 +31,8 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local imports
-from ObserverPatternBase import Observer, Subject
-from model import Model
+from tkAppFramework.ObserverPatternBase import Observer, Subject
+from tkAppFramework.model import Model
 
 
 class tkViewManager(ttk.Frame, Observer):

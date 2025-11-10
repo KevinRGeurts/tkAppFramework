@@ -24,12 +24,12 @@ from tkinter import ttk
 import logging
 
 # Local
-from tkSimulatorApp import tkSimulatorApp
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
-from model import Model
-import tkApp
-from sim_adapter import SimulatorAdapter
+from tkAppFramework.tkSimulatorApp import tkSimulatorApp
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
+from tkAppFramework.model import Model
+import tkAppFramework.tkApp
+from tkAppFramework.sim_adapter import SimulatorAdapter
 from UserResponseCollector.UserQueryCommand import askForFloat, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -145,13 +145,13 @@ class DemotkViewManager(tkViewManager):
         return None
 
 
-class DemotkApp(tkApp.tkApp):
+class DemotkApp(tkAppFramework.tkApp.tkApp):
     """
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def __init__(self, parent):
-        info = tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
-                                  license='MIT License', source='GitHub', help_file='.\\Help\\tkAppFramework\\HelpFile.txt')
+        info = tkAppFramework.tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
+                                                 license='MIT License', source='GitHub', help_file='.\\Help\\tkAppFramework\\HelpFile.txt')
         super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
 
     def _createViewManager(self):

@@ -5,8 +5,8 @@ from tkinter import ttk
 from queue import Queue
 
 # Local imports
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
 
 class tkSimulatorViewManager(tkViewManager):
     """

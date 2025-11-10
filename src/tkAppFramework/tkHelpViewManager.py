@@ -20,8 +20,8 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local imports
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
 
 
 class tkHelpViewManager(tkViewManager):

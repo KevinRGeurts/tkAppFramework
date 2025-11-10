@@ -49,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\Developer_Documentation.txt" />
-    <Content Include="Help\tkAppFramework\HelpApp_HelpFile.txt" />
+    <Content Include="Help\tkAppFramework\HelpFile.txt" />
     <Content Include="Help\tkAppFramework\SimApp_HelpFile.txt" />
   </ItemGroup>
   <ItemGroup>

@@ -245,8 +245,8 @@ To run the demo app, type ```python main.py``` in a terminal window.
 
 ## Unittests
 
-Unittests for the tkAppFramework are in the project directory, with filenames starting with test_. To run the unittests,
-type ```python -m unittest discover -v``` in a terminal window in the project directory.
+Unittests for the tkAppFramework are in the tests directory, with filenames starting with test_. To run the unittests,
+type ```python -m unittest discover -s ..\..\tests -v``` in a terminal window in the src\tkAppFramework directory.
 
 ## License
 MIT License. See the LICENSE file for details

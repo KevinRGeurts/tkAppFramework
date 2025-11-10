@@ -7,7 +7,7 @@ This module provides unit tests for Model class.
 import unittest
 
 # Local
-from model import Model
+from tkAppFramework.model import Model
 
 
 class Test_Model(unittest.TestCase):

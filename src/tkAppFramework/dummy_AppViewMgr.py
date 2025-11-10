@@ -7,10 +7,10 @@ and a TestWidget, to facilitate testing.
 from tkinter import ttk
 
 # Local
-from tkApp import tkApp
-from model import Model
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
+from tkAppFramework.tkApp import tkApp
+from tkAppFramework.model import Model
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
 
 
 class TestWidget(ttk.LabelFrame, Subject):

@@ -8,9 +8,9 @@ import unittest
 import tkinter as tk
 
 # Local
-from dummy_AppViewMgr import TesttkApp, TesttkViewManager
-from model import Model
-from tkApp import AppAboutInfo
+from tkAppFramework.dummy_AppViewMgr import TesttkApp, TesttkViewManager
+from tkAppFramework.model import Model
+from tkAppFramework.tkApp import AppAboutInfo
 
 
 class Test_tkApp(unittest.TestCase):
