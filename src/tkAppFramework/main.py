@@ -151,7 +151,7 @@ class DemotkApp(tkApp.tkApp):
     """
     def __init__(self, parent):
         info = tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
-                                  license='MIT License', source='GitHub', help_file='.\\Help\\HelpFile.txt')
+                                  license='MIT License', source='GitHub', help_file='.\\Help\\tkAppFramework\\HelpFile.txt')
         super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
 
     def _createViewManager(self):

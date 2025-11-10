@@ -49,12 +49,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\Developer_Documentation.txt" />
-    <Content Include="Help\HelpFile.txt" />
-    <Content Include="Help\SimApp_HelpFile.txt" />
+    <Content Include="Help\tkAppFramework\HelpApp_HelpFile.txt" />
+    <Content Include="Help\tkAppFramework\SimApp_HelpFile.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Help\" />
     <Folder Include="Documentation\" />
+    <Folder Include="Help\tkAppFramework\" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">
