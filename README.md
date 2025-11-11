@@ -91,10 +91,10 @@ launched.
 ```python
 import tkinter as tk
 from tkinter import ttk
-from tkApp import tkApp, AppAboutInfo
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
-from model import Model
+from tkAppFramework.tkApp import tkApp, AppAboutInfo
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
+from tkAppFramework.model import Model
 
 
 class DemoModel(Model):
@@ -237,11 +237,126 @@ class DemotkApp(tkApp):
 root = tk.Tk()
 # Create the demo app
 app = DemotkApp(root)
-# Start the metronome app's event loop running
+# Start the app's event loop running
 app.mainloop()
 ```
 
-To run the demo app, type ```python main.py``` in a terminal window.
+## Demonstration
+
+To run the Demo Application, type ```python tkAppFramework.main``` in a terminal window. Note, that this assumes that the
+tkAppFramework package has been installed in your Python environment. In the terminal window, choose option (d).
+The Demo Application is the same as the code shown above in the Usage section of this document. If you choose option (s),
+then a simple demonstration of the Simulator Application will be launched.
+
+## Simulator Application
+
+The tkAppFramework package also includes a framework for creating applications that serve as a GUI for simulators.
+A simulator is a program that, when run, periodically requests input from the user, performs calculations based
+on that input, and then outputs results to the user. The Simulator Application is a GUI that presents input requests
+from the simulator to the user, collects the user's input, and returns that input to the simulator. It also
+dispalys the simulator's output to the user.
+
+What is inherently true about a Simulator Application, is that the simulator controls the execution flow. In a
+typical GUI application, the GUI's event loop controls the execution flow, and the business logic code
+responds to requests from the GUI based on the user's interactions with the GUI's widgets. In the Simulator Application,
+once the simulator is started, it controls the execution flow, and sends input requests and output data to the GUI.
+Thus the Simulator Application inverts the typical GUI application architecture.
+
+The Simulator Application framework is implemented in the tkSimulatorApp, tkSimulatorViewManager, SimulatorModel,
+SimulatorAdapter, tkUserQueryViewManger, and tkUserUserQueryReceiver classes. Assuming that the simulator meets
+certain requirements, then the only code that needs to be written to hook it up to the Simulator Application is
+to implement a concrete child class of SimulatorAdapter. The simulator must:
+
+(1) Request all user input through the UserResponseCollector package.
+(2) Provide all ouput through the standard logging package.
+(3) Be able to run in a separate thread from the GUI's event loop.
+(4) Stop execution gracefully when a UserResponseCollector.UserQueryReceiverTerminateQueryingThreadError is raised.
+
+The concrete SimulatorAdapter must implement the ```run()``` method, which should call a method of ```self._simulator```
+to start a simulation. The usage example below matches the demonstration Simulator Application described in the Demonstration
+section of this document.
+
+### Usage
+
+```
+# Standard imports
+import tkinter as tk
+import logging
+
+# Local imports
+from tkAppFramework.tkSimulatorApp import tkSimulatorApp
+from tkAppFramework.sim_adapter import SimulatorAdapter
+from UserResponseCollector.UserQueryCommand import askForFloat
+import UserResponseCollector.UserQueryReceiver
+
+class DemoSimulator:
+    """
+    This class is a very simple simulator. In a loop, until terminated, it asks the user for a floating point
+    value, squares the value, and logs it.
+    """
+    def __init__(self, log_level=logging.INFO):
+        """
+        All that needs to be done is to set up logging.
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        """
+        # Create a logger with name 'demo_simulator_logger'. This is NOT the root logger, which is one level up from here, and has no name.
+        logger = logging.getLogger('demo_simulator_logger')
+        # This is the threshold level for the logger itself, before it will pass to any handlers, which can have their own threshold.
+        # Should be able to control here what the stream handler receives and thus what ends up going to stderr.
+        # Use this key for now:
+        #   DEBUG = debug messages sent to this logger will end up on stderr
+        #   INFO = info messages sent to this logger will end up on stderr
+        logger.setLevel(log_level)
+        # Set up this highest level below root logger with a stream handler
+        sh = logging.StreamHandler()
+        # Set the threshold for the stream handler itself, which will come into play only after the logger threshold is met.
+        sh.setLevel(log_level)
+        # Add the stream handler to the logger
+        logger.addHandler(sh)
+
+    def go(self):
+        """
+        Execute a simulation.
+        :return: None
+        """
+        logger = logging.getLogger('demo_simulator_logger')
+        while True:
+            try:
+                response = askForFloat('Enter a value to square.')
+            except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
+                break
+            squared = response * response
+            logger.info(f"The square of {response} is {squared}.")
+        return None
+
+class DemoSimulatorAdapter(SimulatorAdapter):
+    """
+    Adapter to wrap DemoSimulator object.
+    """
+    def __init__(self, out_queue=None):
+        """
+        """
+        super().__init__(DemoSimulator(), 'demo_simulator_logger', out_queue)
+
+    def run(self):
+        """
+        Launch a simulation.
+        :return: None
+        """
+        self.simulator.go()
+        return None
+
+
+# Get Tcl interpreter up and running and get the root widget
+root = tk.Tk()
+# Create the tkSimulatorApp
+simapp = tkSimulatorApp(root)
+# Create the DemoSimulatorAdapter, set it's output queue to the simapp's sim_output_queue property,
+# and assign it to the simapp's model's sim_adapter property.
+simapp.getModel().sim_adapter = DemoSimulatorAdapter(simapp.sim_output_queue)
+# Start the app's event loop running
+simapp.mainloop()
+```
 
 ## Unittests
 

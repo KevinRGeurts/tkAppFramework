@@ -2,6 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 from threading import Thread
+import sysconfig
 
 # local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserResponseCollector correctly changes values of globals in UserResponseCollector --
@@ -27,9 +28,10 @@ class tkSimulatorApp(tkApp):
         """
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         """
-        info = AppAboutInfo(name='Simulator Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
+        info = AppAboutInfo(name='Simulator Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
-                                  help_file='.\\Help\\tkAppFramework\\SimApp_HelpFile.txt')
+                                  help_file=help_file_path)
         menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
                            'Help':{'View Help...':self.onViewHelp, 'About...':self.onHelpAbout}}
         super().__init__(parent, title="Simulator Application", menu_dict=menu_dictionary, app_info=info)

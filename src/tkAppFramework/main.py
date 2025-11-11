@@ -22,6 +22,7 @@ Exported Functions:
 import tkinter as tk
 from tkinter import ttk
 import logging
+import sysconfig
 
 # Local
 from tkAppFramework.tkSimulatorApp import tkSimulatorApp
@@ -150,8 +151,9 @@ class DemotkApp(tkAppFramework.tkApp.tkApp):
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def __init__(self, parent):
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\HelpFile.txt'
         info = tkAppFramework.tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
-                                                 license='MIT License', source='GitHub', help_file='.\\Help\\tkAppFramework\\HelpFile.txt')
+                                                 license='MIT License', source='GitHub', help_file=help_file_path)
         super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
 
     def _createViewManager(self):
@@ -225,7 +227,6 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         self.simulator.go()
         return None
     
-
 
 if __name__ == '__main__':
     

@@ -6,6 +6,7 @@ This module provides unit tests for tkSimulatorApp class.
 # Standard
 import unittest
 import tkinter as tk
+import sysconfig
 
 # Local
 from tkAppFramework.tkSimulatorApp import tkSimulatorApp
@@ -21,9 +22,10 @@ class Test_tkSimulatorApp(unittest.TestCase):
         self.assertEqual(root.title(), 'Simulator Application')
         self.assertIsInstance(simapp._view_manager, tkSimulatorViewManager)
         self.assertIsInstance(simapp.getModel(), SimulatorModel)
-        info = AppAboutInfo(name='Simulator Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
+        info = AppAboutInfo(name='Simulator Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                            license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
-                           help_file='.\\Help\\tkAppFramework\\SimApp_HelpFile.txt')
+                           help_file=help_file_path)
         self.assertTupleEqual(simapp.getAboutInfo(), info)
         self.assertIsNone(simapp.onFileExit())
 
