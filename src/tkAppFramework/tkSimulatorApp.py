@@ -135,24 +135,19 @@ class tkSimulatorApp(tkApp):
 
         return None
 
-    def onLoadSimulator(self):
+    def onLoadSimulation(self):
         """
-        Method called when menu item File | Load Simulator is selected.
+        Method called when menu item File | Load Simulation is selected.
+        Currently not called and not implemented. Here as place holder for future expansion.
+        :return: None
         """
-        # TODO: Call some method on the App (now) or mediator (later) that will clean up the UI ahead of the new game, since the previous game may have been terminated
-        # in the middle. This also requires that the QueryWidget get itself cleaned up.
+        # TODO: Call some method on the mediators that will clean up the UI ahead of the new simulation
+        # since the previous simulation may have been terminated in the middle.
 
         if self._sim_thread is None:
-            # # Call play(load_game=True) method of CribbageGame, on a new thread
-            # self._game_thread = Thread(target=self._game.play, kwargs={'load_game':True})
-            # self._game_thread.start()
-            # # Start processing of the tkWindowManager's game event queue
-            # self._view_manager.CribbageGameOutputEventHandler()
-            # # enable File | End Game, since we now have a currently running game
-            # self._menu_file.entryconfig('End Game', state='normal')
-            # # disable File | Start Game and File | Load Game menu items, since we don't want more than one game currently running.
-            # self._menu_file.entryconfig('Start Game', state='disabled') 
-            # self._menu_file.entryconfig('Load Game', state='disabled')
+            # TODO: Implement loading of a previously saved simulator state.
+            # TODO: enable File | End Simulator, since we now have a currently running simulation
+            # TODO: Possible, disable File | Start Simulator and File | Load Simulation menu items, since we don't want more than one simulation currently running.
             pass 
         else:
             # Do nothing.
@@ -163,6 +158,7 @@ class tkSimulatorApp(tkApp):
     def onEndSimulator(self):
         """
         Method called when menu item File | End Simulator is selected.
+        :return: None
         """
         if self._sim_thread:
             self._query_view_manager.reset_widgets()
@@ -179,6 +175,7 @@ class tkSimulatorApp(tkApp):
     def request_simulator_end(self):
         """
         Utility method that places a termination request in the response queue of the tkUserResponseCollector.
+        :return: None
         """
         # Note: Had considered changing this so that instead a request to end the simulator is sent to
         # self._query_view_manager, and it sends the requrired response to the tkUserQueryReceiver, because
