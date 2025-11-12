@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 /.vs/tkAppFramework
 /src/tkAppFramework/.vs/tkAppFramework
+/.vs
