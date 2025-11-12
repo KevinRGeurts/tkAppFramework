@@ -1,3 +1,26 @@
+"""
+Defines tkSimulatorApp class, which is a concrete implementation of tkApp for simulator applications.
+
+Class is a child of tkApp, extending it's functionality for "simulator" type applications, where there is a
+simulator engine that is "in control", rather than control being the user interacting with the GUI. The GUI
+becomes a thin shell for launching the simulator on a separate thread. The simulator then progresses as it
+wishes, but periodically requests input from the user through tkUserQueryReceiver, and periodically uses
+logging to send output caught by tkSimulatorViewManager.
+
+Exported Classes:
+    tkSimulatorApp -- Is-A tkAppnterface implementation for simulator applications.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+
+Logging:
+    None
+"""
+
+
 # standard imports
 import tkinter as tk
 from tkinter import ttk

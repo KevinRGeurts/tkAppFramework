@@ -1,6 +1,39 @@
+"""
+tkUserQueryReceiver is a concrete implementation of UserResponseCollector.UserQueryReceiver.UserQueryReceiver.
+
+A concrete UserResponseCollector.UserQueryCommand.UserQueryCommand object can use tkUserQueryReceiver to obtain raw responses
+from the user through a tkInter based GUI. The workflow is:
+(1) Add an objectified query message to a FIFO query queue in the tkinter app, that runs on the tkinter thread.
+(2) Generate an event to a designated tkinter widget that will handle input, that a query is waiting in the queue.
+(3) Sit in a tight loop, checking a separate response queue that runs in the same thread as self, waiting for the tkinter widget
+to place an objectified response message in the response queue.
+(4) Read the response message from the respone queue, exit the tight loop, and act on the response. 
+
+Exported Classes:
+    tkUserQueryReceiver -- A concrete UserResponseCollector.UserQueryReceiver.UserQueryReiver object that can provide raw responses
+                           to any code that creates and Executes() UserResponseCollector.UserQueryCommand.UserQueryCommand  objects,
+                           obtaining the raw responses from the user through a tkInter based GUI.
+    QueryInfo -- Named tuple subclass used to objectify query messages placed in the tkinter app's query queue.
+    QueryResponse -- Named tuple subclass used to objectify response messages placed in the response queue by the tkinter app.
+
+Exported Exceptions:
+    UserQueryReceiverBadResponseError - Custom exception to be raised when the tkinter-based app returns a raw response that cannot be successfully converted to
+                                        a processed response.
+
+Exceptions Raised:
+    UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError - Raised if a response of
+        '<<QueryingThreadTerminationRequest>>' is received in the response queue.
+ 
+Exported Functions:
+    UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver -- Global prebound method that returns the global, single instance of a concrete UserQueryReceiver.
+        Replaces the original prebound method implemented in UserResponseCollector.UserQueryReceiver so that the global instance IS-A tkUserQueryReceiver.
+        See for reference:
+            (1) Global Object Pattern: https://python-patterns.guide/python/module-globals/
+            (2) Prebound Method Pattern: https://python-patterns.guide/python/prebound-methods/
+    tkUserQueryReceiver_setup -- Global prebound method for calling the setup() method of the global tkUserQueryReceiver instance.
+"""
+
 # Standard
-import tkinter as tk
-from tkinter import ttk
 from tkinter.messagebox import showerror
 # from tkinter import filedialog
 from collections import namedtuple
@@ -71,7 +104,9 @@ class tkUserQueryReceiver(UserResponseCollector.UserQueryReceiver.UserQueryRecei
         """
         Called to obtain a raw response from the user through thier interaction with the tkinter based app, which will always be a sting of text.
         :parameter prompt_text: String of text to use to tell the user what response is requrired, string
-        :return: raw_response, string        
+        :return: raw_response, string
+        Raises UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError exception if a response of
+        '<<QueryingThreadTerminationRequest>>' is received in the response queue.
         """
         # Check that a valid set up has been provided, either through __init__ or by calling setup()
         assert(self._query_queue_callback is not None)

@@ -1,7 +1,11 @@
 """
-The code in this modules __main__ illustrates how to a tkinter-based application. The demo application has one
-widgets with a button. The button text cycles between 'Start' and 'Stop' when the button is clicked.
-The demo application's menubar has the standard File | Exit menu item.
+The code in this modules illustrates how to create and launch a tkinter-based application using the tkAppFramework.
+The demo application has one widgets with a button. The button text cycles between 'Start' and 'Stop' when the
+button is clicked. The demo application's menubar has the standard File | Exit menu item.
+
+This module also illustrates how to create and launch a tkinter-based simulator application, tkSimulatorApp and related
+classes from tkAppFramework, using a simple DemoSimulator class that asks the user for floating point values,
+squares them, and logs the results.
 
 Exported Classes:
     DemoWidget -- A demo tkinter labelframe with a button that toggles between 'Start' and 'Stop' when clicked.
@@ -9,12 +13,14 @@ Exported Classes:
     DemotkViewManager -- Concrete implementation of tkViewManager that creates and manages a DemoWidget instace.
                          Also, an Observer of the DemoWidget.
     DemotkApp -- Concrete implementation of tkApp that creates a DemotkViewManager instance.
+    DemoSimulator -- A simple simulator that asks the user for floating point values, squares them, and logs the results.
+    DemoSimulatorAdapter -- Adapter to wrap DemoSimulator object for use in tkSimulatorApp.
 
 Exported Exceptions:
     None
  
 Exported Functions:
-    --main__ -- Create and launch tkinter-based Demo Application.
+    __main__ -- Create and launch tkinter-based Demo Application or Simulator Application, at user's choice.
 """
 
 

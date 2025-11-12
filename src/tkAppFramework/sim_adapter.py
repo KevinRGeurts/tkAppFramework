@@ -1,3 +1,33 @@
+"""
+Defines the abstract base class SimulatorAdapter, which follows an Adapter design pattern. It's client is a SimulatorModel object.
+It's adaptee is a simulator. It is expected that a new subclass (e.g. BlackJackSimulatorAdapter) will need to be created for each simulator
+that is serviced by the tkSimulatorApp. This should be the only "customization" required. The tkSimulatorApp,
+SimulatorModel, and tkSimulatorViewManager should be able to service any simulator that meets certain requirements,
+as long as an approriate SimulatorAdapter subclass can be created.
+
+Simulator requirements:
+(1) Obtain all user input through execution of UserQueryCommand objects.
+(2) Provide all output to user through python logging library.
+(3) Appropriately captures UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError exception as a request
+    to gracefully terminate itself.
+
+Subclasses must:
+(1) Implement run() - Which should call a method of self._simulator to start a simulation
+
+Exported Classes:
+    SimulatorAdapter -- Interface (abstract base) class for classes that adapt a simulator to the
+                        tkSimulatorApp.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+
+Logging:
+    None
+"""
+
 # standard imports
 from queue import Queue
 from logging.handlers import QueueHandler
@@ -30,7 +60,8 @@ class SimulatorAdapter(object):
         :parameter logger_name: The name of a logging.logger that the simulator object adaptee uses for its
                                 simulation output.
         :parameter logging_queue: The Queue() object for a logging queue handler. This queue will receive
-                                  the simulation output LogRecords.
+                                  the simulation output LogRecords. It should always be set to
+                                  tkSimulatorApp.sim_output_queue property.
         :parameter logging_level: The threshold for the queue handler, e.g. logging.INFO or logging.DEBUG
         """
         self.simulator = sim

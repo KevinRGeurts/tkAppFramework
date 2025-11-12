@@ -9,13 +9,15 @@ in the Observer design pattern.
 
 ## Credit where credit is due
 
-- Observer, Mediator, and Factory Method patterns follow the concepts, UML diagrams, and examples provided in
+- Adapter, Observer, Mediator, and Factory Method patterns follow the concepts, UML diagrams, and examples provided in
   "Design Patterns: Elements of Reusable Object-Oriented Software," by Eric Gamma, Richard Helm, Ralph Johnson,
   and John Vlissides, published by Addison-Wesley, 1995.
 - The implementations of ```tkApp``` and ```tkViewManager``` leverage concepts from Chapter 11 of "Programming Python,"
   by Mark Lutz, published by O'Reilly, 1996. In particular, ```tkApp``` takes a similar approach to Mr. Lutz's
   ```GuiMaker``` class by using a python dictionary to configure it's menu bar.
 - This framework also borrows concepts from Microsoft's Foundation Classes (MFC), which I learned in the late 1990's.
+- The Simulator Application framework leverages concepts from {stuff I read in tkinter docs and on stackoverflow
+  that I synthesized into the framework}
 
 ## tkApp class
 
