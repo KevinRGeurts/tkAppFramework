@@ -43,8 +43,8 @@ from tkinter import filedialog
 from multiprocessing import Process
 
 # local imports
-from tkHelpViewManager import tkHelpViewManager
-from HelpModel import HelpModel
+from tkAppFramework.tkHelpViewManager import tkHelpViewManager
+from tkAppFramework.HelpModel import HelpModel
 
 
 # This function cannot be a method of tkApp, do to Process using pickle.
@@ -105,7 +105,7 @@ class tkApp(ttk.Frame):
                 (e) Help|About... which will call OnHelpAbout
             If menu_dict is not empty, then the above items will not be added to the menubar automatically.
         :parameter app_info: An AppAboutInfo named tuple with the app's "About" information:
-            (name, version, copyright, author, license, source), all fields provided as strings
+            (name, version, copyright, author, license, source, help_file), all fields provided as strings
             Example:
             ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
         :parameter file_types: A list of file type tuples for saving and opening, in this format:
@@ -401,7 +401,7 @@ class tkHelpApp(tkApp):
         """
         :parameter help_file: Path to the help file to be opened and displayed initially, string
         """
-        info = AppAboutInfo(name='Help Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
+        info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
         menu_dictionary = {'File':{'Exit':self.onFileExit},
                            'Help':{'About...':self.onHelpAbout}}

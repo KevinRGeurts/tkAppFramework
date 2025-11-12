@@ -1,3 +1,0 @@
-This is help content for the Simulator Application.
-(1) It should explain how to start and stop simulations.
-(2) It should explain how to user the Query Widget.

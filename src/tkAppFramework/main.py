@@ -1,7 +1,11 @@
 """
-The code in this modules __main__ illustrates how to a tkinter-based application. The demo application has one
-widgets with a button. The button text cycles between 'Start' and 'Stop' when the button is clicked.
-The demo application's menubar has the standard File | Exit menu item.
+The code in this modules illustrates how to create and launch a tkinter-based application using the tkAppFramework.
+The demo application has one widgets with a button. The button text cycles between 'Start' and 'Stop' when the
+button is clicked. The demo application's menubar has the standard File | Exit menu item.
+
+This module also illustrates how to create and launch a tkinter-based simulator application, tkSimulatorApp and related
+classes from tkAppFramework, using a simple DemoSimulator class that asks the user for floating point values,
+squares them, and logs the results.
 
 Exported Classes:
     DemoWidget -- A demo tkinter labelframe with a button that toggles between 'Start' and 'Stop' when clicked.
@@ -9,12 +13,14 @@ Exported Classes:
     DemotkViewManager -- Concrete implementation of tkViewManager that creates and manages a DemoWidget instace.
                          Also, an Observer of the DemoWidget.
     DemotkApp -- Concrete implementation of tkApp that creates a DemotkViewManager instance.
+    DemoSimulator -- A simple simulator that asks the user for floating point values, squares them, and logs the results.
+    DemoSimulatorAdapter -- Adapter to wrap DemoSimulator object for use in tkSimulatorApp.
 
 Exported Exceptions:
     None
  
 Exported Functions:
-    --main__ -- Create and launch tkinter-based Demo Application.
+    __main__ -- Create and launch tkinter-based Demo Application or Simulator Application, at user's choice.
 """
 
 
@@ -22,16 +28,17 @@ Exported Functions:
 import tkinter as tk
 from tkinter import ttk
 import logging
+import sysconfig
 
 # Local
-from tkSimulatorApp import tkSimulatorApp
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
-from model import Model
-import tkApp
-from sim_adapter import SimulatorAdapter
-from UserQueryCommand import askForFloat, UserQueryCommandMenu
-import UserQueryReceiver
+from tkAppFramework.tkSimulatorApp import tkSimulatorApp
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
+from tkAppFramework.model import Model
+import tkAppFramework.tkApp
+from tkAppFramework.sim_adapter import SimulatorAdapter
+from UserResponseCollector.UserQueryCommand import askForFloat, UserQueryCommandMenu
+import UserResponseCollector.UserQueryReceiver
 
 class DemoModel(Model):
     """
@@ -145,13 +152,14 @@ class DemotkViewManager(tkViewManager):
         return None
 
 
-class DemotkApp(tkApp.tkApp):
+class DemotkApp(tkAppFramework.tkApp.tkApp):
     """
     Provide implementations of _createViewManager() and _createModel() factory methods.
     """
     def __init__(self, parent):
-        info = tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
-                                  license='MIT License', source='GitHub', help_file='.\\Help\\HelpFile.txt')
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\HelpFile.txt'
+        info = tkAppFramework.tkApp.AppAboutInfo(name='Demo Application', version='0.1', copyright='2025', author='John Q. Public',
+                                                 license='MIT License', source='GitHub', help_file=help_file_path)
         super().__init__(parent, title="Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
 
     def _createViewManager(self):
@@ -202,7 +210,7 @@ class DemoSimulator:
         while True:
             try:
                 response = askForFloat('Enter a value to square.')
-            except UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
+            except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
             squared = response * response
             logger.info(f"The square of {response} is {squared}.")
@@ -226,7 +234,6 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         return None
     
 
-
 if __name__ == '__main__':
     
     """
@@ -236,7 +243,7 @@ if __name__ == '__main__':
     """
 
     # Since the global UserQueryReceiver is a tkUserQueryReceiver, we have to construct a local one for the console
-    receiver = UserQueryReceiver.ConsoleUserQueryReceiver()
+    receiver = UserResponseCollector.UserQueryReceiver.ConsoleUserQueryReceiver()
     command = UserQueryCommandMenu(receiver,
                                    'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app'})
     response = command.Execute()

@@ -8,7 +8,7 @@ This module provides unit tests for:
 import unittest
 
 # Local imports
-from ObserverPatternBase import Subject, Observer
+from tkAppFramework.ObserverPatternBase import Subject, Observer
 
 
 class Test_Subject(unittest.TestCase):

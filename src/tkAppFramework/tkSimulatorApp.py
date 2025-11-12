@@ -1,18 +1,42 @@
+"""
+Defines tkSimulatorApp class, which is a concrete implementation of tkApp for simulator applications.
+
+Class is a child of tkApp, extending it's functionality for "simulator" type applications, where there is a
+simulator engine that is "in control", rather than control being the user interacting with the GUI. The GUI
+becomes a thin shell for launching the simulator on a separate thread. The simulator then progresses as it
+wishes, but periodically requests input from the user through tkUserQueryReceiver, and periodically uses
+logging to send output caught by tkSimulatorViewManager.
+
+Exported Classes:
+    tkSimulatorApp -- Is-A tkAppnterface implementation for simulator applications.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+
+Logging:
+    None
+"""
+
+
 # standard imports
 import tkinter as tk
 from tkinter import ttk
 from threading import Thread
+import sysconfig
 
 # local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserResponseCollector correctly changes values of globals in UserResponseCollector --
-import UserQueryReceiver
-import tkSimulatorViewManager
-import tkUserQueryReceiver
+import UserResponseCollector.UserQueryReceiver
+import tkAppFramework.tkSimulatorViewManager
+import tkAppFramework.tkUserQueryReceiver
 # -- End Leave --
-from tkApp import tkApp, AppAboutInfo
-from tkUserQueryViewManager import tkUserQueryViewManager
-from tkSimulatorViewManager import tkSimulatorViewManager
-from SimulatorModel import SimulatorModel
+from tkAppFramework.tkApp import tkApp, AppAboutInfo
+from tkAppFramework.tkUserQueryViewManager import tkUserQueryViewManager
+from tkAppFramework.tkSimulatorViewManager import tkSimulatorViewManager
+from tkAppFramework.SimulatorModel import SimulatorModel
 
 
 class tkSimulatorApp(tkApp):
@@ -27,9 +51,10 @@ class tkSimulatorApp(tkApp):
         """
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         """
-        info = AppAboutInfo(name='Simulator Application', version='0.1', copyright='2025', author='Kevin R. Geurts',
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
+        info = AppAboutInfo(name='Simulator Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
-                                  help_file='.\\Help\\SimApp_HelpFile.txt')
+                                  help_file=help_file_path)
         menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
                            'Help':{'View Help...':self.onViewHelp, 'About...':self.onHelpAbout}}
         super().__init__(parent, title="Simulator Application", menu_dict=menu_dictionary, app_info=info)
@@ -110,24 +135,19 @@ class tkSimulatorApp(tkApp):
 
         return None
 
-    def onLoadSimulator(self):
+    def onLoadSimulation(self):
         """
-        Method called when menu item File | Load Simulator is selected.
+        Method called when menu item File | Load Simulation is selected.
+        Currently not called and not implemented. Here as place holder for future expansion.
+        :return: None
         """
-        # TODO: Call some method on the App (now) or mediator (later) that will clean up the UI ahead of the new game, since the previous game may have been terminated
-        # in the middle. This also requires that the QueryWidget get itself cleaned up.
+        # TODO: Call some method on the mediators that will clean up the UI ahead of the new simulation
+        # since the previous simulation may have been terminated in the middle.
 
         if self._sim_thread is None:
-            # # Call play(load_game=True) method of CribbageGame, on a new thread
-            # self._game_thread = Thread(target=self._game.play, kwargs={'load_game':True})
-            # self._game_thread.start()
-            # # Start processing of the tkWindowManager's game event queue
-            # self._view_manager.CribbageGameOutputEventHandler()
-            # # enable File | End Game, since we now have a currently running game
-            # self._menu_file.entryconfig('End Game', state='normal')
-            # # disable File | Start Game and File | Load Game menu items, since we don't want more than one game currently running.
-            # self._menu_file.entryconfig('Start Game', state='disabled') 
-            # self._menu_file.entryconfig('Load Game', state='disabled')
+            # TODO: Implement loading of a previously saved simulator state.
+            # TODO: enable File | End Simulator, since we now have a currently running simulation
+            # TODO: Possible, disable File | Start Simulator and File | Load Simulation menu items, since we don't want more than one simulation currently running.
             pass 
         else:
             # Do nothing.
@@ -138,6 +158,7 @@ class tkSimulatorApp(tkApp):
     def onEndSimulator(self):
         """
         Method called when menu item File | End Simulator is selected.
+        :return: None
         """
         if self._sim_thread:
             self._query_view_manager.reset_widgets()
@@ -154,6 +175,7 @@ class tkSimulatorApp(tkApp):
     def request_simulator_end(self):
         """
         Utility method that places a termination request in the response queue of the tkUserResponseCollector.
+        :return: None
         """
         # Note: Had considered changing this so that instead a request to end the simulator is sent to
         # self._query_view_manager, and it sends the requrired response to the tkUserQueryReceiver, because
@@ -165,8 +187,8 @@ class tkSimulatorApp(tkApp):
         # Don't do anything if self._sim_thread = None, because there is no running simulator to end.
         
         if self._sim_thread:
-            end_sim_response = tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
-            UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
+            end_sim_response = tkAppFramework.tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
+            UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
             self._sim_thread = None
         else:
             pass

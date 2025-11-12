@@ -15,9 +15,7 @@ Exported Functions:
 # standard imports
 
 # local imports
-from model import Model
-from sim_adapter import SimulatorAdapter
-import sim_adapter
+from tkAppFramework.model import Model
 
 
 class SimulatorModel(Model):
@@ -43,6 +41,7 @@ class SimulatorModel(Model):
     def run(self):
         """
         Method called to run the simulator, using the simulator adapter.
+        :return: None
         """
         self._sim_adapter.run()
         return None

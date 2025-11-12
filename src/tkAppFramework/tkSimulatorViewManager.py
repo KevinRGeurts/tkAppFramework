@@ -1,3 +1,26 @@
+"""
+Defines tkSimulatorViewManager class, which is a concrete implementation of tkViewManager for simulator applications.
+
+tkSimulatorViewManager handles the interactions between output widgets in a tkinter based simulator application.
+This class monitors an internal Queue of output events from the simulator, which runs on a separate thread from the
+tkinter application. The internal queue will be the designated target of a logging.handler.QueueHandler,
+and the simulator will use logging to place output events into the internal queue. The tkSimulatorViewManager
+displays these output events to the user through it's SimulatorShowInfoWidget.
+
+Exported Classes:
+    tkSimulatorViewManager -- Is-A tkSimulatorViewManager implementation for simulator applications.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
+
+Logging:
+    None
+"""
+
+
 # Standard imports
 from logging import LogRecord
 import tkinter as tk
@@ -5,18 +28,16 @@ from tkinter import ttk
 from queue import Queue
 
 # Local imports
-from tkViewManager import tkViewManager
-from ObserverPatternBase import Subject
+from tkAppFramework.tkViewManager import tkViewManager
+from tkAppFramework.ObserverPatternBase import Subject
 
 class tkSimulatorViewManager(tkViewManager):
     """
-    Class follows mediator design pattern. It handles the interactions between widgets in a tkinter based application.
-    Ultimately the intent is to use this as a base class, and only implment in it reusable functionality for any tkinter based application
-    where non-UI objects are "in control" rather than the tkinter event loop. Think of a "simulation" code that is started and does it's own thing,
-    excpet for maybe occassionaly requesting input from a user. The simulation periodically produces output that should be displayed in the tkinter-based
-    application. Objects of this class will monitor an internal Queue of output events from the simulation, which runs on a separate thread from the
-    tkinter application. The internal queue will be the designated target of a logging.handler.QueueHandler, and the simulator will use logging to place
-    output events into the internal queue.
+    tkSimulatorViewManager IS-A tkViewManager, and handles the interactions between output widgets in a tkinter based
+    simulator application. This class monitors an internal Queue of output events from the simulator, which runs on a
+    separate thread from the tkinter application. The internal queue will be the designated target of a logging.handler.QueueHandler,
+    and the simulator will use logging to place output events into the internal queue. The tkSimulatorViewManager
+    displays these output events to the user through it's SimulatorShowInfoWidget.
     """
     def __init__(self, parent) -> None:
         """
@@ -38,13 +59,15 @@ class tkSimulatorViewManager(tkViewManager):
     def reset_widgets_for_new_simulation(self):
         """
         Utility function called to put child widgets in appropriate state ahead of a new simulation.
+        :return: None
         """
         return None
 
     def SimulatorOutputEventHandler(self, event=None):
         """
         Method which handles output events from simulator which the simulator expects the tkSimulatorApp to visualize and the app expects
-        the tkSimulatorWindowManager to visualize.
+        the tkSimulatorViewManager to visualize.
+        :parameter event: The tkinter event object associated with this event handler call. Default is None.
         :return None:
         """
         if not self._sim_event_queue.empty():
@@ -65,6 +88,8 @@ class tkSimulatorViewManager(tkViewManager):
     def _CreateWidgets(self):
         """
         Utility function to be called by tkViewManager.__init__ to set up the child widgets of the tkSimulatorViewManager widget.
+        This method could be extended by a child class, in the event that the child class wanted to add additional widgets for
+        displaying simulator output.
         :return None:
         """
         self._info_widget = SimulatorShowInfoWidget(self)
@@ -100,6 +125,7 @@ class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
     """
     Class represents a tkinter label frame, the widget contents of which will display simulator output to the user
     during a simulation.
+    :parameter parent: The parent widget of this widget, The tkSimulatorViewManager
     """
     def __init__(self, parent) -> None:
         super().__init__(parent, text='Simulation Output', takefocus=0)
@@ -128,6 +154,11 @@ class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
         self._txt_info['state']=tk.DISABLED
 
     def insert_end(self, message=''):
+        """
+        Utility function to insert a message at the end of the Text widget.
+        :parameter message: The message (text) to insert at the end of the Text widget. Default is empty string.
+        :return: None
+        """
         # Set state to NORMAL so we can insert text
         self._txt_info['state']=tk.NORMAL
         self._txt_info.insert('end', f"{message}\n")
@@ -138,4 +169,3 @@ class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
         # Let observers know that state has changed
         self.notify()
         return None
-

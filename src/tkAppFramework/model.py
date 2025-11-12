@@ -23,7 +23,7 @@ Exported Functions:
 # standard imports
 
 # local imports
-from ObserverPatternBase import Subject
+from tkAppFramework.ObserverPatternBase import Subject
 
 
 class Model(Subject):
