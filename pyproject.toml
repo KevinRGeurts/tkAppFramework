@@ -39,7 +39,7 @@ classifiers = [
 ]
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
-keywords = ["query", "console", "input", "response"]
+keywords = ["query", "GUI", "desktop", "framework", "simulator", "tkinter", "help", "MVC"]
 
 [project.urls]
 Homepage = "https://github.com/KevinRGeurts/tkAppFramework"
