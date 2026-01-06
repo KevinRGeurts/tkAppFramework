@@ -76,7 +76,7 @@ class tkSimulatorApp(tkApp):
         Factory method to create the model (simulator) for the app.
         :return: The model for the app, simulator
         """
-        model = SimulatorModel()
+        model = SimulatorModel(self)
         return model
 
     def _setup_child_widgets(self):
@@ -103,7 +103,7 @@ class tkSimulatorApp(tkApp):
 
     @property
     def sim_output_queue(self):
-        return self._view_manager.sim_output_queue
+        return self.getModel().sim_output_queue
         
     def onFileExit(self):
         """
@@ -127,8 +127,8 @@ class tkSimulatorApp(tkApp):
             # Call thread_target on a new thread
             self._sim_thread = Thread(target=thread_target)
             self._sim_thread.start()
-            # Start processing of the tkSimulatorViewManager's simulator event queue
-            self._view_manager.SimulatorOutputEventHandler()
+            # Start processing of the SimulatorModel's simulator event queue
+            self._model.SimulatorOutputEventHandler()
             # TODO: The way entryconfig() is used is so cryptic, it cries out for a helper function, which
             # should be defined at the tkApp level.
             # enable File | End Simulator, since we now have a currently running simulation
