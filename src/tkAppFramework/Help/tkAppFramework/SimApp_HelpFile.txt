@@ -5,10 +5,11 @@ This content is generally applicable to the Simulation Application, regardless o
 Menu bar Usage:
 
 (1) To start the simulator engine, select File | Start Simulator from the menu bar.
-(2) To stop the simulator engine, select File | End Simulator from the menu bar.
-(3) To exit the Simulation Application, select File | Exit from the menu bar.
-(4) To view this help content, select Help | View Help... from the menu bar.
-(5) To see information about the Simulator Applicaton, select Help | About... from the menu bar.
+(2) To load a saved simulation state, and start the simulator engine from that state, select File | Load Simulation from the menu bar.
+(3) To stop the simulator engine, select File | End Simulator from the menu bar.
+(4) To exit the Simulation Application, select File | Exit from the menu bar.
+(5) To view this help content, select Help | View Help... from the menu bar.
+(6) To see information about the Simulator Applicaton, select Help | About... from the menu bar.
 
 While the Simulator is running:
 
