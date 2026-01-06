@@ -13,6 +13,8 @@ Simulator requirements:
 
 Subclasses must:
 (1) Implement run() - Which should call a method of self._simulator to start a simulation
+Subclasses may also implement:
+(1) load_and_run() - Which should load a simulation state and run the simulation with that state.
 
 Exported Classes:
     SimulatorAdapter -- Interface (abstract base) class for classes that adapt a simulator to the
@@ -52,7 +54,8 @@ class SimulatorAdapter(object):
 
     Subclasses must:
     (1) Implement run() - Which should call a method of self._simulator to start a simulation
-
+    Subclasses may also implement:
+    (1) load_and_run() - Which should load a simulation state and run the simulation with that state
     """
     def __init__(self, sim=None, logger_name='', logging_queue=None, logging_level = logging.INFO):
         """
@@ -83,6 +86,14 @@ class SimulatorAdapter(object):
         raise NotImplementedError
         return None
 
+    def load_and_run(self):
+        """
+        This abstract method must be implemented by subclasses. When called, it should load a simulation state and run the
+        simulation with that state.
+        """
+        raise NotImplementedError
+        return None
+    
     def _setup_logging(self, name='', queue=None, log_level = logging.INFO):
         """
         Add a queue handler to the simulator's logger. The queue that this queue handler writes to will be

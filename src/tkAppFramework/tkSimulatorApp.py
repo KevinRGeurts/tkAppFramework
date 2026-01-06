@@ -55,9 +55,12 @@ class tkSimulatorApp(tkApp):
         info = AppAboutInfo(name='Simulator Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                                   help_file=help_file_path)
-        menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
+        menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'Load Simulation':self.onLoadSimulation, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
                            'Help':{'View Help...':self.onViewHelp, 'About...':self.onHelpAbout}}
         super().__init__(parent, title="Simulator Application", menu_dict=menu_dictionary, app_info=info)
+
+        # Disable File | End Simulator menu item, since no simulator will now be running
+        self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
 
         # Thread on which the Simulator will be run
         self._sim_thread = None
@@ -102,24 +105,27 @@ class tkSimulatorApp(tkApp):
     def sim_output_queue(self):
         return self._view_manager.sim_output_queue
         
-    def onExit(self):
+    def onFileExit(self):
         """
         Method called when menu item File | Exit is selected.
+        Extended from tkApp.onExit() to request simulator termination ahead of exiting.
         """
         self.request_simulator_end()
-        self.master.destroy()
+        super().onFileExit()
         return None
     
-    def onStartSimulator(self):
+    def _run_simulator_helper(self, thread_target=None):
         """
-        Method called when menu item File | Start Simulator is selected.
+        A helper function called to run the simulator on a separate thread.
+        :parameter thread_target: The callable to be called on the new thread to run the simulator, typically
+                                  SimulatorModel.run() method.
         """
         # TODO: Call some method on the App (now) or mediator (later) that will clean up the UI ahead of the new simulation, since the previous simulation may have been terminated
         # in the middle. This also requires that the QueryWidget get itself cleaned up.
 
         if self._sim_thread is None:
-            # Call run() method of SimulatorModel, on a new thread
-            self._sim_thread = Thread(target=self.getModel().run)
+            # Call thread_target on a new thread
+            self._sim_thread = Thread(target=thread_target)
             self._sim_thread.start()
             # Start processing of the tkSimulatorViewManager's simulator event queue
             self._view_manager.SimulatorOutputEventHandler()
@@ -129,30 +135,26 @@ class tkSimulatorApp(tkApp):
             self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.NORMAL)
             # disable File | Start Simlator menu item, since we don't want more than one simulator currently running.
             self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.DISABLED)
+            # disable File | Load Simlation menu item, since we don't want more than one simulator currently running.
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Load Simulation'][1], state=tk.DISABLED)
         else:
             # Do nothing.
             pass
-
+        return None
+    
+    def onStartSimulator(self):
+        """
+        Method called when menu item File | Start Simulator is selected.
+        """
+        self._run_simulator_helper(thread_target=self.getModel().run)
         return None
 
     def onLoadSimulation(self):
         """
         Method called when menu item File | Load Simulation is selected.
-        Currently not called and not implemented. Here as place holder for future expansion.
         :return: None
         """
-        # TODO: Call some method on the mediators that will clean up the UI ahead of the new simulation
-        # since the previous simulation may have been terminated in the middle.
-
-        if self._sim_thread is None:
-            # TODO: Implement loading of a previously saved simulator state.
-            # TODO: enable File | End Simulator, since we now have a currently running simulation
-            # TODO: Possible, disable File | Start Simulator and File | Load Simulation menu items, since we don't want more than one simulation currently running.
-            pass 
-        else:
-            # Do nothing.
-            pass
-
+        self._run_simulator_helper(thread_target=self.getModel().load_and_run)
         return None
 
     def onEndSimulator(self):
@@ -167,6 +169,8 @@ class tkSimulatorApp(tkApp):
             self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
             # enable File | Start Simulator, since now we have no running simlator
             self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.NORMAL)
+            # enable File | Load Simulation, since now we have no running simlator
+            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Load Simulation'][1], state=tk.NORMAL)
         else:
             pass
 
@@ -180,7 +184,7 @@ class tkSimulatorApp(tkApp):
         # Note: Had considered changing this so that instead a request to end the simulator is sent to
         # self._query_view_manager, and it sends the requrired response to the tkUserQueryReceiver, because
         # this may seem like the App getting involved in the business of the query view manager, and that the app
-        # should not need to import tkUserQueryReceiver at allow. However, it is the app, and not the query view
+        # should not need to import tkUserQueryReceiver at all. However, it is the app, and not the query view
         # manager that knows that the simulator is running on self._sim_thread, and needs to be requested to shut down
         # like this. So elected to leave this as is.
         

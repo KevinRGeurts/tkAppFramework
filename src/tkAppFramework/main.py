@@ -232,6 +232,16 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         """
         self.simulator.go()
         return None
+
+    def load_and_run(self):
+        """
+        No loading functionality implemented for DemoSimulator, so just log a message and launch a simulation.
+        :return: None
+        """
+        logger = logging.getLogger('demo_simulator_logger')
+        logger.info(f"Loading functinality not implemented for DemoSimulator, so just lauching a simulation...")
+        self.simulator.go()
+        return None
     
 
 if __name__ == '__main__':

@@ -95,9 +95,9 @@ class tkSimulatorViewManager(tkViewManager):
         self._info_widget = SimulatorShowInfoWidget(self)
         self.register_subject(self._info_widget, self.handle_info_widget_update)
         self._info_widget.attach(self)
-        self._info_widget.grid(column=1, row=4, columnspan=2, sticky='NWES') # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(4, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self._info_widget.grid(column=0, row=0, sticky='NWES') # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         return None
 
     def handle_model_update(self):

@@ -46,4 +46,12 @@ class SimulatorModel(Model):
         self._sim_adapter.run()
         return None
 
+    def load_and_run(self):
+        """
+        Method called to load a simulator state, and then run the simulator with that state, using the simulator adapter.
+        :return: None
+        """
+        self._sim_adapter.load_and_run()
+        return None
+
 

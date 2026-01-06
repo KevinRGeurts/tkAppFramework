@@ -27,6 +27,11 @@ class Test_SimulatorModel(unittest.TestCase):
         mod = SimulatorModel(adapt)
         self.assertRaises(NotImplementedError, mod.run)
 
+    def test_load_and_run(self):
+        adapt = SimulatorAdapter(logger_name='test_simulator_model_logger')
+        mod = SimulatorModel(adapt)
+        self.assertRaises(NotImplementedError, mod.load_and_run)
+
 
 if __name__ == '__main__':
     unittest.main()

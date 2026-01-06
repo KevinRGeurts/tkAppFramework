@@ -26,6 +26,10 @@ class Test_SimulatorAdapter(unittest.TestCase):
         adapt = SimulatorAdapter(logger_name='test_simulator_adapter_logger')
         self.assertRaises(NotImplementedError, adapt.run)
 
+    def test_load_and_run(self):
+        adapt = SimulatorAdapter(logger_name='test_simulator_adapter_logger')
+        self.assertRaises(NotImplementedError, adapt.load_and_run)
+
 
 if __name__ == '__main__':
     unittest.main()
