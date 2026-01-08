@@ -52,7 +52,7 @@ class tkSimulatorApp(tkApp):
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         """
         help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
-        info = AppAboutInfo(name='Simulator Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
+        info = AppAboutInfo(name='Simulator Application', version='0.9.1', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                                   help_file=help_file_path)
         menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'Load Simulation':self.onLoadSimulation, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
