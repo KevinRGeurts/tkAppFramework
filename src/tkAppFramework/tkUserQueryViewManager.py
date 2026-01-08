@@ -55,7 +55,7 @@ class tkUserQueryViewManager(tkViewManager):
         # Set to the QueryInfo object pulled out of the query queue
         self._current_query_info = None
 
-        # Set up tkUserResponseCollector so it has the correct callbacks
+        # Set up tkUserQueryReceiver so it has the correct callbacks
         tkAppFramework.tkUserQueryReceiver.tkUserQueryReceiver_setup(query_event_callback=self.event_generate, query_queue_callback=self.put_query_info_in_queue)
 
         self.bind('<<TkinterAppQueryEvent>>', self.TkAppQueryEventHandler)

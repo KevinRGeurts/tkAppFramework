@@ -1,14 +1,11 @@
 """
 Defines tkSimulatorViewManager class, which is a concrete implementation of tkViewManager for simulator applications.
 
-tkSimulatorViewManager handles the interactions between output widgets in a tkinter based simulator application.
-This class monitors an internal Queue of output events from the simulator, which runs on a separate thread from the
-tkinter application. The internal queue will be the designated target of a logging.handler.QueueHandler,
-and the simulator will use logging to place output events into the internal queue. The tkSimulatorViewManager
+tkSimulatorViewManager, as an Observer of the SimulatorModel, repsonds to updates from the Model by retrieving simulator output events, and
 displays these output events to the user through it's SimulatorShowInfoWidget.
 
 Exported Classes:
-    tkSimulatorViewManager -- Is-A tkSimulatorViewManager implementation for simulator applications.
+    tkSimulatorViewManager -- Is-A tkViewManager implementation for simulator applications.
 
 Exported Exceptions:
     None    
@@ -32,9 +29,8 @@ from tkAppFramework.ObserverPatternBase import Subject
 
 class tkSimulatorViewManager(tkViewManager):
     """
-    tkSimulatorViewManager IS-A tkViewManager, and handles the interactions between output widgets in a tkinter based
-    simulator application. This class is an Observer of the SimulatorModel, and thus it will be notified of updates to the Model,
-    including when new simulator output events are available from the simulator.
+    tkSimulatorViewManager IS-A tkViewManager. This class is an Observer of the SimulatorModel, and thus it will be
+    notified of updates to the Model, including when new simulator output events are available from the simulator.
     """
     def __init__(self, parent) -> None:
         """

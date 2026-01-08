@@ -1,6 +1,7 @@
 """
 This module provides the SimlatorModel class, which represents the "business logic" of an application for interacting with
-a simulator.
+a simulator. It also maintains a queue of output events from the simulator, which can be observed by Views in the MVC pattern.
+And, as a ttk.Frame, it can receive tkinter events.
 
 Exported Classes:
     SimulatorModel -- This class represents (wraps) the simulator, and is a Model in the MVC pattern.
@@ -72,6 +73,8 @@ class SimulatorModel(Model, ttk.Frame):
             self._log_record = info
             # Notify observers that new simulator output is available
             self.notify()
+            # Clear out the placeholder
+            self._log_record = None
 
         # Schedule the next execution of this handler
         # First argument to master is delay time (which is in microseconds)

@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\Developer_Documentation.txt" />
+    <Content Include="Documentation\uml_class_diagram.pptx" />
     <Content Include="Help\tkAppFramework\HelpFile.txt" />
     <Content Include="Help\tkAppFramework\SimApp_HelpFile.txt" />
   </ItemGroup>
