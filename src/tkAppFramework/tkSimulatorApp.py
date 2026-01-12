@@ -26,6 +26,7 @@ import tkinter as tk
 from tkinter import ttk
 from threading import Thread
 import sysconfig
+import logging
 
 # local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserResponseCollector correctly changes values of globals in UserResponseCollector --
@@ -47,19 +48,45 @@ class tkSimulatorApp(tkApp):
     wishes, but periodically requests input from the user through tkUserQueryReceiver, and periodically uses
     logging to send output caught by tkSimulatorViewManager.
     """
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, title = '', menu_dict = {}, app_info = None, file_types=[],
+                 log_level = logging.INFO) -> None:
         """
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
+        :parameter title: The title of the application, to appear on the app's main window, string
+            Note: If title is an empty string, then the default title "Simulator Application" will be used.
+        :parameter menu_dict: A dictionary describing the app's menubar:
+            {menu text string : handler callable or another menu_dict if there is a cascade}
+            If menu_dict is empty, then the menubar will only have:
+                (a) File|Start Simulator... which will call onStartSimulator
+                (b) File|Load Simulation which will call onLoadSimulation
+                (c) File|End Simulator which will call onEndSimulator
+                (d) File|Exit which will call OnFileExit
+                (e) Help|View Help... which will call OnViewHelp
+                (f) Help|About... which will call OnHelpAbout
+            If menu_dict is not empty, then the above items will not be added to the menubar automatically.
+        :parameter app_info: An AppAboutInfo named tuple with the app's "About" information:
+            (name, version, copyright, author, license, source, help_file), all fields provided as strings
+            Example:
+            ('my app', 'X.X', '20XX', 'John Q. Public', 'MIT License', 'github url')
+            Note: If app_info is None, then default info for "Simulator Application" will be used.
+        :parameter file_types: A list of file type tuples for saving and opening, in this format:
+            [('Description1', '*.ext1'), ('Description2', '*.ext2'), ...]
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
-        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
-        info = AppAboutInfo(name='Simulator Application', version='0.9.1', copyright='2025', author='Kevin R. Geurts',
+        if len(title) == 0:
+            title = "Simulator Application"
+        if app_info is None:
+            help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
+            app_info = AppAboutInfo(name='Simulator Application', version='0.9.1', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                                   help_file=help_file_path)
-        menu_dictionary = {'File':{'Start Simulator':self.onStartSimulator, 'Load Simulation':self.onLoadSimulation, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
+        if len(menu_dict) == 0:
+            menu_dict = {'File':{'Start Simulator':self.onStartSimulator, 'Load Simulation':self.onLoadSimulation, 'End Simulator':self.onEndSimulator, 'Exit':self.onFileExit},
                            'Help':{'View Help...':self.onViewHelp, 'About...':self.onHelpAbout}}
-        super().__init__(parent, title="Simulator Application", menu_dict=menu_dictionary, app_info=info)
+        super().__init__(parent, title, menu_dict=menu_dict, app_info=app_info, file_types=file_types, log_level=log_level)
 
         # Disable File | End Simulator menu item, since no simulator will now be running
+        # TODO: If menu_dict is provided by the user, this will fail if there is no 'File|End Simulator' item included.
         self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
 
         # Thread on which the Simulator will be run
