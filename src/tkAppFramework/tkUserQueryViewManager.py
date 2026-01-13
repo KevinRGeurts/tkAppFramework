@@ -63,7 +63,7 @@ class tkUserQueryViewManager(tkViewManager):
         self.bind('<<TkinterAppQueryEvent>>', self.TkAppQueryEventHandler)
 
         # Maintain a dictionary of any registered user query tools, keyed by UserQueryCommand type
-        self.__user_query_tools = dict()
+        self._user_query_tools = dict()
 
         # Register tools that are built in
         self.register_user_query_tool(tkPathOpenTool())
@@ -77,7 +77,7 @@ class tkUserQueryViewManager(tkViewManager):
         """
         if user_query_tool is not None:
             assert(isinstance(user_query_tool, tkUserQueryTool))
-            self.__user_query_tools[user_query_tool.query_type] = user_query_tool
+            self._user_query_tools[user_query_tool.query_type] = user_query_tool
 
             # Also register the tool with the QueryResponseToolsWidget
             self._query_response_tools_widget.register_tool(user_query_tool)
@@ -216,6 +216,21 @@ class tkUserQueryViewManager(tkViewManager):
         # Activate the QueryResponseEntryWidget, and request that it be given focus (if the app has focus)
         self._query_response_entry_widget.disable_query_response_entry(False)
         self._query_response_entry_widget.focus_set()
+
+        # Check if we have a registered tool for this query type, and if so, launch it automatically to help the user
+        
+        tool = None
+        try:
+            # Try to get the tool for this query type
+            tool = self._user_query_tools[item.extra['query_type']]
+        except:
+            # tool remains None
+            pass
+
+        if tool is not None:
+            # If we have a tool for this query type, then we will launch it automatically to help the user
+            response = tool.run()
+            self._query_response_tools_widget.set_state(response)
 
         return None
 
@@ -417,6 +432,15 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         self._menu_tools.add_command(label = user_query_tool.tool_name, command = partial(self.onSelectTool, index))
         return None
         
+    def set_state(self, response=''):
+        """
+        Set the tool response text of the QueryResponseToolsWidget.
+        :return: None
+        """
+        assert(type(response)==str)
+        self._tool_response_txt = response
+        self.notify()
+    
     def get_state(self):
         """
         Get the tool response text from the QueryResponseToolsWidget.

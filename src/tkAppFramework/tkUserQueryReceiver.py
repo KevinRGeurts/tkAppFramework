@@ -60,8 +60,10 @@ class UserQueryReceiverBadResponseError(UserResponseCollector.UserQueryReceiver.
 # Fields:
 # prompt_text: Text displayed to the user to request their response, string
 # query_ID: Unique identifier of the query, which should be returned with the response to help ensure the the query and response are matched up
-#               correctly since they are placed in different queues, string from str(uuid)
-QueryInfo = namedtuple('QueryInfo', ['prompt_text', 'query_ID'])
+#           correctly since they are placed in different queues, string from str(uuid)
+# extra: Optional dictionary of key/value pairs to be pass along as information for any user query tools to use, dictionary
+#        Clients Should assume that any information passed in extra may not be used. 
+QueryInfo = namedtuple('QueryInfo', ['prompt_text', 'query_ID', 'extra'])
 
 # Define a tuple subclass QueryResponse that will be the objectified query message placed in the response queue
 # Fields:
@@ -100,10 +102,12 @@ class tkUserQueryReceiver(UserResponseCollector.UserQueryReceiver.UserQueryRecei
         # A time in seconds to wait when attempting to access a queue with a put or get before timing out
         self._queue_access_timeout = 1
     
-    def GetRawResponse(self, prompt_text=''):
+    def GetRawResponse(self, prompt_text='', extra={}):
         """
-        Called to obtain a raw response from the user through thier interaction with the tkinter based app, which will always be a sting of text.
+        Called to obtain a raw response from the user through their interaction with the tkinter based app, which will always be a sting of text.
         :parameter prompt_text: String of text to use to tell the user what response is requrired, string
+        :parameter extra: Optional additional dictionary of key/value pairs, used to pass along information for any user query tools to use.
+            GetRawResponse() does not use these arguments itself, but merely passes them along in the QueryInfo object placed in the query queue.
         :return: raw_response, string
         Raises UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError exception if a response of
         '<<QueryingThreadTerminationRequest>>' is received in the response queue.
@@ -116,7 +120,7 @@ class tkUserQueryReceiver(UserResponseCollector.UserQueryReceiver.UserQueryRecei
         query_ID = uuid4()
 
         # Package up the query information in a named tuple
-        query_message = QueryInfo(prompt_text, str(query_ID))
+        query_message = QueryInfo(prompt_text, str(query_ID), extra)
 
         # Place the query message in the query queue in the tkinter app
         self._query_queue_callback(query_message)
