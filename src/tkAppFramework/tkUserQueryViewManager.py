@@ -23,6 +23,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from queue import Queue
+from functools import partial
 
 # Local imports
 # -- Leave these next two imports EXACTLY how they are, so that tkUserQueryReceiver correctly changes values of globals in UserQueryReceiver --
@@ -31,6 +32,7 @@ import tkAppFramework.tkUserQueryReceiver
 # -- End Leave --
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
+from tkAppFramework.tkUserQueryTool import tkUserQueryTool, tkPathSaveTool, tkPathOpenTool
 
 # TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
 # as a tkViewManager, it is a tkinter.ttk.Frame. Do we need to find a way to have a Query text label to help the
@@ -60,6 +62,28 @@ class tkUserQueryViewManager(tkViewManager):
 
         self.bind('<<TkinterAppQueryEvent>>', self.TkAppQueryEventHandler)
 
+        # Maintain a dictionary of any registered user query tools, keyed by UserQueryCommand type
+        self.__user_query_tools = dict()
+
+        # Register tools that are built in
+        self.register_user_query_tool(tkPathOpenTool())
+        self.register_user_query_tool(tkPathSaveTool())
+
+    def register_user_query_tool(self, user_query_tool=None):
+        """
+        Register a user query tool with the tkUserQueryViewManager.
+        :parameter user_query_tool: An object of a class derived from tkUserQueryTool
+        :return: None
+        """
+        if user_query_tool is not None:
+            assert(isinstance(user_query_tool, tkUserQueryTool))
+            self.__user_query_tools[user_query_tool.query_type] = user_query_tool
+
+            # Also register the tool with the QueryResponseToolsWidget
+            self._query_response_tools_widget.register_tool(user_query_tool)
+
+        return None
+        
     def handle_model_update(self):
         """
         Handler function called when the model notifies the tkUserQueryViewManager of a change in state.
@@ -376,9 +400,23 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         # Tools menu button menu
         self._menu_tools = tk.Menu(self._mbtn_tools)
         self._mbtn_tools['menu'] = self._menu_tools
-        self._menu_tools.add_command(label='File Save Path...', command=self.OnFileSavePath)
-        self._menu_tools.add_command(label='File Open Path...', command=self.OnFileOpenPath)
+        # Maintain a list of any registered user query tools
+        self._user_query_tools = list()
 
+    def register_tool(self, user_query_tool=None):
+        """
+        Register a user query tool with the QueryResponseToolsWidget.
+        :parameter user_query_tool: An object of a class derived from tkUserQueryTool
+        :return: None
+        """
+        assert(isinstance(user_query_tool, tkUserQueryTool))
+        self._user_query_tools.append(user_query_tool)
+        index = len(self._user_query_tools)-1
+        # Note: partial is used in order to be able to pass along a menu item index to the command function, which otherwise takes no arguments
+        # See: (https://stackoverflow.com/questions/6920302/how-to-pass-arguments-to-a-button-command-in-tkinter)
+        self._menu_tools.add_command(label = user_query_tool.tool_name, command = partial(self.onSelectTool, index))
+        return None
+        
     def get_state(self):
         """
         Get the tool response text from the QueryResponseToolsWidget.
@@ -386,25 +424,15 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         """
         return self._tool_response_txt
 
-    def OnFileSavePath(self):
+    def onSelectTool(self, index):
         """
-        Help respond to a file save path query by using the tkFileDialog for save to get the path.
+        Handle selection of a user query tool from the tools menu.
+        :parameter index: Index of the tool selected from the tools menu, integer
         :return: None
         """
-        # Pop up tkFileDialog for save
-        response = filedialog.asksaveasfilename(title='File Save Path')
-        self._tool_response_txt = response
-        self.notify()
-        return None
-    
-    def OnFileOpenPath(self):
-        """
-        Help respond to a file open path query by using the tkFileDialog for open to get the path.
-        :return: None
-        """
-        # Pop up tkFileDialog for open
-        response = filedialog.askopenfilename(title='File Open Path')
-        self._tool_response_txt = response
+        assert(isinstance(index, int) and index>=0 and index<len(self._user_query_tools))
+        tool = self._user_query_tools[index]
+        self._tool_response_txt = tool.run()
         self.notify()
         return None
 
