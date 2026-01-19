@@ -113,6 +113,11 @@ class tkSimulatorApp(tkApp):
         """
         super()._setup_child_widgets()
 
+        # Adjust grid setting for self._view_manager, since we want the tkUserQueryViewManager at the top.
+        self._view_manager.grid(column=0, row=1, sticky='NWES') # Grid-1 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(1, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
+
         # Setup for tkUserQueryViewManager
         self._query_view_manager = tkUserQueryViewManager(self)
         # Attach view manager as observer of model, because tkViewManager.onDestroy() will attempt detach
@@ -120,11 +125,6 @@ class tkSimulatorApp(tkApp):
         self._query_view_manager.grid(column=0, row=0, sticky='NWES') # Grid-1 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
-
-        # Adjust grid setting for self._view_manager, since we want the UserQueryEntry at the top.
-        self._view_manager.grid(column=0, row=1, sticky='NWES') # Grid-1 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(0, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(1, weight=1) # Grid-1 in Documentation\UI_WireFrame.pptx
 
         return None
 

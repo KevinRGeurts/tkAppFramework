@@ -97,6 +97,7 @@ class tkUserQueryViewManager(tkViewManager):
         Utility function to be called by super.__init__ to set up the child widgets of the query view manager.
         :return None:
         """
+        
         # QueryPromptWidget for showing the query prompt text, that is, the text descibing what query the user is responding too
         self._query_prompt_widget = QueryPromptWidget(self)
         self.register_subject(self._query_prompt_widget, self.handle_query_prompt_widget_update)
@@ -113,21 +114,30 @@ class tkUserQueryViewManager(tkViewManager):
         self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
 
+        # QueryResponseMenuWidget - For menu style query responses
+        # Note that when used, it will visually replace the QueryResponseEntryWidget
+        self._query_response_menu_widget = QueryResponseMenuWidget(self)
+        self.register_subject(self._query_response_menu_widget, self.handle_query_response_menu_widget_update)
+        self._query_response_menu_widget.attach(self)
+        # self._query_response_menu_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
+        # self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        # self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+
         # Widget for sending query response
         self._query_response_send_widget = QueryResponseSendWidget(self)
         self.register_subject(self._query_response_send_widget, self.handle_query_response_send_widget_update)
         self._query_response_send_widget.attach(self)
-        self._query_response_send_widget.grid(column=2, row=0) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(2, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self._query_response_send_widget.grid(column=2, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(2, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         
         # QueryResponseToolsWidget - For launching "tools" that help the user fill in the QueryResponseEntryWidget under different circumstances.
         self._query_response_tools_widget = QueryResponseToolsWidget(self)
         self.register_subject(self._query_response_tools_widget, self.handle_query_response_tools_widget_update)
         self._query_response_tools_widget.attach(self)
-        self._query_response_tools_widget.grid(column=3, row=0) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(3, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=0) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self._query_response_tools_widget.grid(column=3, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(3, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         
         self.reset_widgets()
 
@@ -146,6 +156,16 @@ class tkUserQueryViewManager(tkViewManager):
     def handle_query_response_entry_widget_update(self):
         """
         Handler function called when the QueryResponseEntryWidget object notifies the tkUserQueryViewManager of a change in state.
+        Currently does nothing.
+        :return None:
+        """
+        # Do nothing
+        # TODO: Determine if this should do something.
+        return None
+
+    def handle_query_response_menu_widget_update(self):
+        """
+        Handler function called when the QueryResponseMenuWidget object notifies the tkUserQueryViewManager of a change in state.
         Currently does nothing.
         :return None:
         """
@@ -241,7 +261,13 @@ class tkUserQueryViewManager(tkViewManager):
         """
         self._query_prompt_widget.set_state('--')
         self._query_response_entry_widget.set_state('')
+        self._query_response_menu_widget.setup_list({})
         self._query_response_entry_widget.disable_query_response_entry(True)
+        self._query_response_menu_widget.disable_query_response_menu(True)
+        
+        # Hide the menu response widget behind the entry response widget
+        # self._query_response_menu_widget.lower(self._query_response_entry_widget)
+        
         self._query_response_send_widget.disable_query_response_send(True)
         self._query_response_tools_widget.disable_query_response_tools(True)
         return None
@@ -295,8 +321,8 @@ class QueryResponseEntryWidget(ttk.Labelframe, Subject):
 
         # Query response Entry widget, that is, the entry widget where the user types in their response to the query
         self._ent_response = ttk.Entry(self, width=50, takefocus=1)
-        self._ent_response.grid(column=1, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._ent_response.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         # Control variable for the Entry widget
         self._ent_response_txt = tk.StringVar()
@@ -304,7 +330,7 @@ class QueryResponseEntryWidget(ttk.Labelframe, Subject):
         self._ent_response["textvariable"] = self._ent_response_txt
         # Set up a horizontal scroll bar
         self._ent_scroll_hor = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.onScrollHorizontal)
-        self._ent_scroll_hor.grid(column=1, row=1, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._ent_scroll_hor.grid(column=0, row=1, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
         self._ent_response['xscrollcommand'] = self._ent_scroll_hor.set
 
     # See: https://tkdocs.com/shipman/entry-scrolling.html
@@ -365,8 +391,8 @@ class QueryResponseSendWidget(ttk.Labelframe, Subject):
 
         # Enter button
         self._btn_enter = ttk.Button(self, text='Enter', command=self.OnEnterButton, takefocus=1)
-        self._btn_enter.grid(column=2, row=0) # Grid-3 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(2, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._btn_enter.grid(column=0, row=0) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
 
     def OnEnterButton(self):
@@ -409,8 +435,8 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         # under different circumstances. Example, if the user is asked for a file path to save to, they can use the tools menu button
         # to launch a file save dialog.
         self._mbtn_tools = ttk.Menubutton(self, text='Tools', takefocus=1)
-        self._mbtn_tools.grid(column=3, row=3) # Grid-3 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(3, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._mbtn_tools.grid(column=0, row=0) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         # Tools menu button menu
         self._menu_tools = tk.Menu(self._mbtn_tools)
@@ -462,7 +488,7 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
 
     def disable_query_response_tools(self, disabled=True):
         """
-        Used to set if the widget can launch respone tools or not.
+        Used to set if the widget can launch response tools or not.
         :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
         :return None:
         """
@@ -470,4 +496,86 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
             self._mbtn_tools.state(['disabled'])
         else:
             self._mbtn_tools.state(['!disabled'])
+        return None
+
+
+class QueryResponseMenuWidget(ttk.Labelframe, Subject):
+    """
+    Class represents a tkinter label frame, the widget contents of which let the user select a response to a menu query.
+    Class is also a Subject in Observer design pattern.
+    """
+    def __init__(self, parent, choices={}) -> None:
+        """
+        :parameter parent: tkinter widget that is the parent of this widget
+        :parameter choices: Dictionary of menu choices, where keys are expected response strings, and values are descriptions of the choices, to appear in the listbox.
+        """
+        ttk.Labelframe.__init__(self, parent, text='Query Response - Menu')
+        Subject.__init__(self)
+
+        assert(type(choices)==dict)
+        self._choices = choices
+
+        # Listbox widget for showing/selecting from the menu choices
+        
+        self._lb_menu_response = tk.Listbox(self, height=1, takefocus=1)
+        self._lb_menu_response.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        # Control variable for the Listbox widget
+        self._lb_menu_response_txt = tk.StringVar()
+        # Tell the Listbox widget to match this variable.
+        self._lb_menu_response["listvariable"] = self._lb_menu_response_txt
+        
+        # Set up a horizontal scroll bar
+        self._lb_scroll_hor = tk.Scrollbar(self, orient=tk.HORIZONTAL, command=self._lb_menu_response.xview)
+        self._lb_scroll_hor.grid(column=0, row=1, sticky='WE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        # self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        # self.rowconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._lb_menu_response['xscrollcommand'] = self._lb_scroll_hor.set
+
+        # Set up a vertical scroll bar
+        self._lb_scroll_ver = tk.Scrollbar(self, orient=tk.VERTICAL, command=self._lb_menu_response.yview)
+        self._lb_scroll_ver.grid(column=1, row=0, sticky='NS') # Grid-3 in Documentation\UI_WireFrame.pptx
+        # self.columnconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        # self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._lb_menu_response['yscrollcommand'] = self._lb_scroll_ver.set
+
+        # Populate the listbox with the menu choices
+        self.setup_list(self._choices)
+
+    def get_state(self):
+        """
+        Get the menu response text from the QueryResponseMenuWidget. This should be the key, not the value.
+        :return: Menu response text, string
+        """
+        selected = self._lb_menu_response.curselection()
+        assert(len(selected)==1)
+        index = selected[0]
+        key = list(self._choices.keys())[index]
+        return key
+
+    def setup_list(self, choices = {}):
+        """
+        Set the list of menu choices in the QueryResponseMenuWidget.
+        :return: None
+        """
+        assert(type(choices)==dict)
+        self._choices = choices
+        # Remove any current items in the listbox
+        self._lb_menu_response.delete(0, tk.END)
+        # Populate the listbox with the menu choices
+        for (key, value) in self._choices:
+            self._lb_menu_response.insert(tk.END, str(value))
+        self._lb_menu_response['height']=len(self._choices)
+
+    def disable_query_response_menu(self, disabled=True):
+        """
+        Used to set if the widget will allow a menu query response selection or not.
+        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
+        :return None:
+        """
+        if disabled:
+            self._lb_menu_response['state']=tk.DISABLED
+        else:
+            self._lb_menu_response['state']=tk.NORMAL
         return None

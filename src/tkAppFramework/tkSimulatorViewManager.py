@@ -96,23 +96,23 @@ class SimulatorShowInfoWidget(ttk.Labelframe, Subject):
         super().__init__(parent, text='Simulation Output', takefocus=0)
         Subject.__init__(self)
         
-       # Create a text widget which will display all the logging.info messages received from the simulator
+        # Create a text widget which will display all the logging.info messages received from the simulator
        
         self._txt_info =  tk.Text(self, width=40, height=10)
-        self._txt_info.grid(column=0, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self._txt_info.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         # Set wrap to NONE, so that there are no line breaks
         self._txt_info['wrap']=tk.NONE
 
         # Create a vertical Scrollbar and associate it with _txt_info
         self._scrollbar_vert = ttk.Scrollbar(self, command=self._txt_info.yview)
-        self._scrollbar_vert.grid(column=1, row=0, rowspan=2, sticky='NWSE')
+        self._scrollbar_vert.grid(column=1, row=0, rowspan=2, sticky='NWSE') # Grid-3
         self._txt_info['yscrollcommand'] = self._scrollbar_vert.set
 
         # Create a horizontal Scrollbar and associate it with _txt_info
         self._scrollbar_horz = ttk.Scrollbar(self, command=self._txt_info.xview, orient=tk.HORIZONTAL)
-        self._scrollbar_horz.grid(column=0, row=1, columnspan=2, sticky='NWSE')
+        self._scrollbar_horz.grid(column=0, row=1, columnspan=2, sticky='NWSE') # Grid-3
         self._txt_info['xscrollcommand'] = self._scrollbar_horz.set
 
         # Set state to DISABLED so the user can't add or change content

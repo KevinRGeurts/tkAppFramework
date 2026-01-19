@@ -153,7 +153,6 @@ class tkUserQueryReceiver(UserResponseCollector.UserQueryReceiver.UserQueryRecei
         """
         # Let the user know that there was a problem with their response, by popping up a tkMessageBox dialog
         showerror(title='User Query Error', message=msg)
-        # print(msg)
         return None
     
     def setup(self, query_event_callback, query_queue_callback):

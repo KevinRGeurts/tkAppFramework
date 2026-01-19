@@ -51,4 +51,26 @@ Later, when you need to use entryconfig(...) on Start Simulation command:
 
 _menuWids['File'][0].entryconfig(_menuWids['File'][1]['Start Simulation'][1], state=DISABLED)
 
+*** 1/15/2026: Sorting through a gridding issue with tkSimulatorApp ***
 
+important notes:
+1. A call to grid() on a widget places that widget into the grid of its parent widget.
+2. Calls to rowconfigure() and columnconfigure() on a widget configure the grid of that widget, so you typically want to call
+   rowconfigure() and columnconfigure() on the parent widget of the widget you are gridding.
+
+tkSimulatorApp IS-A tkApp, which IS-A ttk.Frame. That Frame is positioned in r0c0 of the root window's grid (grid-0) by  __init__().
+tkApp's _setup_child_widgets() method creates self._view_manager, which Is-A ttk.Frame, also. It is positioned in r0c0 of
+the tkApp's grid (grid-1), by tkApp._setup_child_widgets().
+
+tkSimulatorApps's _createViewManager() method creates a tkSimulatorViewManager object, which is a child of tkViewManager.
+When tkSimulatorApp's _setup_child_widgets() method calls super()._setup_child_widgets(), the tkSimulatorViewManager is
+created and gridded as above. Then it is moved to r1c0 of the tkApp's grid (grid-1). And a tkUserQueryViewManager object is created
+and gridded into r0c0 of the tkApp's grid (grid-1).
+
+tkSimulatorViewManager IS-A tkViewManager. When it's _CreateWidgets() method is called, it creates a SimulatorShowInfoWidget object,
+which IS-A ttk.LabelFrame. The SimulatorShowInfoWidget object is gridded into r0c0 of the tkSimulatorViewManager's grid (grid-2).
+The child widgets of the SimulatorShowInfoWidget are gridded into the SimulatorShowInfoWidget's grid (grid-3).
+
+tkUserQueryViewManager IS-A tkViewManager. When it's _CreateWidgets() method is called, it creates a QueryPromptWidget object,
+a QueryResponseWidget object, etc. Each of these widgets are gridded into the tkUserQueryViewManager's grid (grid-2). The
+widgets that make up each of these widgets are gridded into their respective grids (grid-3).
