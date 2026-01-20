@@ -184,6 +184,9 @@ class tkUserQueryViewManager(tkViewManager):
         # Put the menu response into the entry response widget
         self._query_response_entry_widget.set_state(response)
 
+        # Automatically send the response
+        self.handle_query_response_send_widget_update()
+
         return None
 
     def handle_query_response_send_widget_update(self):
