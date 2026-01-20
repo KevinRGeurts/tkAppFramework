@@ -7,6 +7,10 @@ a base application class (tkApp), a base view manager class (tkViewManager), a b
 class (Model), and a base class so that GUI widget managed by the view manager can act as observed subjects (Subject)
 in the Observer design pattern.
 
+## Requirements
+
+UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
+
 ## Credit where credit is due
 
 - Adapter, Observer, Mediator, and Factory Method patterns follow the concepts, UML diagrams, and examples provided in
@@ -284,6 +288,7 @@ section of this document.
 # Standard imports
 import tkinter as tk
 import logging
+from math import sqrt
 
 # Local imports
 from tkAppFramework.tkSimulatorApp import tkSimulatorApp
@@ -324,11 +329,18 @@ class DemoSimulator:
         logger = logging.getLogger('demo_simulator_logger')
         while True:
             try:
-                response = askForFloat('Enter a value to square.')
+                response= askForMenuSelection('What operation do you want?', {'s':'square a number', 'r':'square root of a number'})
+                match response:
+                    case 's':
+                        response = askForFloat('Enter a value to square.')
+                        squared = response * response
+                        logger.info(f"The square of {response} is {squared}.")
+                    case 'r':
+                        response = askForFloat('Enter a value to square root.', minimum=0.0)
+                        sqrted = sqrt(response)
+                        logger.info(f"The square root of {response} is {sqrted}.")
             except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
-            squared = response * response
-            logger.info(f"The square of {response} is {squared}.")
         return None
 
 class DemoSimulatorAdapter(SimulatorAdapter):

@@ -33,6 +33,7 @@ import tkAppFramework.tkUserQueryReceiver
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.tkUserQueryTool import tkUserQueryTool, tkPathSaveTool, tkPathOpenTool
+import UserResponseCollector.UserQueryCommand
 
 # TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
 # as a tkViewManager, it is a tkinter.ttk.Frame. Do we need to find a way to have a Query text label to help the
@@ -106,6 +107,18 @@ class tkUserQueryViewManager(tkViewManager):
         self.columnconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
 
+
+        # QueryResponseMenuWidget - For menu style query responses
+        # Note that when used, it will visually replace the QueryResponseEntryWidget
+        self._query_response_menu_widget = QueryResponseMenuWidget(self)
+        self.register_subject(self._query_response_menu_widget, self.handle_query_response_menu_widget_update)
+        self._query_response_menu_widget.attach(self)
+        self._query_response_menu_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+        # Initially hide (remove) the menu response widget, but it's grid location is remembered
+        self._query_response_menu_widget.grid_remove()
+
         # QueryResponseEntryWidget, that is, the widget where the user types in their response to the query
         self._query_response_entry_widget = QueryResponseEntryWidget(self)
         self.register_subject(self._query_response_entry_widget, self.handle_query_response_entry_widget_update)
@@ -113,15 +126,6 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_response_entry_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-
-        # QueryResponseMenuWidget - For menu style query responses
-        # Note that when used, it will visually replace the QueryResponseEntryWidget
-        self._query_response_menu_widget = QueryResponseMenuWidget(self)
-        self.register_subject(self._query_response_menu_widget, self.handle_query_response_menu_widget_update)
-        self._query_response_menu_widget.attach(self)
-        # self._query_response_menu_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
-        # self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        # self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
 
         # Widget for sending query response
         self._query_response_send_widget = QueryResponseSendWidget(self)
@@ -166,11 +170,20 @@ class tkUserQueryViewManager(tkViewManager):
     def handle_query_response_menu_widget_update(self):
         """
         Handler function called when the QueryResponseMenuWidget object notifies the tkUserQueryViewManager of a change in state.
-        Currently does nothing.
         :return None:
         """
-        # Do nothing
-        # TODO: Determine if this should do something.
+        # Get the response from the menu QueryResponseMenuWidget
+        response = self._query_response_menu_widget.get_state()
+
+        # Remove the menu response widget from the grid, so that it disappears from view, but remembers it's grid location
+        self._query_response_menu_widget.grid_remove()
+
+        # Re-grid the entry response widget back into it's original grid cell (where the menu response widget was)
+        self._query_response_entry_widget.grid()
+
+        # Put the menu response into the entry response widget
+        self._query_response_entry_widget.set_state(response)
+
         return None
 
     def handle_query_response_send_widget_update(self):
@@ -252,6 +265,37 @@ class tkUserQueryViewManager(tkViewManager):
             response = tool.run()
             self._query_response_tools_widget.set_state(response)
 
+        # Check if this is a menu style query
+        if item.extra['query_type'] == UserResponseCollector.UserQueryCommand.UserQueryCommandMenu:
+            # Call special handler for menu style query
+            query_dic = item.extra['query_dic']
+            assert(type(query_dic)==dict)
+            self._handle_menu_query(query_dic)
+        return None
+
+    def _handle_menu_query(self, choices={}):
+        """
+        Uitility function called by handle_query_event(...) to handle a menu style query.
+        :parameter choices: Dictionary of menu choices, where keys are expected response strings, and values are descriptions of the choices, to appear as the menu commands.
+        :return: None
+        """
+        assert(type(choices)==dict)
+
+        # Enable the menu response widget
+        self._query_response_menu_widget.disable_query_response_menu(False)
+
+        # Disable the tools widget, as it is not needed for menu style queries
+        self._query_response_tools_widget.disable_query_response_tools(True)
+
+        # Remove the entry response widget from the grid, so that it disappears from view, but remembers it's grid location
+        self._query_response_entry_widget.grid_remove()
+
+        # Restore the menu response widget into the grid cell that was its original location (where the respnse entry widget was)
+        self._query_response_menu_widget.grid()
+
+        # Set up the menu response widget with the menu choices
+        self._query_response_menu_widget.setup_list(choices)
+        
         return None
 
     def reset_widgets(self):
@@ -264,10 +308,6 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_response_menu_widget.setup_list({})
         self._query_response_entry_widget.disable_query_response_entry(True)
         self._query_response_menu_widget.disable_query_response_menu(True)
-        
-        # Hide the menu response widget behind the entry response widget
-        # self._query_response_menu_widget.lower(self._query_response_entry_widget)
-        
         self._query_response_send_widget.disable_query_response_send(True)
         self._query_response_tools_widget.disable_query_response_tools(True)
         return None
@@ -514,31 +554,17 @@ class QueryResponseMenuWidget(ttk.Labelframe, Subject):
 
         assert(type(choices)==dict)
         self._choices = choices
+        self._selection = None
 
-        # Listbox widget for showing/selecting from the menu choices
+        # Menu response menu button for showing/selecting from the menu choices
         
-        self._lb_menu_response = tk.Listbox(self, height=1, takefocus=1)
-        self._lb_menu_response.grid(column=0, row=0, sticky='NWSE') # Grid-3 in Documentation\UI_WireFrame.pptx
+        self._mbtn_menu_response = ttk.Menubutton(self, text='Choices', takefocus=1)
+        self._mbtn_menu_response.grid(column=0, row=0) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
         self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
-        # Control variable for the Listbox widget
-        self._lb_menu_response_txt = tk.StringVar()
-        # Tell the Listbox widget to match this variable.
-        self._lb_menu_response["listvariable"] = self._lb_menu_response_txt
-        
-        # Set up a horizontal scroll bar
-        self._lb_scroll_hor = tk.Scrollbar(self, orient=tk.HORIZONTAL, command=self._lb_menu_response.xview)
-        self._lb_scroll_hor.grid(column=0, row=1, sticky='WE') # Grid-3 in Documentation\UI_WireFrame.pptx
-        # self.columnconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
-        # self.rowconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
-        self._lb_menu_response['xscrollcommand'] = self._lb_scroll_hor.set
-
-        # Set up a vertical scroll bar
-        self._lb_scroll_ver = tk.Scrollbar(self, orient=tk.VERTICAL, command=self._lb_menu_response.yview)
-        self._lb_scroll_ver.grid(column=1, row=0, sticky='NS') # Grid-3 in Documentation\UI_WireFrame.pptx
-        # self.columnconfigure(1, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
-        # self.rowconfigure(0, weight=1) # Grid-3 in Documentation\UI_WireFrame.pptx
-        self._lb_menu_response['yscrollcommand'] = self._lb_scroll_ver.set
+        # Menu response menu button menu
+        self._menu_menu_response = tk.Menu(self._mbtn_menu_response)
+        self._mbtn_menu_response['menu'] = self._menu_menu_response
 
         # Populate the listbox with the menu choices
         self.setup_list(self._choices)
@@ -548,11 +574,7 @@ class QueryResponseMenuWidget(ttk.Labelframe, Subject):
         Get the menu response text from the QueryResponseMenuWidget. This should be the key, not the value.
         :return: Menu response text, string
         """
-        selected = self._lb_menu_response.curselection()
-        assert(len(selected)==1)
-        index = selected[0]
-        key = list(self._choices.keys())[index]
-        return key
+        return self._selection
 
     def setup_list(self, choices = {}):
         """
@@ -561,12 +583,23 @@ class QueryResponseMenuWidget(ttk.Labelframe, Subject):
         """
         assert(type(choices)==dict)
         self._choices = choices
-        # Remove any current items in the listbox
-        self._lb_menu_response.delete(0, tk.END)
-        # Populate the listbox with the menu choices
-        for (key, value) in self._choices:
-            self._lb_menu_response.insert(tk.END, str(value))
-        self._lb_menu_response['height']=len(self._choices)
+        # Remove any current commands from the menu
+        self._menu_menu_response.delete(0, self._menu_menu_response.index(tk.END))
+        # Populate the menu with commands for the menu choices
+        for key in self._choices:
+            self._menu_menu_response.add_command(label = str(self._choices[key]), command = partial(self.onSelectChoice, key))
+
+    def onSelectChoice(self, key):
+        """
+        Handle selection of a menu choice from the menu.
+        :parameter key: Key of the choice selected from the menu, string
+        :return: None
+        """
+        assert(isinstance(key, str) and key in self._choices)
+        self._selection = key
+        self.notify()
+        self._selection = None
+        return None
 
     def disable_query_response_menu(self, disabled=True):
         """
@@ -575,7 +608,7 @@ class QueryResponseMenuWidget(ttk.Labelframe, Subject):
         :return None:
         """
         if disabled:
-            self._lb_menu_response['state']=tk.DISABLED
+            self._mbtn_menu_response.state(['disabled'])
         else:
-            self._lb_menu_response['state']=tk.NORMAL
+            self._mbtn_menu_response.state(['!disabled'])
         return None

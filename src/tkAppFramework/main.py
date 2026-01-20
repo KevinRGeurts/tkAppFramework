@@ -29,6 +29,7 @@ import tkinter as tk
 from tkinter import ttk
 import logging
 import sysconfig
+from math import sqrt
 
 # Local
 from tkAppFramework.tkSimulatorApp import tkSimulatorApp
@@ -37,7 +38,7 @@ from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
-from UserResponseCollector.UserQueryCommand import askForFloat, UserQueryCommandMenu
+from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
 class DemoModel(Model):
@@ -209,11 +210,18 @@ class DemoSimulator:
         logger = logging.getLogger('demo_simulator_logger')
         while True:
             try:
-                response = askForFloat('Enter a value to square.')
+                response= askForMenuSelection('What operation do you want?', {'s':'square a number', 'r':'square root of a number'})
+                match response:
+                    case 's':
+                        response = askForFloat('Enter a value to square.')
+                        squared = response * response
+                        logger.info(f"The square of {response} is {squared}.")
+                    case 'r':
+                        response = askForFloat('Enter a value to square root.', minimum=0.0)
+                        sqrted = sqrt(response)
+                        logger.info(f"The square root of {response} is {sqrted}.")
             except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
-            squared = response * response
-            logger.info(f"The square of {response} is {squared}.")
         return None
 
 class DemoSimulatorAdapter(SimulatorAdapter):
