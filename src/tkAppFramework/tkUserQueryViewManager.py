@@ -36,9 +36,6 @@ from tkAppFramework.tkUserQueryToolModal import tkUserQueryToolModal, tkPathSave
 from tkAppFramework.tkUserQueryToolEmbedded import tkMenuUserUserQuerytToolEmbedded, tkUserQueryToolEmbedded
 import UserResponseCollector.UserQueryCommand
 
-# TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
-# as a tkViewManager, it is a tkinter.ttk.Frame. Do we need to find a way to have a Query text label to help the
-# user understand the purpose of the child widgets?
 
 class tkUserQueryViewManager(tkViewManager):
     """
@@ -78,7 +75,6 @@ class tkUserQueryViewManager(tkViewManager):
         menu_widget = tkMenuUserUserQuerytToolEmbedded(self)
         self.register_user_query_tool_embedded(menu_widget)
 
-
         # Put all child widets in correct initial state
         self.reset_widgets()
 
@@ -107,7 +103,7 @@ class tkUserQueryViewManager(tkViewManager):
             assert(isinstance(tool_widget, tkUserQueryToolEmbedded))
             self._user_query_tool_embedded[tool_widget.query_type] = tool_widget
             # Register a handler for updates from the embedded user query tool widget.
-            self.register_subject(tool_widget, partial(self.handle_query_response_tool_widget_update, tool_widget))
+            self.register_subject(tool_widget, partial(self.handle_embedded_query_response_tool_widget_update, tool_widget))
             # Attach self as Observer of the embedded user query tool widget.
             tool_widget.attach(self)
             # Grid the embedded user query tool widget in the same (row,column) as the QueryResponseEntryWidget.
@@ -159,7 +155,7 @@ class tkUserQueryViewManager(tkViewManager):
         
         # QueryResponseToolsWidget - For launching "tools" that help the user fill in the QueryResponseEntryWidget under different circumstances.
         self._query_response_tools_widget = QueryResponseToolsWidget(self)
-        self.register_subject(self._query_response_tools_widget, self.handle_query_response_tools_widget_update)
+        self.register_subject(self._query_response_tools_widget, self.handle_modal_query_response_tools_widget_update)
         self._query_response_tools_widget.attach(self)
         self._query_response_tools_widget.grid(column=3, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
         self.columnconfigure(3, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
@@ -187,9 +183,7 @@ class tkUserQueryViewManager(tkViewManager):
         # TODO: Determine if this should do something.
         return None
 
-    # TODO: Super confusing that there is another method named handle_query_response_tools_widget_update.
-    # Need to refactor to make the difference between embedded widget and modal dialog tools clearer.
-    def handle_query_response_tool_widget_update(self, tool_wid=None):
+    def handle_embedded_query_response_tool_widget_update(self, tool_wid=None):
         """
         Handler function called when any tkUserQueryToolEmbedded object notifies the tkUserQueryViewManager of a change in state.
         :parameter tool_wid: The tkUserQueryToolEmbedded object that notified tkUserQueryManager of a change in state.
@@ -231,7 +225,7 @@ class tkUserQueryViewManager(tkViewManager):
 
         return None
 
-    def handle_query_response_tools_widget_update(self):
+    def handle_modal_query_response_tools_widget_update(self):
         """
         Handler function called when the QueryResponseToolsWidget object notifies the tkUserQueryViewManager of a change in state.
         :return None:
@@ -264,6 +258,8 @@ class tkUserQueryViewManager(tkViewManager):
         Utility function that handle's a query event.
         :return: None
         """
+        # Reset all child widgets, to make sure they are in a known state.
+        self.reset_widgets()
         # Retrieve an item from the simulator event queue to determine what type of information we need from the user
         item = self._query_info_queue.get(timeout=self._queue_access_timeout)
         # Store the QueryInfo that we just retrieved, so that we can access it's ID when we respond
@@ -278,33 +274,33 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_response_entry_widget.disable_query_response_entry(False)
         self._query_response_entry_widget.focus_set()
 
-        # Check if we have a registered tool for this query type, and if so, launch it automatically to help the user
+        # Check if we have a registered modal tool for this query type, and if so, launch it automatically to help the user
         
         tool = None
         try:
-            # Try to get the tool for this query type
+            # Try to get the modal tool for this query type
             tool = self._user_query_tool_modal[item.extra['query_type']]
         except:
             # tool remains None
             pass
 
         if tool is not None:
-            # If we have a tool for this query type, then we will launch it automatically to help the user
+            # If we have a modal tool for this query type, then we will launch it automatically to help the user
             response = tool.run()
             self._query_response_tools_widget.set_state(response)
 
-        # Check if we have a registered tool widget for this type of query, and if so, "embed" it in self to handle query
+        # Check if we have a registered embedded tool (widget) for this type of query, and if so, "embed" it in self to handle query
 
         tool_wid = None
         try:
-            # Try to get the tool widget for this query type
+            # Try to get the embedded tool (widget) for this query type
             tool_wid = self._user_query_tool_embedded[item.extra['query_type']]
         except:
             # tool_wid remains None
             pass
 
         if tool_wid is not None:
-            # Enable the tool widget
+            # Enable the embedded tool (widget)
             tool_wid.disable(False)
             # Disable the tools widget, as it is not needed for a query handled by a tool widget
             self._query_response_tools_widget.disable_query_response_tools(True)
@@ -327,12 +323,14 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_prompt_widget.set_state('--')
         self._query_response_entry_widget.set_state('')
         self._query_response_entry_widget.disable_query_response_entry(True)
+        self._query_response_entry_widget.grid() # Make sure entry widget is in the grid (visible)
         self._query_response_send_widget.disable_query_response_send(True)
         self._query_response_tools_widget.disable_query_response_tools(True)
 
-        # Disable any tool widgets
+        # Disable and any embedded user query tools (widgets), and remove them from the grid.
         for key in self._user_query_tool_embedded:
             self._user_query_tool_embedded[key].disable(True)
+            self._user_query_tool_embedded[key].grid_remove()
 
         return None
 
