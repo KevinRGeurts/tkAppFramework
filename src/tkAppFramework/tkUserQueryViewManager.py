@@ -32,7 +32,7 @@ import tkAppFramework.tkUserQueryReceiver
 # -- End Leave --
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
-from tkAppFramework.tkUserQueryTool import tkUserQueryTool, tkPathSaveTool, tkPathOpenTool
+from tkAppFramework.tkUserQueryToolModal import tkUserQueryToolModal, tkPathSaveToolModal, tkPathOpenToolModal
 from tkAppFramework.tkQueryResponseToolWidget import tkMenuResponseToolWidget, tkQueryResponseToolWidget
 import UserResponseCollector.UserQueryCommand
 
@@ -68,8 +68,8 @@ class tkUserQueryViewManager(tkViewManager):
         self._user_query_tool_modal = dict()
 
         # Create and register modal user query tools that are built in
-        self.register_user_query_tool_modal(tkPathOpenTool())
-        self.register_user_query_tool_modal(tkPathSaveTool())
+        self.register_user_query_tool_modal(tkPathOpenToolModal())
+        self.register_user_query_tool_modal(tkPathSaveToolModal())
 
         # Maintain a dictionary of any registered embedded user query tool widgets, keyed by UserQueryCommand type
         self._user_query_tool_embedded = dict()
@@ -89,7 +89,7 @@ class tkUserQueryViewManager(tkViewManager):
         :return: None
         """
         if user_query_tool is not None:
-            assert(isinstance(user_query_tool, tkUserQueryTool))
+            assert(isinstance(user_query_tool, tkUserQueryToolModal))
             self._user_query_tool_modal[user_query_tool.query_type] = user_query_tool
 
             # Also register the tool with the QueryResponseToolsWidget
@@ -511,10 +511,10 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
     def register_tool(self, user_query_tool=None):
         """
         Register a user query tool with the QueryResponseToolsWidget.
-        :parameter user_query_tool: An object of a class derived from tkUserQueryTool
+        :parameter user_query_tool: An object of a class derived from tkUserQueryToolModal
         :return: None
         """
-        assert(isinstance(user_query_tool, tkUserQueryTool))
+        assert(isinstance(user_query_tool, tkUserQueryToolModal))
         self._user_query_tool_modal.append(user_query_tool)
         index = len(self._user_query_tool_modal)-1
         # Note: partial is used in order to be able to pass along a menu item index to the command function, which otherwise takes no arguments

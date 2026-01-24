@@ -47,7 +47,7 @@
     <Compile Include="tkSimulatorApp.py" />
     <Compile Include="tkSimulatorViewManager.py" />
     <Compile Include="tkUserQueryReceiver.py" />
-    <Compile Include="tkUserQueryTool.py">
+    <Compile Include="tkUserQueryToolModal.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tkViewManager.py" />

@@ -1,16 +1,17 @@
 """
-This module contains the tkUserQueryTool class, which is an abstract base class for user query tools that can be
-used by a tkUserQueryManager to help the user answer queries posed by the UserQueryReceiver. It also contains
-two concrete implementations of tkUserQueryTool: tkPathSaveTool and tkPathOpenTool.
+This module contains the tkUserQueryToolModal class, which is an abstract base class for user query tools that can be
+used by a tkUserQueryManager to help the user answer queries posed by the UserQueryReceiver. A defining feature of this
+type of tool is that it launches a modal dialog to interact with the user. This module als contains two concrete
+implementations of tkUserQueryToolModal: tkPathSaveToolModal and tkPathOpenToolModal.
 
-Concrete implementation child classes of tkUserQueryTool must:
+Concrete implementation child classes of tkUserQueryToolModal must:
     (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
     (2) Implement the run() method to execute the user query tool and return the result as a string.
 
 Exported Classes:
-    tkUserQueryTool -- Abstract base class for user query tools.
-    tkPathSaveTool -- A user query tool that allows the user to select a file path to save as, using the tkinter file dialog.
-    tkPathOpenTool -- A user query tool that allows the user to select a file path to open, using the tkinter file dialog.
+    tkUserQueryToolModal -- Abstract base class for user query tools.
+    tkPathSaveToolModal -- A user query tool that allows the user to select a file path to save as, using the tkinter file dialog.
+    tkPathOpenToolModal -- A user query tool that allows the user to select a file path to open, using the tkinter file dialog.
 
 Exported Exceptions:
     None    
@@ -25,12 +26,13 @@ from tkinter import filedialog
 # Local application imports
 import UserResponseCollector.UserQueryCommand
 
-class tkUserQueryTool(object):
+class tkUserQueryToolModal(object):
     """
     This is an abstract base class for user query tools. User query tools can be used by a tkUserQueryManager to help
-    the user to answer queries posed by the UserQueryReceiver.
+    the user to answer queries posed by the UserQueryReceiver. A defining feature of this type of tool is that it
+    launches a modal dialog to interact with the user.
 
-    Concrete implementation child classes of tkUserQueryTool must:
+    Concrete implementation child classes of tkUserQueryToolModal must:
         (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
         (2) Implement the run() method to execute the user query tool and return the result as a string.
     """
@@ -65,7 +67,7 @@ class tkUserQueryTool(object):
         return result
 
 
-class tkPathSaveTool(tkUserQueryTool):
+class tkPathSaveToolModal(tkUserQueryToolModal):
     """
     A user query tool that allows the user to select a file path to save as.
     """
@@ -84,7 +86,7 @@ class tkPathSaveTool(tkUserQueryTool):
         return response
 
 
-class tkPathOpenTool(tkUserQueryTool):
+class tkPathOpenToolModal(tkUserQueryToolModal):
     """
     A user query tool that allows the user to select a file path to open.
     """
