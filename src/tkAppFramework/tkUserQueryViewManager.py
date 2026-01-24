@@ -33,7 +33,7 @@ import tkAppFramework.tkUserQueryReceiver
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.tkUserQueryToolModal import tkUserQueryToolModal, tkPathSaveToolModal, tkPathOpenToolModal
-from tkAppFramework.tkQueryResponseToolWidget import tkMenuResponseToolWidget, tkQueryResponseToolWidget
+from tkAppFramework.tkUserQueryToolEmbedded import tkMenuUserUserQuerytToolEmbedded, tkUserQueryToolEmbedded
 import UserResponseCollector.UserQueryCommand
 
 # TODO: Before, when UserQueryWidget was a tkinter.ttk.LabelFrame, it had text label 'Query' to show to the user. Now,
@@ -75,7 +75,7 @@ class tkUserQueryViewManager(tkViewManager):
         self._user_query_tool_embedded = dict()
 
         # Create and register embedded user query tool widgets that are built in
-        menu_widget = tkMenuResponseToolWidget(self)
+        menu_widget = tkMenuUserUserQuerytToolEmbedded(self)
         self.register_user_query_tool_embedded(menu_widget)
 
 
@@ -100,11 +100,11 @@ class tkUserQueryViewManager(tkViewManager):
     def register_user_query_tool_embedded(self, tool_widget=None):
         """
         Register a query tool widget with the tkUserQueryViewManager.
-        :parameter tool_widget: An object of a class derived from tkQueryResponseToolWidget
+        :parameter tool_widget: An object of a class derived from tkUserQueryToolEmbedded
         :return: None
         """
         if tool_widget is not None:
-            assert(isinstance(tool_widget, tkQueryResponseToolWidget))
+            assert(isinstance(tool_widget, tkUserQueryToolEmbedded))
             self._user_query_tool_embedded[tool_widget.query_type] = tool_widget
             # Register a handler for updates from the embedded user query tool widget.
             self.register_subject(tool_widget, partial(self.handle_query_response_tool_widget_update, tool_widget))
@@ -191,8 +191,8 @@ class tkUserQueryViewManager(tkViewManager):
     # Need to refactor to make the difference between embedded widget and modal dialog tools clearer.
     def handle_query_response_tool_widget_update(self, tool_wid=None):
         """
-        Handler function called when any tkQueryResponseToolWidget object notifies the tkUserQueryViewManager of a change in state.
-        :parameter tool_wid: The tkQueryResponseToolWidget object that notified tkUserQueryManager of a change in state.
+        Handler function called when any tkUserQueryToolEmbedded object notifies the tkUserQueryViewManager of a change in state.
+        :parameter tool_wid: The tkUserQueryToolEmbedded object that notified tkUserQueryManager of a change in state.
         :return None:
         """
         assert(tool_wid is not None)

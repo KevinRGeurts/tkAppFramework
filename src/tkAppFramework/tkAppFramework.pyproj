@@ -41,7 +41,7 @@
     </Compile>
     <Compile Include="tkApp.py" />
     <Compile Include="tkHelpViewManager.py" />
-    <Compile Include="tkQueryResponseToolWidget.py">
+    <Compile Include="tkUserQueryToolEmbedded.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tkSimulatorApp.py" />

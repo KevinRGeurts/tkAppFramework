@@ -1,15 +1,15 @@
 """
-This module defines the tkQueryResponseToolWidget class. It represents a widget for responding to particular types
-of queries from tkUserQueryReceiver. Instances of this class are created by tkUserQueryViewManager, which "embeds" them
-into its own ttkFrame when needed.
+This module defines the tkUserQueryToolEmbedded class. It represents an abstract base class for  embedded user query tools (widgets) 
+for responding to particular types of queries from tkUserQueryReceiver. Instances of this class are created by tkUserQueryViewManager,
+which "embeds" them into its own ttk.Frame when needed.
 
-Concrete implementation child classes of tkQueryResponseToolWidget must:
+Concrete implementation child classes of tkUserQueryToolEmbedded must:
         (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
         (2) Implement the _CreateWidgets() method to create the child widgets of the tool widget.
         (3) Implement the disable() method, to set if the tool widget is enabled or disabled, by applying the appropriate state to its child widgets.
 
 Exported Classes:
-    tkQueryResponseToolWidget -- Abstract base class for query response tool widgets.
+    tkUserQueryToolEmbedded -- Abstract base class for query response tool widgets.
     tkMenuResponseToolWidget -- A query response tool widget that allows the user to select from a menu of options, using a menu button.
 
 Exported Exceptions:
@@ -29,11 +29,11 @@ from tkAppFramework.ObserverPatternBase import Subject
 import UserResponseCollector.UserQueryCommand
 
 
-class tkQueryResponseToolWidget(ttk.Labelframe, Subject):
+class tkUserQueryToolEmbedded(ttk.Labelframe, Subject):
     """
-    This is an abstract base class for query response tool widgets. It is both a ttk.Labelframe and a Subject.
+    This is an abstract base class for embedded user query tools (widgets). It is both a ttk.Labelframe and a Subject.
     These widgets can be used by a tkUserQueryViewManager to help the user to answer queries posed by the
-    tkUserQueryReceiver. Instances of this class are created by tkUserQueryViewManager, which "embeds" them into its own ttkFrame when needed.
+    tkUserQueryReceiver. Instances of this class are created by tkUserQueryViewManager, which "embeds" them into its own ttk.Frame when needed.
 
     Concrete implementation child classes of tkUserQueryTool must:
         (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
@@ -43,8 +43,8 @@ class tkQueryResponseToolWidget(ttk.Labelframe, Subject):
     def __init__(self, parent, tool_name = 'A Tool Widget', query_type = None):
         """
         :parameter parent: tkinter widget that is the parent of this widget
-        :parameter tool_name: The name of the tool widget, string
-        :parameter query_type: The type of user query command that this tool widget can answer, UserQueryCommand subclass
+        :parameter tool_name: The name of the embedded user query tool (widget), string
+        :parameter query_type: The type of user query command that this embedded user query tool (widget) can answer, UserQueryCommand subclass
         """
         assert(isinstance(tool_name, str) and len(tool_name)>0)
         label = f"Query Response - {tool_name}"
@@ -74,7 +74,7 @@ class tkQueryResponseToolWidget(ttk.Labelframe, Subject):
     @property
     def response(self):
         """
-        Get the query response text from the too widget.
+        Get the query response text from the embedded user query tool (widget).
         :return: Query response text, string
         """
         return self._response
@@ -86,8 +86,8 @@ class tkQueryResponseToolWidget(ttk.Labelframe, Subject):
 
     def _CreateWidgets(self):
         """
-        This abstract method is called by __init__() to create the child widgets of the tool widget. It must be implemented by concrete child classes.
-        Will raise NotImplementedError if called.
+        This abstract method is called by __init__() to create the child widgets of the embedded user query tool (widget).
+        It must be implemented by concrete child classes. Will raise NotImplementedError if called.
         :return None:
         """
         raise NotImplementedError
@@ -95,28 +95,30 @@ class tkQueryResponseToolWidget(ttk.Labelframe, Subject):
 
     def setup_query(self, extra):
         """
-        This method should be called to populate and set state of child widgets of the tool widget appropriately
-        to handle a query. It must be extended by concrete child classes. Will raise AssertionError if "extra" is not a dictionary.
+        This method should be called to populate and set state of child widgets of the embedded user query tool (widget)
+        appropriately to handle a query. It must be extended by concrete child classes.
+        Will raise AssertionError if "extra" is not a dictionary.
         :parameter extra: Dictionary of key/value pairs of optional "extra" info passed to tkUserQueryReceiver. Expected
-                          to contain the info a  tkQueryResponseToolWidget needs to set up for a query.
+                          to contain the info a  tkUserQueryToolEmbedded needs to set up for a query.
         """
         assert(type(extra)==dict)
         return None
 
     def disable(self, disabled=True):
         """
-        This abstract method is used to set if the tool widget is enabled or disabled. It must be implemented by concrete child classes.
-        Will raise NotImplementedError if called.
-        :parameter disabled: True if the tool widget should be disabled, False if it should be enabled, boolean
+        This abstract method is used to set if the embedded user query tool (widget) is enabled or disabled.
+        It must be implemented by concrete child classes. Will raise NotImplementedError if called.
+        :parameter disabled: True if the embedded user query tool (widget) should be disabled,
+                             False if it should be enabled, boolean
         :return None:
         """
         raise NotImplementedError
         return None
 
 
-class tkMenuResponseToolWidget(tkQueryResponseToolWidget):
+class tkMenuUserUserQuerytToolEmbedded(tkUserQueryToolEmbedded):
     """
-    Class is a concrete implementation of a tkQueryResponseToolWidget.
+    Class is a concrete implementation of a tkUserQueryToolEmbedded. Handels UserQueryCommandMenu type queries.
     """
     def __init__(self, parent) -> None:
         """
@@ -128,7 +130,7 @@ class tkMenuResponseToolWidget(tkQueryResponseToolWidget):
 
     def _CreateWidgets(self):
         """
-        This method is called by super.__init__() to create the child widgets of the tool widget.
+        This method is called by super.__init__() to create the child widgets of the embedded user query tool (widget).
         :return None:
         """
         # Menu response menu button for showing/selecting from the menu choices
@@ -143,10 +145,10 @@ class tkMenuResponseToolWidget(tkQueryResponseToolWidget):
 
     def setup_query(self, extra):
         """
-        This method should be called to populate and set state of child widgets of the tool widget appropriately
-        to handle a query.
+        This method should be called to populate and set state of child widgets of the embedded user query tool (widget)
+        appropriately to handle a query.
         :parameter extra: Dictionary of key/value pairs of optional "extra" info passed to tkUserQueryReceiver. Expected
-                          to contain the info a  tkQueryResponseToolWidget needs to set up for a query.
+                          to contain the info a  tkUserQueryToolEmbedded needs to set up for a query.
         """
         super().setup_query(extra)
 
@@ -175,8 +177,8 @@ class tkMenuResponseToolWidget(tkQueryResponseToolWidget):
 
     def disable(self, disabled=True):
         """
-        Used to set if the tool widget is enabled or disabled.
-        :parameter disabled: True if the tool widget should be disabled, False if it should be enabled, boolean
+        Used to set if the embedded user query tool (widget) is enabled or disabled.
+        :parameter disabled: True if the embedded user query tool (widget) should be disabled, False if it should be enabled, boolean
         :return None:
         """
         if disabled:
