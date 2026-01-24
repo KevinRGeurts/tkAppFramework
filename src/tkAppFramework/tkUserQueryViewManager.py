@@ -64,31 +64,25 @@ class tkUserQueryViewManager(tkViewManager):
 
         self.bind('<<TkinterAppQueryEvent>>', self.TkAppQueryEventHandler)
 
-        # Maintain a dictionary of any registered user query tools, keyed by UserQueryCommand type
-        self._user_query_tools = dict()
+        # Maintain a dictionary of any registered modal user query tools, keyed by UserQueryCommand type
+        self._user_query_tool_modal = dict()
 
-        # Create and register user query tools that are built in
-        self.register_user_query_tool(tkPathOpenTool())
-        self.register_user_query_tool(tkPathSaveTool())
+        # Create and register modal user query tools that are built in
+        self.register_user_query_tool_modal(tkPathOpenTool())
+        self.register_user_query_tool_modal(tkPathSaveTool())
 
-        # Maintain a dictionary of any registered response tool widgets, keyed by UserQueryCommand type
-        self._query_tool_widgets = dict()
+        # Maintain a dictionary of any registered embedded user query tool widgets, keyed by UserQueryCommand type
+        self._user_query_tool_embedded = dict()
 
-        # Create, register, and position response tool widgets that are built in
+        # Create and register embedded user query tool widgets that are built in
         menu_widget = tkMenuResponseToolWidget(self)
-        self.register_query_tool_widgets(menu_widget)
-        self.register_subject(menu_widget, partial(self.handle_query_response_tool_widget_update, menu_widget))
-        menu_widget.attach(self)
-        menu_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
-        # Initially hide (remove) the menu response widget, but it's grid location is remembered
-        menu_widget.grid_remove()
+        self.register_user_query_tool_embedded(menu_widget)
+
 
         # Put all child widets in correct initial state
         self.reset_widgets()
 
-    def register_user_query_tool(self, user_query_tool=None):
+    def register_user_query_tool_modal(self, user_query_tool=None):
         """
         Register a user query tool with the tkUserQueryViewManager.
         :parameter user_query_tool: An object of a class derived from tkUserQueryTool
@@ -96,14 +90,14 @@ class tkUserQueryViewManager(tkViewManager):
         """
         if user_query_tool is not None:
             assert(isinstance(user_query_tool, tkUserQueryTool))
-            self._user_query_tools[user_query_tool.query_type] = user_query_tool
+            self._user_query_tool_modal[user_query_tool.query_type] = user_query_tool
 
             # Also register the tool with the QueryResponseToolsWidget
             self._query_response_tools_widget.register_tool(user_query_tool)
 
         return None
 
-    def register_query_tool_widgets(self, tool_widget=None):
+    def register_user_query_tool_embedded(self, tool_widget=None):
         """
         Register a query tool widget with the tkUserQueryViewManager.
         :parameter tool_widget: An object of a class derived from tkQueryResponseToolWidget
@@ -111,7 +105,18 @@ class tkUserQueryViewManager(tkViewManager):
         """
         if tool_widget is not None:
             assert(isinstance(tool_widget, tkQueryResponseToolWidget))
-            self._query_tool_widgets[tool_widget.query_type] = tool_widget
+            self._user_query_tool_embedded[tool_widget.query_type] = tool_widget
+            # Register a handler for updates from the embedded user query tool widget.
+            self.register_subject(tool_widget, partial(self.handle_query_response_tool_widget_update, tool_widget))
+            # Attach self as Observer of the embedded user query tool widget.
+            tool_widget.attach(self)
+            # Grid the embedded user query tool widget in the same (row,column) as the QueryResponseEntryWidget.
+            tool_widget.grid(column=1, row=0, sticky='NWSE') # Grid-2 in Documentation\UI_WireFrame.pptx
+            self.columnconfigure(1, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+            self.rowconfigure(0, weight=1) # Grid-2 in Documentation\UI_WireFrame.pptx
+            # Initially hide (remove) the user query tool widget, but it's grid location is remembered
+            tool_widget.grid_remove()
+
         return None
         
     def handle_model_update(self):
@@ -278,7 +283,7 @@ class tkUserQueryViewManager(tkViewManager):
         tool = None
         try:
             # Try to get the tool for this query type
-            tool = self._user_query_tools[item.extra['query_type']]
+            tool = self._user_query_tool_modal[item.extra['query_type']]
         except:
             # tool remains None
             pass
@@ -293,7 +298,7 @@ class tkUserQueryViewManager(tkViewManager):
         tool_wid = None
         try:
             # Try to get the tool widget for this query type
-            tool_wid = self._query_tool_widgets[item.extra['query_type']]
+            tool_wid = self._user_query_tool_embedded[item.extra['query_type']]
         except:
             # tool_wid remains None
             pass
@@ -326,8 +331,8 @@ class tkUserQueryViewManager(tkViewManager):
         self._query_response_tools_widget.disable_query_response_tools(True)
 
         # Disable any tool widgets
-        for key in self._query_tool_widgets:
-            self._query_tool_widgets[key].disable(True)
+        for key in self._user_query_tool_embedded:
+            self._user_query_tool_embedded[key].disable(True)
 
         return None
 
@@ -501,7 +506,7 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         self._menu_tools = tk.Menu(self._mbtn_tools)
         self._mbtn_tools['menu'] = self._menu_tools
         # Maintain a list of any registered user query tools
-        self._user_query_tools = list()
+        self._user_query_tool_modal = list()
 
     def register_tool(self, user_query_tool=None):
         """
@@ -510,8 +515,8 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         :return: None
         """
         assert(isinstance(user_query_tool, tkUserQueryTool))
-        self._user_query_tools.append(user_query_tool)
-        index = len(self._user_query_tools)-1
+        self._user_query_tool_modal.append(user_query_tool)
+        index = len(self._user_query_tool_modal)-1
         # Note: partial is used in order to be able to pass along a menu item index to the command function, which otherwise takes no arguments
         # See: (https://stackoverflow.com/questions/6920302/how-to-pass-arguments-to-a-button-command-in-tkinter)
         self._menu_tools.add_command(label = user_query_tool.tool_name, command = partial(self.onSelectTool, index))
@@ -539,8 +544,8 @@ class QueryResponseToolsWidget(ttk.Labelframe, Subject):
         :parameter index: Index of the tool selected from the tools menu, integer
         :return: None
         """
-        assert(isinstance(index, int) and index>=0 and index<len(self._user_query_tools))
-        tool = self._user_query_tools[index]
+        assert(isinstance(index, int) and index>=0 and index<len(self._user_query_tool_modal))
+        tool = self._user_query_tool_modal[index]
         self._tool_response_txt = tool.run()
         self.notify()
         return None
