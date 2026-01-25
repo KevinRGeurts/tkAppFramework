@@ -6,7 +6,12 @@ which "embeds" them into its own ttk.Frame when needed.
 Concrete implementation child classes of tkUserQueryToolEmbedded must:
         (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
         (2) Implement the _CreateWidgets() method to create the child widgets of the tool widget.
-        (3) Implement the disable() method, to set if the tool widget is enabled or disabled, by applying the appropriate state to its child widgets.
+        (3) Implement the setup_query() method to populate and set the state of child widgets, appropriately to handle a specific query.
+        (4) Implement the disable() method, to set if the tool widget is enabled or disabled, by applying the appropriate state to its child widgets.
+
+Once setup_query() method is called, then it is the responsibility of any event handlers to respond to user interaction,
+and set the response property appropriately for the user's response to the query. The response property setter will notify
+Observers that a response has been set, and thus that the user has responded to the query.
 
 Exported Classes:
     tkUserQueryToolEmbedded -- Abstract base class for query response tool widgets.
@@ -18,6 +23,7 @@ Exported Exceptions:
 Exported Functions:
     None
 """
+
 
 # Standard library imports
 import tkinter as tk
@@ -38,7 +44,12 @@ class tkUserQueryToolEmbedded(ttk.Labelframe, Subject):
     Concrete implementation child classes of tkUserQueryTool must:
         (1) Implement the __init__() method, calling super().__init__() with appropriate tool_name and query_type parameters.
         (2) Implement the _CreateWidgets() method to create the child widgets of the tool widget.
-        (3) Implement the disable() method, to set if the tool widget is enabled or disabled, by applying the appropriate state to its child widgets.
+        (3) Implement the setup_query() method to populate and set the state of child widgets, appropriately to handle a specific query.
+        (4) Implement the disable() method, to set if the tool widget is enabled or disabled, by applying the appropriate state to its child widgets.
+
+    Once setup_query() method is called, then it is the responsibility of any event handlers to respond to user interaction,
+    and set the response property appropriately for the user's response to the query. The response property setter will notify
+    Observers that a response has been set, and thus that the user has responded to the query.
     """
     def __init__(self, parent, tool_name = 'A Tool Widget', query_type = None):
         """
@@ -81,6 +92,10 @@ class tkUserQueryToolEmbedded(ttk.Labelframe, Subject):
 
     @response.setter
     def response(self, value):
+        """
+        Set the query response text from the embedded user query tool (widget), and notify observers.
+        :parameter value: The value to which to set the response property, any
+        """
         self._response = value
         self.notify()
 
@@ -100,6 +115,7 @@ class tkUserQueryToolEmbedded(ttk.Labelframe, Subject):
         Will raise AssertionError if "extra" is not a dictionary.
         :parameter extra: Dictionary of key/value pairs of optional "extra" info passed to tkUserQueryReceiver. Expected
                           to contain the info a  tkUserQueryToolEmbedded needs to set up for a query.
+        :return: None
         """
         assert(type(extra)==dict)
         return None
@@ -149,6 +165,7 @@ class tkMenuUserUserQuerytToolEmbedded(tkUserQueryToolEmbedded):
         appropriately to handle a query.
         :parameter extra: Dictionary of key/value pairs of optional "extra" info passed to tkUserQueryReceiver. Expected
                           to contain the info a  tkUserQueryToolEmbedded needs to set up for a query.
+        :return: None
         """
         super().setup_query(extra)
 
