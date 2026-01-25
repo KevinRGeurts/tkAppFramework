@@ -4,7 +4,7 @@ build-backend = "pdm.backend"
 
 [tool.pdm.build]
 includes = ["src/tkAppFramework/*.py"]
-source-includes = ["tests/", "src/tkAppFramework/Documentation/Developer_Documentation.txt","src/tkAppFramework/Help/*", "src/tkAppFramework/tkAppFramework.sln", "src/tkAppFramework/tkAppFramework.pyproj"]
+source-includes = ["tests/", "src/tkAppFramework/Documentation/Developer_Documentation.txt", "src/tkAppFramework/Documentation/uml_class_diagram.pptx", "src/tkAppFramework/Help/*", "src/tkAppFramework/tkAppFramework.sln", "src/tkAppFramework/tkAppFramework.pyproj"]
 
 [tool.pdm.build.wheel-data]
 # Recursively install all files from Help/ to the $prefix/data directory,
