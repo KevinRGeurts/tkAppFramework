@@ -14,8 +14,8 @@ and set the response property appropriately for the user's response to the query
 Observers that a response has been set, and thus that the user has responded to the query.
 
 Exported Classes:
-    tkUserQueryToolEmbedded -- Abstract base class for query response tool widgets.
-    tkMenuResponseToolWidget -- A query response tool widget that allows the user to select from a menu of options, using a menu button.
+    tkUserQueryToolEmbedded -- Abstract base class for embedded user query tools (widgets).
+    tkMenuUserUserQuerytToolEmbedded -- An embedded user query tool (widget) that allows the user to select from a menu of options, using a menu button.
 
 Exported Exceptions:
     None    
