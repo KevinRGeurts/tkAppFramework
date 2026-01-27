@@ -190,17 +190,27 @@ class tkSimulatorApp(tkApp):
         :return: None
         """
         if self._sim_thread:
-            self._query_view_manager.reset_widgets()
             self.request_simulator_end()
-            # Disable File | End Simulator menu item, since no simulator will now be running
-            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
-            # enable File | Start Simulator, since now we have no running simlator
-            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.NORMAL)
-            # enable File | Load Simulation, since now we have no running simlator
-            self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Load Simulation'][1], state=tk.NORMAL)
         else:
             pass
 
+        return None
+
+    def cleanup_after_simulator_ends(self):
+        """
+        Utility function called to clean up GUI state when simulator ends.
+        :return: None
+        """
+        if self._sim_thread is not None:
+            assert(self._sim_thread.is_alive()==False,'Simulation thread unexpectedly found alive in tkSimulatorApp._cleanup_after_simulator_ends().')
+            self._sim_thread = None
+        self._query_view_manager.reset_widgets()
+        # Disable File | End Simulator menu item, since no simulator will now be running
+        self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['End Simulator'][1], state=tk.DISABLED)
+        # enable File | Start Simulator, since now we have no running simlator
+        self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Start Simulator'][1], state=tk.NORMAL)
+        # enable File | Load Simulation, since now we have no running simlator
+        self._menuConfigDict['File'][0].entryconfig(self._menuConfigDict['File'][1]['Load Simulation'][1], state=tk.NORMAL)
         return None
 
     def request_simulator_end(self):
@@ -220,7 +230,6 @@ class tkSimulatorApp(tkApp):
         if self._sim_thread:
             end_sim_response = tkAppFramework.tkUserQueryReceiver.QueryResponse(query_response='<<QueryingThreadTerminationRequest>>', query_ID='')
             UserResponseCollector.UserQueryReceiver.UserQueryReceiver_GetCommandReceiver().put_response_in_queue(end_sim_response)
-            self._sim_thread = None
         else:
             pass
             

@@ -71,6 +71,12 @@ class tkSimulatorViewManager(tkViewManager):
         if info is not None:
             # Make sure we are retrieving what we think we are retrieving, that is, a LogRecord object
             assert(isinstance(info, LogRecord))
+            
+            # Check if the retrieved LogRecord is informing us that simulator reports completing.
+            if info.message == '<<SimulatorReportsCompletion>>':
+                # Ask app to clean up.
+                self.master.cleanup_after_simulator_ends()
+
             # Put the message from the Log Record in the SimulatorShowInfoWidget
             self._info_widget.insert_end(info.message)
         return None

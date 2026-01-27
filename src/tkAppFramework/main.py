@@ -242,6 +242,7 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         :return: None
         """
         self.simulator.go()
+        super().run()
         return None
 
     def load_and_run(self):
@@ -250,8 +251,9 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         :return: None
         """
         logger = logging.getLogger('demo_simulator_logger')
-        logger.info(f"Loading functinality not implemented for DemoSimulator, so just lauching a simulation...")
+        logger.info(f"Loading functionality not implemented for DemoSimulator, so just lauching a simulation...")
         self.simulator.go()
+        super().load_and_run()
         return None
     
 

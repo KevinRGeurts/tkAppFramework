@@ -12,9 +12,9 @@ Simulator requirements:
     to gracefully terminate itself.
 
 Subclasses must:
-(1) Implement run() - Which should call a method of self._simulator to start a simulation
+(1) Extend run() - Which should call a method of self._simulator to start a simulation, then call super().run().
 Subclasses may also implement:
-(1) load_and_run() - Which should load a simulation state and run the simulation with that state.
+(1) load_and_run() - Which should load a simulation state and run the simulation with that state, and then call super().load_and_run()
 
 Exported Classes:
     SimulatorAdapter -- Interface (abstract base) class for classes that adapt a simulator to the
@@ -68,6 +68,7 @@ class SimulatorAdapter(object):
         :parameter logging_level: The threshold for the queue handler, e.g. logging.INFO or logging.DEBUG
         """
         self.simulator = sim
+        self._logger_name = logger_name
         self._setup_logging(logger_name, logging_queue, logging_level)
 
     @property
@@ -80,18 +81,25 @@ class SimulatorAdapter(object):
 
     def run(self):
         """
-        This abstract method must be implemented by subclasses. When called, it should start a simulation.
+        This method must be extended by subclasses. When called, it should start a simulation. super() version should be
+        called at end.
         :return: None
         """
-        raise NotImplementedError
+        # Get the adaptee simulator's logger
+        logger = logging.getLogger(self._logger_name)
+        # Log that simulator run ended, so that tkSimulatorApp knows 
+        logger.info('<<SimulatorReportsCompletion>>')
         return None
 
     def load_and_run(self):
         """
-        This abstract method must be implemented by subclasses. When called, it should load a simulation state and run the
-        simulation with that state.
+        This method must be extended by subclasses. When called, it should load a simulation state and run the
+        simulation with that state. super() version should be called at end.
         """
-        raise NotImplementedError
+        # Get the adaptee simulator's logger
+        logger = logging.getLogger(self._logger_name)
+        # Log that simulator run ended, so that tkSimulatorApp knows 
+        logger.info('<<SimulatorReportsCompletion>>')
         return None
     
     def _setup_logging(self, name='', queue=None, log_level = logging.INFO):
