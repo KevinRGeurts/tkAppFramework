@@ -278,9 +278,9 @@ to implement a concrete child class of SimulatorAdapter. The simulator must:
 (3) Be able to run in a separate thread from the GUI's event loop.
 (4) Stop execution gracefully when a UserResponseCollector.UserQueryReceiverTerminateQueryingThreadError is raised.
 
-The concrete SimulatorAdapter must implement the ```run()``` method, which should call a method of ```self._simulator```
-to start a simulation. The usage example below matches the demonstration Simulator Application described in the Demonstration
-section of this document.
+The concrete SimulatorAdapter must extend the ```run()``` method, which should call a method of ```self._simulator```
+to start a simulation, and then call ```super().run()```. The usage example below matches the demonstration Simulator Application
+described in the Demonstration section of this document.
 
 ### Usage
 
@@ -327,8 +327,9 @@ class DemoSimulator:
         :return: None
         """
         logger = logging.getLogger('demo_simulator_logger')
-        while True:
+        while count < 2:
             try:
+                logger.info(f"Requesting operation number {count+1}.")
                 response= askForMenuSelection('What operation do you want?', {'s':'square a number', 'r':'square root of a number'})
                 match response:
                     case 's':
@@ -341,6 +342,7 @@ class DemoSimulator:
                         logger.info(f"The square root of {response} is {sqrted}.")
             except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
+            count += 1
         return None
 
 class DemoSimulatorAdapter(SimulatorAdapter):
@@ -358,6 +360,7 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         :return: None
         """
         self.simulator.go()
+        super().run()
         return None
 
     def load_and_run(self):
@@ -368,6 +371,7 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         logger = logging.getLogger('demo_simulator_logger')
         logger.info(f"Loading functinality not implemented for DemoSimulator, so just lauching a simulation...")
         self.simulator.go()
+        super().load_and_run()
         return None
 
 
