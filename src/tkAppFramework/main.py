@@ -208,8 +208,10 @@ class DemoSimulator:
         :return: None
         """
         logger = logging.getLogger('demo_simulator_logger')
-        while True:
+        count = 0
+        while count < 2:
             try:
+                logger.info(f"Requesting operation number {count+1}.")
                 response= askForMenuSelection('What operation do you want?', {'s':'square a number', 'r':'square root of a number'})
                 match response:
                     case 's':
@@ -222,6 +224,7 @@ class DemoSimulator:
                         logger.info(f"The square root of {response} is {sqrted}.")
             except UserResponseCollector.UserQueryReceiver.UserQueryReceiverTerminateQueryingThreadError:
                 break
+            count += 1
         return None
 
 class DemoSimulatorAdapter(SimulatorAdapter):
