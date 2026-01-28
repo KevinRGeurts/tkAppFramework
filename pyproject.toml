@@ -17,7 +17,7 @@ data = [{path = "src/tkAppFramework/Help/**/*", relative-to = "src/tkAppFramewor
 
 [project]
 name = "tkAppFramework"
-version = "0.9.2"
+version = "0.9.3"
 dependencies = [
 	"UserResponseCollector>=1.1.0"
 ]
