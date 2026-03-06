@@ -41,7 +41,7 @@ class tkHelpViewManager(tkViewManager):
         :return None:
         """
 
-        self._helptxt_widget = HelpTextWidget(self, help_file=self.getModel().help_file)
+        self._helptxt_widget = HelpTextWidget(self)
         self.register_subject(self._helptxt_widget, self.handle_helptxt_widget_update)
         self._helptxt_widget.attach(self)
         self._helptxt_widget.grid(column=0, row=0, sticky='NWES') # Grid-2
@@ -55,7 +55,7 @@ class tkHelpViewManager(tkViewManager):
         Handle updates from help text widget.
         :return None:
         """
-        # Do something
+        # Do something as needed.
         return None
 
     def handle_model_update(self):
@@ -63,25 +63,22 @@ class tkHelpViewManager(tkViewManager):
         Handler function called when the model notifies the view manager of a change in state.
         :return None:
         """
-        self._helptxt_widget._readHelpFileContent(self.getModel().help_file)
+        (help_content, help_format) = self.getModel().get_help_content()
+        self._helptxt_widget._processHelpContent(help_content, help_format)
         return None
 
 
-# TODO: Assess whether or not this widget needs to keep as a member the path to the help content file,
-# since this can be obtained from the HelpModel through the tkHelpViewManager and tkHelpApp.
 class HelpTextWidget(ttk.Labelframe, Subject):
     """
     Class represents a tkinter label frame, the widget contents of which allow viewing of help topic content.
     Class is also a Subject in Observer design pattern.
     """
-    def __init__(self, parent, help_file='') -> None:
+    def __init__(self, parent) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
-        :parameter help_file: Path to the help file to be opened and displayed initially, string
         """
         ttk.Labelframe.__init__(self, parent, text="Help Topic Content")
         Subject.__init__(self)
-        self._help_file=help_file
 
         self._txt_content = tk.Text(self)
         self._txt_content.grid(column=0, row=0, sticky='NWSE') # Grid-2
@@ -97,19 +94,33 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         self._scrollbar_hor = ttk.Scrollbar(self, command=self._txt_content.xview, orient='horizontal')
         self._scrollbar_hor.grid(column=0, row=1, sticky='NWSE')
         self._txt_content['xscrollcommand'] = self._scrollbar_hor.set
-
-        # Read in help file content
-        self._readHelpFileContent(help_file)
     
-    def _readHelpFileContent(self, help_file=''):
+    def _processHelpContent(self, help_content='', help_format='txt'):
         """
-        Utility function that reads in the help file content and inserts it into the Text widget.
-        :parameter help_file: Path to the help file from which to read content, string
+        Utility function that processes help content and inserts it into the Text widget.
+        :parameter help_content: Help content to be processed and inserted, as string
+        :parameter help_format: Help content format (either 'txt', or 'xhtml'), as string
         :return: None
         """
-        if len(help_file)>0:
-            with open(help_file, 'r') as f:
-                self._txt_content.insert(tk.INSERT, f.read())
-            self._txt_content.config(state='disabled')
+        assert(type(help_content)==str)
+        assert(type(help_format)==str)
+        assert(help_format in ['txt', 'xhtml'])
+
+        # Clear any existing content from the Text widget
+        self._txt_content.config(state='normal')
+        self._txt_content.delete('1.0', tk.END)
+
+        match help_format:
+
+            case 'txt':
+                self._txt_content.insert(tk.INSERT, help_content)
+
+            case 'xhtml':
+                # TODO: Process the xhtml content and format it in the Text widget.
+                # For now, no processing. Just insert the raw xhtml into the Text widget.
+                self._txt_content.insert(tk.INSERT, help_content)
+
+        self._txt_content.config(state='disabled')
+        
         return None
 

@@ -48,15 +48,20 @@ from tkAppFramework.HelpModel import HelpModel
 
 
 # This function cannot be a method of tkApp, do to Process using pickle.
-def _launch_help_app(help_file = ''):
+def _launch_help_app(help_file = '', help_format = 'txt'):
     """
     Launch tkinter app for displaying online help.
     :parameter help_file: Path to the help file to be opened and displayed initially, string
+    :parameter help_format: Format of content in help file (must be 'txt' or 'xhtml'), string
     :return: None
     """
+    assert(type(help_file)==str)
+    assert(type(help_format)==str)
+    assert(help_format in ['txt', 'xhtml'])
+
     # Create and configure the app
     root = tk.Tk()
-    myapp = tkHelpApp(root, help_file)
+    myapp = tkHelpApp(root, help_file, help_format)
 
     # Start the app's event loop running
     myapp.mainloop()
@@ -397,16 +402,20 @@ class tkHelpApp(tkApp):
     """
     Class represent help application built using tkinter, leveraging tkApp framework.
     """
-    def __init__(self, parent, help_file='') -> None:
+    def __init__(self, parent, help_file='', help_format='txt') -> None:
         """
         :parameter help_file: Path to the help file to be opened and displayed initially, string
+        :parameter help_format: Format of the help file content (must be 'txt' or 'xhtml'), string
         """
+        assert(type(help_file)==str)
+        assert(type(help_format)==str)
+        assert(help_format in ['txt', 'xhtml'])
         info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
         menu_dictionary = {'File':{'Exit':self.onFileExit},
                            'Help':{'About...':self.onHelpAbout}}
         super().__init__(parent, title="Help Application", menu_dict=menu_dictionary, app_info=info)
-        self._model.help_file = help_file
+        self._model.set_help_file(help_file, help_format)
         
     def _createViewManager(self):
         """
