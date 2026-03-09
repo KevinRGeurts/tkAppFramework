@@ -33,20 +33,21 @@ class Test_HelpModel(unittest.TestCase):
             self.assertEqual('', hm._md_content)
 
     def test_md(self):
-        help_content = 'Help file markdown content'
+        md_help_content = '# Help file markdown content'
+        html_help_content = '<h1>Help file markdown content</h1>'
         with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False) as temp_file:
-            temp_file.write(help_content)
+            temp_file.write(md_help_content)
             temp_file.close()
             hm = HelpModel(help_file=temp_file.name, help_format='md')
             self.assertEqual(temp_file.name, hm._help_file)
             self.assertEqual('md', hm._help_format)
             self.assertEqual('', hm._txt_content)
-            self.assertEqual('', hm._xhtml_content)
-            self.assertEqual(help_content, hm._md_content)
-            self.assertEqual('', hm.get_help_content()[0])
+            self.assertEqual(html_help_content, hm._xhtml_content)
+            self.assertEqual(md_help_content, hm._md_content)
+            self.assertEqual(html_help_content, hm.get_help_content()[0])
 
     def test_xhtml(self):
-        help_content = 'Help file xhtml content'
+        help_content = '<h1>Help file xhtml content</h1>'
         with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False) as temp_file:
             temp_file.write(help_content)
             temp_file.close()

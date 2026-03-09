@@ -13,6 +13,10 @@ Exported Functions:
 
 # standard imports
 
+# PyPi package imports
+from markdown import markdown
+from justhtml import JustHTML
+
 # local imports
 from tkAppFramework.model import Model
 
@@ -81,6 +85,8 @@ class HelpModel(Model):
 
             case 'md':
                 self._md_content = file.read()
+                html =  markdown(self._md_content)
+                self._xhtml_content = JustHTML(html, fragment=True).to_html()
 
         return None
 

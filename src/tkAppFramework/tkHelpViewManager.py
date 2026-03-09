@@ -22,6 +22,7 @@ from tkinter import ttk
 # Local imports
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
+from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
 
 
 class tkHelpViewManager(tkViewManager):
@@ -64,7 +65,7 @@ class tkHelpViewManager(tkViewManager):
         :return None:
         """
         (help_content, help_format) = self.getModel().get_help_content()
-        self._helptxt_widget._processHelpContent(help_content, help_format)
+        self._helptxt_widget.processHelpContent(help_content, help_format)
         return None
 
 
@@ -95,9 +96,9 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         self._scrollbar_hor.grid(column=0, row=1, sticky='NWSE')
         self._txt_content['xscrollcommand'] = self._scrollbar_hor.set
     
-    def _processHelpContent(self, help_content='', help_format='txt'):
+    def processHelpContent(self, help_content='', help_format='txt'):
         """
-        Utility function that processes help content and inserts it into the Text widget.
+        Method that processes help content and inserts it into the Text widget.
         :parameter help_content: Help content to be processed and inserted, as string
         :parameter help_format: Help content format (either 'txt', or 'xhtml'), as string
         :return: None
@@ -118,9 +119,30 @@ class HelpTextWidget(ttk.Labelframe, Subject):
             case 'xhtml':
                 # TODO: Process the xhtml content and format it in the Text widget.
                 # For now, no processing. Just insert the raw xhtml into the Text widget.
-                self._txt_content.insert(tk.INSERT, help_content)
+                self._processXHTMLHelpContent(help_content)
 
         self._txt_content.config(state='disabled')
         
+        return None
+
+    def _processXHTMLHelpContent(self, help_content):
+        """
+        Utility method, called by _ProcessHelpContent(), that processes XHTML help content and inserts it into the Text widget.
+        :parameter help_content: Help content to be processed and inserted, as string
+        :return: None
+        """
+        assert(type(help_content)==str)
+        parser = XHTMLParserForTkTextWidget()
+        (tag_list, text_list) = parser.xhtml_string_to_elements(help_content)
+        # Create tkinter Text widget tags
+        for tag in tag_list:
+            self._txt_content.tag_config(tag[0], tag[1])
+        # Insert each item in the text_list, appropriately tagged, into the Text widget
+        for item in text_list:
+            # item = {tagName, text content}
+            begin_index = self._txt_content.index(tk.INSERT)
+            self._txt_content.insert(begin_index, item[1])
+            end_index = self._txt_content.index(tk.INSERT)
+            self._txt_content.tag_add(item[0], begin_index, end_index)
         return None
 

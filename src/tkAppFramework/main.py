@@ -255,6 +255,16 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         self.simulator.go()
         super().load_and_run()
         return None
+
+
+def debug():
+    """
+    Code that is should be changed to what needs to be debugged.
+    """
+    help_file = 'C:\\Users\\krgeu\\source\\repos\\tkAppFramework\\src\\tkAppFramework\\env\\Help\\tkAppFramework\\HelpFile.md'
+    help_format = 'md'
+    app = tkAppFramework.tkApp._launch_help_app(help_file, help_format)
+    return None
     
 
 if __name__ == '__main__':
@@ -268,7 +278,7 @@ if __name__ == '__main__':
     # Since the global UserQueryReceiver is a tkUserQueryReceiver, we have to construct a local one for the console
     receiver = UserResponseCollector.UserQueryReceiver.ConsoleUserQueryReceiver()
     command = UserQueryCommandMenu(receiver,
-                                   'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app'})
+                                   'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app', 'b':'Debug a case'})
     response = command.Execute()
 
     match response:
@@ -291,6 +301,11 @@ if __name__ == '__main__':
             simapp = tkSimulatorApp(root)
             simapp.getModel().sim_adapter = DemoSimulatorAdapter(simapp.sim_output_queue)
             simapp.mainloop()
+
+        case 'b':
+
+            # Debug
+            debug()
 
 
 

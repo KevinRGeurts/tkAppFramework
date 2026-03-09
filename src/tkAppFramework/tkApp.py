@@ -352,7 +352,16 @@ class tkApp(ttk.Frame):
         """
         if not self._help_process or not self._help_process.is_alive():
             # Help app is not running, so launch it
-            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':self._appInfo.help_file})
+            
+            # Get the help format by looking at the help file extension
+            if self._appInfo.help_file.endswith('md'):
+                help_format='md'
+            elif self._appInfo.help_file.endswith('xhtml'):
+                help_format='xhtml'
+            else:
+                help_format='txt'
+
+            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':self._appInfo.help_file, 'help_format':help_format})
             self._help_process.start()
         return None
 
@@ -411,7 +420,8 @@ class tkHelpApp(tkApp):
         assert(type(help_format)==str)
         assert(help_format in ['txt', 'xhtml', 'md'])
         info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
-                                  license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
+                                  license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
+                                  help_file=help_file)
         menu_dictionary = {'File':{'Exit':self.onFileExit},
                            'Help':{'About...':self.onHelpAbout}}
         super().__init__(parent, title="Help Application", menu_dict=menu_dictionary, app_info=info)

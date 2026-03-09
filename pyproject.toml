@@ -19,6 +19,8 @@ data = [{path = "src/tkAppFramework/Help/**/*", relative-to = "src/tkAppFramewor
 name = "tkAppFramework"
 version = "0.9.3"
 dependencies = [
+	"justhtml>=1.9.0",
+	"markdown>=3.10.2",
 	"UserResponseCollector>=1.1.0"
 ]
 authors = [
