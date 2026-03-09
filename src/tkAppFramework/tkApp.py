@@ -52,12 +52,12 @@ def _launch_help_app(help_file = '', help_format = 'txt'):
     """
     Launch tkinter app for displaying online help.
     :parameter help_file: Path to the help file to be opened and displayed initially, string
-    :parameter help_format: Format of content in help file (must be 'txt' or 'xhtml'), string
-    :return: None
+    :parameter help_format: Format of content in help file (must be 'txt', 'xhtml', or 'md'), string
+    :return: The launched tkHelpApp object, as tkHelpApp object
     """
     assert(type(help_file)==str)
     assert(type(help_format)==str)
-    assert(help_format in ['txt', 'xhtml'])
+    assert(help_format in ['txt', 'xhtml', 'md'])
 
     # Create and configure the app
     root = tk.Tk()
@@ -65,7 +65,7 @@ def _launch_help_app(help_file = '', help_format = 'txt'):
 
     # Start the app's event loop running
     myapp.mainloop()
-    return None
+    return myapp
 
 
 # Named tuple to hold the "About" information of the app.
@@ -405,11 +405,11 @@ class tkHelpApp(tkApp):
     def __init__(self, parent, help_file='', help_format='txt') -> None:
         """
         :parameter help_file: Path to the help file to be opened and displayed initially, string
-        :parameter help_format: Format of the help file content (must be 'txt' or 'xhtml'), string
+        :parameter help_format: Format of the help file content (must be 'txt', 'xhtml', or 'md'), string
         """
         assert(type(help_file)==str)
         assert(type(help_format)==str)
-        assert(help_format in ['txt', 'xhtml'])
+        assert(help_format in ['txt', 'xhtml', 'md'])
         info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
         menu_dictionary = {'File':{'Exit':self.onFileExit},
