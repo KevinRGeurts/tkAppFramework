@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 
 
 # local imports
+from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
 
 
 class XHTMLParserForTkTextWidget(object):
@@ -91,7 +92,10 @@ class XHTMLParserForTkTextWidget(object):
         """
         assert(type(xhtml_tag)==str)
         # Look up tkinter Text widget tag "base name" for this element
-        (base_tagName, options_dict) = self._tag_map[xhtml_tag]
+        try:
+            (base_tagName, options_dict) = self._tag_map[xhtml_tag]
+        except KeyError:
+            raise NoWidgetTagConfigurationAvailableForXHTMLTag
         tagName = base_tagName + '_' + self._getTagIdSuffix()
         return (tagName, options_dict)
         
@@ -155,13 +159,16 @@ class XHTMLParserForTkTextWidget(object):
         if len(el_txt) > 0:
             _ei = self._insert_txt_cb(_ei, el_txt)
             print(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
-        # Get a tkinter Text widget tagName tag for this element
-        (tagName, config_dict) = self.build_tagName(element.tag)
-        # Tag the text inserted for this element
-        self._tag_txt_cb(_si, _ei, tagName)
-        print(f"Tagged text from indices {_si} to {_ei} with {tagName}")
-        # Configure the tag
-        self._config_tag_cb(tagName, config_dict)
+        try:
+            # Get a tkinter Text widget tagName  adn configuration for this element
+            (tagName, config_dict) = self.build_tagName(element.tag)
+            # Tag the text inserted for this element
+            self._tag_txt_cb(_si, _ei, tagName)
+            print(f"Tagged text from indices {_si} to {_ei} with {tagName}")
+            # Configure the tag
+            self._config_tag_cb(tagName, config_dict)
+        except NoWidgetTagConfigurationAvailableForXHTMLTag:
+            pass
         # Get any 'tail' text for the element
         el_tail = element.tail
         if el_tail is not None:

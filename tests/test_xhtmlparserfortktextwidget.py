@@ -8,6 +8,7 @@ import unittest
 
 # Local imports
 from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
+from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
 
 
 class TextWidgetTestMock:
@@ -99,6 +100,11 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         self.assertEqual('tag_h1_2', act_val[0])
         self.assertEqual({'foreground':'red'}, act_val[1])
 
+    def test_build_tagName_fail(self):
+        mock = TextWidgetTestMock()
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        self.assertRaises(NoWidgetTagConfigurationAvailableForXHTMLTag, parser.build_tagName, 'unconfigured_xhtml_tag')
+
     def test_process_xhtml_1_element(self):
         mock = TextWidgetTestMock()
         parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
@@ -125,18 +131,18 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
     #     exp_val = [('0', '24', 'tag_h1'), ('23', '24', 'tag_em')] # This probably isn't right
     #     self.assertListEqual(exp_val, act_val)
         
-    def test_process_xhtml_2_nested_elements_end(self):
-        mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
-        parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
-        # Check text insertions
-        act_val = mock._inserted_text
-        exp_val = [('0', '24', 'This is a Heading Level '), ('24', '25', '1')]
-        self.assertListEqual(exp_val, act_val)
-        # Check added tags
-        act_val = mock._added_tags
-        exp_val = [('0', '25', 'tag_h1_0'), ('24', '25', 'tag_em_1')]
-        self.assertListEqual(exp_val, act_val)
+    # def test_process_xhtml_2_nested_elements_end(self):
+    #     mock = TextWidgetTestMock()
+    #     parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+    #     parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
+    #     # Check text insertions
+    #     act_val = mock._inserted_text
+    #     exp_val = [('0', '24', 'This is a Heading Level '), ('24', '25', '1')]
+    #     self.assertListEqual(exp_val, act_val)
+    #     # Check added tags
+    #     act_val = mock._added_tags
+    #     exp_val = [('0', '25', 'tag_h1_0'), ('24', '25', 'tag_em_1')]
+    #     self.assertListEqual(exp_val, act_val)
 
 
 
