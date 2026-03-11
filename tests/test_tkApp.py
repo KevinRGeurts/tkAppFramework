@@ -31,12 +31,14 @@ class Test_tkHelpApp(unittest.TestCase):
 
     def test_getAppInfo(self):
         help_content = 'Help file text content'
-        info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts', license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework')
         with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False) as temp_file:
             temp_file.write(help_content)
             temp_file.close()
             root = tk.Tk()
             myapp = tkHelpApp(root, help_file=temp_file.name, help_format='txt')
+            info = AppAboutInfo(name='Help Application', version='0.9.0', copyright='2025', author='Kevin R. Geurts',
+                                license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
+                                help_file=temp_file.name)
             self.assertTupleEqual(myapp.getAboutInfo(), info)
 
 
