@@ -15,14 +15,7 @@ Exported Functions:
 
 # standard imports
 import logging
-from pickle import NONE
-import tkinter as tk
-from tkinter import ttk
-from types import NoneType
 import xml.etree.ElementTree as ET
-
-# PyPi package imports
-
 
 # local imports
 from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
@@ -69,6 +62,10 @@ class XHTMLParserForTkTextWidget(object):
         # self._tag_id will be used as a suffix to provide a unique name for each tag.
         # This will be increment each time _getTagIDSuffix() method is called.
         self._tag_id=0
+        # Create a dictionary that maps TreeElement id's onto starting and ending indices in teh Text widget.
+        #   key = id(Element), as int
+        #   value = (starting_index, ending_index), as (string, string)
+        self._elem_insert_indices = {}
         
         self._setup_logging(log_level)
 
@@ -131,52 +128,86 @@ class XHTMLParserForTkTextWidget(object):
 
     def process_xhtml(self, xhtml_string=''):
         """
-        Process all elements in the elements tree.
+        Process all elements in the elements tree, and use call backs to insert and tag text in a tkinter Text widget.
         :param xhtml_string: String containing XHTML data.
         :return: None
         """
         assert(type(xhtml_string)==str)
+        # Clear the existing dictionary of element insertion indices
+        self._elem_insert_indices.clear()
+        # Create an ElementTree representing the XHTML string
         root = self._xhtml_string_to_elements_tree(xhtml_string)
+        # Pass 1: Recurse the ElementTree to insert text into the Text widget, and to capture insertion indices.
         index = self._start_index_cb()
-        for elem in root.iter():
-            (index, tail_txt) = self._process_element(element=elem, start_index=index)
+        self._process_element_text(element=root, start_index=index)
+        # Pass 2: Recurse the ElementTree to tag text in the Text widget, using captured insertion indices
+        self._process_element_tags(element=root)
         return None
 
-    def _process_element(self, element=None, start_index=''):
+    def _process_element_text(self, element=None, start_index=''):
         """
-        Utility method called by process_xhtml(...) method to process one element in the elements tree.
+        Utility method called by process_xhtml(...) method to process the text content of one element in the elements tree.
         :parameter element: The element in the element tree to process, as xml.etree.ElementTree.Element
         :parameter start_index: tkinter Text widget index to start any text insertions, as string
-        :return: Tuple (end_index, tail_text), as (string, string)
+        :return: end_index, as string
                  end_index = tkinter Text widget index at the end of any text insertion
-                 tail_text = text that belongs to and needs to be formatted with the parent tag
         """
+        logger = logging.getLogger('xhtml_parser_logger')
+
         _si = start_index
         _ei = start_index
-        # Get the element's 'text', that is, the text of the element itself and any child elements
+        # Get the element's 'text', that is, the text of the element itself
         el_txt = element.text
         # Insert element's 'text' into the Text widget
         if len(el_txt) > 0:
-            _ei = self._insert_txt_cb(_ei, el_txt)
-            print(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
-        try:
-            # Get a tkinter Text widget tagName  adn configuration for this element
-            (tagName, config_dict) = self.build_tagName(element.tag)
-            # Tag the text inserted for this element
-            self._tag_txt_cb(_si, _ei, tagName)
-            print(f"Tagged text from indices {_si} to {_ei} with {tagName}")
-            # Configure the tag
-            self._config_tag_cb(tagName, config_dict)
-        except NoWidgetTagConfigurationAvailableForXHTMLTag:
-            pass
+            _ei = self._insert_txt_cb(_si, el_txt)
+            logger.debug(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
+        # Capture the start and end indices for the element's text
+        self._elem_insert_indices[id(element)]=(_si, _ei)
+        # Iterate through the direct children of element, and proccess them
+        for j in range(len(element)):
+            _ei = self._process_element_text(element[j], _ei)
         # Get any 'tail' text for the element
         el_tail = element.tail
         if el_tail is not None:
             _si = _ei
             # Insert the element's 'tail' text into the Text widget
             _ei = self._insert_txt_cb(_si, el_tail)
-            print(f"Inserted element tail text \'{el_tail}\' from indices {_si} to {_ei}.")
-        return (_ei, '')
+            logger.debug(f"Inserted element tail text \'{el_tail}\' from indices {_si} to {_ei}.")
+        return _ei
+
+    def _process_element_tags(self, element=None):
+        """
+        Utility method called by process_xhtml(...) method to process the tag of one element in the elements tree.
+        :parameter element: The element in the element tree to process, as xml.etree.ElementTree.Element
+        :return: None
+        """
+        logger = logging.getLogger('xhtml_parser_logger')
+
+        # Look up the element's text's indices in the Text widget
+        (_si, _ei) = self._elem_insert_indices[id(element)] 
+        # Get the element's 'inner text', that is, the text of the element itself and any child elements
+        intxt = "".join(element.itertext())
+        l_intext = len(intxt)
+        # "Calculate" the ending index for tagging by "adding" the length of the element's 'inner text'
+        # to the starting index.
+        _ei = f"{_si} +{l_intext}c"
+        # Get the element's tag
+        el_tag = element.tag
+        try:
+            # Get a tkinter Text widget tagName aand configuration for this element
+            (tagName, config_dict) = self.build_tagName(el_tag)
+            # Tag the text inserted for this element
+            self._tag_txt_cb(_si, _ei, tagName)
+            logger.debug(f"Tagged text from indices {_si} to {_ei} with {tagName}")
+            # Configure the tag
+            self._config_tag_cb(tagName, config_dict)
+        except NoWidgetTagConfigurationAvailableForXHTMLTag:
+            pass
+        # Iterate through the direct children of element, and proccess them
+        for j in range(len(element)):
+            self._process_element_tags(element[j])
+        return None
 
     def _setup_logging(self, log_level=logging.INFO):
         """

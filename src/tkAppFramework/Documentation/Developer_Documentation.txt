@@ -74,3 +74,31 @@ The child widgets of the SimulatorShowInfoWidget are gridded into the SimulatorS
 tkUserQueryViewManager IS-A tkViewManager. When it's _CreateWidgets() method is called, it creates a QueryPromptWidget object,
 a QueryResponseWidget object, etc. Each of these widgets are gridded into the tkUserQueryViewManager's grid (grid-2). The
 widgets that make up each of these widgets are gridded into their respective grids (grid-3).
+
+
+*** 11-March-2026: Notes on parsing markdown/xhtml and displaying in tkHelpApp as help content ***
+
+Requirements for traversing ElementTree and inserting and tagging text in Text widget:
+
+1. It may be necessary to recurse the ElementTree rather than use built in Element.iter() and Element.itertext() methods.
+These methods iterate through the entire tree beneath Element, rather than itering only through Element's direct children. The issues
+is that any 'tail' text cannot be tagged with the direct parent if these functions are used, because it is not possible to
+identify the direct parent.
+2. However, a potential issue if Element.itertext() is NOT used is that the "layering" of tagging may not be correct. If (as is often 
+the case) xhtml tags are nested. formatting in Text widget should be "layered". E.g., ALL heading text should be the right font size,
+AND any emphasized text in the heading should ALSO be bold.
+3. If Element.itertext() is used, which might help with the layered tagging, then how do we not end up inserting text multiple times.
+4. One possibility is that we insert text using Element.itertext(), but then recurse down from child generation to generation to handle
+the tagging of text. In this case a challenge may be tracking the start and end indices for tagging, since we get those tags back from the
+Text widget when we insert text. One option might be to due a search in the Text widget to find the text that needs to be tagged as we are recursing.
+Here there could be an issue with multiple occurence of the same text having been inserted "all at once" but intended to be tagged differently.
+5. It is possible to access only the Element's direct children using len(Element) and Element[i].
+6. I'm going to try this algorithm. First pass: Manually recurse the tree downward from the root Element using len(Element) and Element[i].
+Insert text into the Text widget and capture the ending insertion point. Store in a dict the starting and ending insertion points for the
+text in a tuple, keyed by id(Element). Second pass: Iterate all Elements in the tree using Element.iter() from the root. Apply tags in
+the Text widget, making use of the starting insertion points stored in the dict for each Element. The ending insertion point will
+be determined by, at each element, by adding '+{len(Element.itertext())}c' to the starting insertion point.
+
+
+First: from the root Element, use itertext() to get all the text and insert it into the Text widget.
+Second: Use 

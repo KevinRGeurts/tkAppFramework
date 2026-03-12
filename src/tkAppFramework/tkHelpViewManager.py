@@ -18,6 +18,7 @@ Exported Functions:
 # Standard imports
 import tkinter as tk
 from tkinter import ttk
+import logging
 
 # Local imports
 from tkAppFramework.tkViewManager import tkViewManager
@@ -98,7 +99,8 @@ class HelpTextWidget(ttk.Labelframe, Subject):
 
         # Create an XHTML parser object
         self._parser = XHTMLParserForTkTextWidget(insert_txt_cb = self._insert_text, tag_txt_cb = self._tag_text,
-                                                  config_tag_cb = self._config_tag, start_index_cb = self._get_start_index)
+                                                  config_tag_cb = self._config_tag, start_index_cb = self._get_start_index,
+                                                  log_level = logging.DEBUG)
     
     def processHelpContent(self, help_content='', help_format='txt'):
         """
@@ -121,8 +123,6 @@ class HelpTextWidget(ttk.Labelframe, Subject):
                 self._txt_content.insert(tk.INSERT, help_content)
 
             case 'xhtml':
-                # TODO: Process the xhtml content and format it in the Text widget.
-                # For now, no processing. Just insert the raw xhtml into the Text widget.
                 self._processXHTMLHelpContent(help_content)
 
         self._txt_content.config(state='disabled')
@@ -131,23 +131,11 @@ class HelpTextWidget(ttk.Labelframe, Subject):
 
     def _processXHTMLHelpContent(self, help_content):
         """
-        Utility method, called by _ProcessHelpContent(), that processes XHTML help content and inserts it into the Text widget.
+        Utility method, called by processHelpContent(), that processes XHTML help content and inserts it into the Text widget.
         :parameter help_content: Help content to be processed and inserted, as string
         :return: None
         """
         assert(type(help_content)==str)
-        # parser = XHTMLParserForTkTextWidget()
-        # (tag_list, text_list) = parser.xhtml_string_to_elements(help_content)
-        # # Create tkinter Text widget tags
-        # for tag in tag_list:
-        #     self._txt_content.tag_config(tag[0], tag[1])
-        # # Insert each item in the text_list, appropriately tagged, into the Text widget
-        # for item in text_list:
-        #     # item = {tagName, text content}
-        #     begin_index = self._txt_content.index(tk.INSERT)
-        #     self._txt_content.insert(begin_index, item[1])
-        #     end_index = self._txt_content.index(tk.INSERT)
-        #     self._txt_content.tag_add(item[0], begin_index, end_index)
         self._parser.process_xhtml(help_content)
         return None
 

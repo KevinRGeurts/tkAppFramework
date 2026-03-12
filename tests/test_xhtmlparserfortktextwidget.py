@@ -5,6 +5,7 @@ This module provides unit tests for the XHTMLParserForTkTextWidget class.
 
 # Standard imports
 import unittest
+import logging
 
 # Local imports
 from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
@@ -78,7 +79,7 @@ class TextWidgetTestMock:
 class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
     def test_init_populate_tag_map(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
         self.assertEqual(2, len(parser._tag_map))
         exp_val = ('tag_h1', {'foreground':'red'})
         act_val = parser._tag_map['h1']
@@ -87,13 +88,13 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         
     def test_getTagIdSuffix(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
         self.assertEqual('0', parser._getTagIdSuffix())
         self.assertEqual('1', parser._getTagIdSuffix())
 
     def test_build_tagName(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
         self.assertEqual('tag_h1_0', parser.build_tagName('h1')[0])
         self.assertEqual('tag_em_1', parser.build_tagName('em')[0])
         act_val = parser.build_tagName('h1')
@@ -102,12 +103,12 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_build_tagName_fail(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
         self.assertRaises(NoWidgetTagConfigurationAvailableForXHTMLTag, parser.build_tagName, 'unconfigured_xhtml_tag')
 
     def test_process_xhtml_1_element(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
         parser.process_xhtml('<h1>This is a Heading Level 1</h1>')
         # Check text insertion
         act_val = mock._inserted_text
@@ -115,36 +116,34 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         self.assertListEqual(exp_val, act_val)
         # Check added tags
         act_val = mock._added_tags
-        exp_val = [('0', '25', 'tag_h1_0')]
+        exp_val = [('0', '0 +25c', 'tag_h1_0')]
         self.assertListEqual(exp_val, act_val)
 
-    # def test_process_xhtml_2_nested_elements_middle(self):
-    #     mock = TextWidgetTestMock()
-    #     parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
-    #     parser.process_xhtml('<h1>This is a <em>Heading</em> Level 1</h1>')
-    #     # Check text insertions
-    #     act_val = mock._inserted_text
-    #     exp_val = [('0', '9', 'This is a '), ('9', '16', 'Heading'), ('16', '24', ' Level 1')]
-    #     self.assertListEqual(exp_val, act_val)
-    #     # Check added tags
-    #     act_val = mock._added_tags
-    #     exp_val = [('0', '24', 'tag_h1'), ('23', '24', 'tag_em')] # This probably isn't right
-    #     self.assertListEqual(exp_val, act_val)
+    def test_process_xhtml_2_nested_elements_middle(self):
+        mock = TextWidgetTestMock()
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser.process_xhtml('<h1>This is a <em>Heading</em> Level 1</h1>')
+        # Check text insertions
+        act_val = mock._inserted_text
+        exp_val = [('0', '10', 'This is a '), ('10', '17', 'Heading'), ('17', '25', ' Level 1')]
+        self.assertListEqual(exp_val, act_val)
+        # Check added tags
+        act_val = mock._added_tags
+        exp_val = [('0', '0 +25c', 'tag_h1_0'), ('10', '10 +7c', 'tag_em_1')]
+        self.assertListEqual(exp_val, act_val)
         
-    # def test_process_xhtml_2_nested_elements_end(self):
-    #     mock = TextWidgetTestMock()
-    #     parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index)
-    #     parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
-    #     # Check text insertions
-    #     act_val = mock._inserted_text
-    #     exp_val = [('0', '24', 'This is a Heading Level '), ('24', '25', '1')]
-    #     self.assertListEqual(exp_val, act_val)
-    #     # Check added tags
-    #     act_val = mock._added_tags
-    #     exp_val = [('0', '25', 'tag_h1_0'), ('24', '25', 'tag_em_1')]
-    #     self.assertListEqual(exp_val, act_val)
-
-
+    def test_process_xhtml_2_nested_elements_end(self):
+        mock = TextWidgetTestMock()
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
+        # Check text insertions
+        act_val = mock._inserted_text
+        exp_val = [('0', '24', 'This is a Heading Level '), ('24', '25', '1')]
+        self.assertListEqual(exp_val, act_val)
+        # Check added tags
+        act_val = mock._added_tags
+        exp_val = [('0', '0 +25c', 'tag_h1_0'), ('24', '24 +1c', 'tag_em_1')]
+        self.assertListEqual(exp_val, act_val)
 
 
 if __name__ == '__main__':
