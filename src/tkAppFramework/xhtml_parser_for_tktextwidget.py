@@ -159,7 +159,7 @@ class XHTMLParserForTkTextWidget(object):
         # Get the element's 'text', that is, the text of the element itself
         el_txt = element.text
         # Insert element's 'text' into the Text widget
-        if len(el_txt) > 0:
+        if el_txt is not None:
             _ei = self._insert_txt_cb(_si, el_txt)
             logger.debug(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
         # Capture the start and end indices for the element's text
@@ -203,7 +203,7 @@ class XHTMLParserForTkTextWidget(object):
             # Configure the tag
             self._config_tag_cb(tagName, config_dict)
         except NoWidgetTagConfigurationAvailableForXHTMLTag:
-            pass
+            logger.debug(f"Parser ignored XHTML tag <{el_tag}>.")
         # Iterate through the direct children of element, and proccess them
         for j in range(len(element)):
             self._process_element_tags(element[j])

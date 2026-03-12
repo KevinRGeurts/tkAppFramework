@@ -145,6 +145,19 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         exp_val = [('0', '0 +25c', 'tag_h1_0'), ('24', '24 +1c', 'tag_em_1')]
         self.assertListEqual(exp_val, act_val)
 
+    def test_process_xhtml_2_serial_elements(self):
+        mock = TextWidgetTestMock()
+        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser.process_xhtml('<body><h1>Heading</h1><p><em>emphasized text</em></p></body>')
+        # Check text insertions
+        act_val = mock._inserted_text
+        exp_val = [('0', '7', 'Heading'), ('7', '22', 'emphasized text')]
+        self.assertListEqual(exp_val, act_val)
+        # Check added tags
+        act_val = mock._added_tags
+        exp_val = [('0', '0 +7c', 'tag_h1_0'), ('7', '7 +15c', 'tag_em_1')]
+        self.assertListEqual(exp_val, act_val)
+
 
 if __name__ == '__main__':
     unittest.main()

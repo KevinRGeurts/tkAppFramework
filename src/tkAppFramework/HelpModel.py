@@ -50,7 +50,7 @@ class HelpModel(Model):
         self._help_format = help_format
         # Open help file and read it's content.
         if len(self._help_file)>0:
-            with open(self._help_file, 'r') as f:
+            with open(self._help_file, mode='r', encoding="utf-8") as f:
                     self.readModelFromFile(f, self._help_format)
         self.notify()
 
@@ -87,6 +87,9 @@ class HelpModel(Model):
                 self._md_content = file.read()
                 html =  markdown(self._md_content)
                 self._xhtml_content = JustHTML(html, fragment=True).to_html()
+                # Surround with  <body> </body> tags so it is legal HTML.
+                # Because the call to markdown(...) produces a fragment.
+                self._xhtml_content = f"<body>{self._xhtml_content}</body>"
 
         return None
 

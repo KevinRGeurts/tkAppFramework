@@ -34,7 +34,7 @@ class Test_HelpModel(unittest.TestCase):
 
     def test_md(self):
         md_help_content = '# Help file markdown content'
-        html_help_content = '<h1>Help file markdown content</h1>'
+        html_help_content = '<body><h1>Help file markdown content</h1></body>'
         with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False) as temp_file:
             temp_file.write(md_help_content)
             temp_file.close()
