@@ -6,6 +6,7 @@ This module provides unit tests for the XHTMLParserForTkTextWidget class.
 # Standard imports
 import unittest
 import logging
+from tkinter.font import Font
 
 # Local imports
 from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
@@ -80,9 +81,9 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
     def test_init_populate_tag_map(self):
         mock = TextWidgetTestMock()
         parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
-        self.assertEqual(2, len(parser._tag_map))
-        exp_val = ('tag_h1', {'foreground':'red'})
-        act_val = parser._tag_map['h1']
+        self.assertEqual(7, len(parser._tag_map))
+        exp_val = 'tag_h1'
+        act_val = parser._tag_map['h1'][0]
         self.assertEqual(exp_val, act_val)
         self.assertEqual(0, len(mock._configed_tags))
         
@@ -99,7 +100,8 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         self.assertEqual('tag_em_1', parser.build_tagName('em')[0])
         act_val = parser.build_tagName('h1')
         self.assertEqual('tag_h1_2', act_val[0])
-        self.assertEqual({'foreground':'red'}, act_val[1])
+        exp_font = Font(family='Helvetica', size=20, weight='bold')
+        self.assertEqual(18.5, act_val[1]['spacing3'])
 
     def test_build_tagName_fail(self):
         mock = TextWidgetTestMock()
@@ -155,7 +157,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         self.assertListEqual(exp_val, act_val)
         # Check added tags
         act_val = mock._added_tags
-        exp_val = [('0', '0 +7c', 'tag_h1_0'), ('7', '7 +15c', 'tag_em_1')]
+        exp_val = [('0', '0 +22c', 'tag_body_0'), ('0', '0 +7c', 'tag_h1_1'), ( '7', '7 +15c','tag_p_2'), ('7', '7 +15c', 'tag_em_3')]
         self.assertListEqual(exp_val, act_val)
 
 

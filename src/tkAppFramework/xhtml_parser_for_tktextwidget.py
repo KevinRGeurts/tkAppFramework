@@ -16,6 +16,8 @@ Exported Functions:
 # standard imports
 import logging
 import xml.etree.ElementTree as ET
+import tkinter as tk
+import tkinter.font as tkFont
 
 # local imports
 from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
@@ -102,18 +104,68 @@ class XHTMLParserForTkTextWidget(object):
             (1) Create a dictionary of XHTML tag to tkinter Text widget tagName
             (2) Create a dictionarhy of configuration options for each tagName to match the formatting implied by the equivalent XHTML tag
         """
+        font_family='Helvetica'
+        font_base_size = 12 # For regular body text, in points
+        base_font = tkFont.Font(family=font_family, size=font_base_size, weight='normal')
+        base_font_height = base_font.metrics('linespace') # The height of the font, in pixels
+        header_size_step = 4 # The amount by which a header steps up in increments from header 3 to 2 to 1, in points.
         # TODO: These are only prototype configurations for testing. Many need to be configures with a font.
+        # <body> to tagName=tag_body
+        options = {}
+        font = tkFont.Font(family=font_family, size=font_base_size, weight='normal')
+        options['font']=base_font
+        options['lmargin1']=f"{font_base_size}p" # How much to indent first line of text, in points
+        options['lmargin2']=f"{font_base_size}p" # How much to indent successive lines of text, in points
+        options['rmargin']=f"{font_base_size}p" # Size of right margin for text, in points
+        options['spacing2']=0.25*base_font_height # Extra space between lines of wrapped text, in pixels
+        options['spacing3']=0.25*base_font_height # Extra space between lines of unwrapped text, in pixels
+        options['wrap']=tk.WORD
+        value = ('tag_body', options)
+        self._tag_map['body']=value
+        # <p> to tagName=tag_p
+        options = {}
+        options['spacing3']=0.5*base_font_height
+        value = ('tag_p', options)
+        self._tag_map['p']=value
         # <h1> to tagName=tag_h1
         options = {}
-        options['foreground']='red'
+        font = tkFont.Font(family=font_family, size=font_base_size+3*header_size_step, weight='bold')
+        options['font']= font
+        font_height = font.metrics('linespace') # The height of the font, in pixels
+        options['spacing3']=0.5*font_height
         value = ('tag_h1', options)
         self._tag_map['h1']=value
+        # <h1> to tagName=tag_h2
+        options = {}
+        font = tkFont.Font(family=font_family, size=font_base_size+2*header_size_step, weight='bold')
+        options['font']= font
+        font_height = font.metrics('linespace') # The height of the font, in pixels
+        options['spacing3']=0.5*font_height
+        value = ('tag_h2', options)
+        self._tag_map['h2']=value
         # <em> to tagName=tag_em
         options = {}
-        options['background']='green'
+        font = tkFont.Font(family=font_family, size=font_base_size, weight='bold')
+        options['font']= font
         value = ('tag_em', options)
         self._tag_map['em']=value
-        # Create more entries in the map
+        # <li> to tagName=tag_li, a list item
+        # TODO: Work out how to create bullets. This probably will need to be handled by inserting a bullet into the text
+        # in Pass 1 through the ElementTree.
+        options = {}
+        options['font']=base_font
+        options['lmargin1']=f"{2*font_base_size}p"
+        options['lmargin2']=f"{4*font_base_size}p"
+        value = ('tag_li', options)
+        self._tag_map['li']=value
+        # <a> to tagName=tag_a, a url anchor
+        # TODO: Work out how to create bindings while parsing the Element tree in Pass 2.
+        options = {}
+        options['foreground']='blue'
+        value = ('tag_a', options)
+        self._tag_map['a']=value
+
+        # TODO: Create more entries in the map
         return None
 
     def _xhtml_string_to_elements_tree(self, xhtml_string=''):
