@@ -82,10 +82,13 @@ class HelpModel(Model):
 
             case 'xhtml':
                 self._xhtml_content = file.read()
+                # "Sanitize" the xhtml content, for safety/security
+                self._xhtml_content = JustHTML(self._xhtml_content, fragment=True).to_html()
 
             case 'md':
                 self._md_content = file.read()
                 html =  markdown(self._md_content)
+                # "Sanitize" the xhtml content, for safety/security
                 self._xhtml_content = JustHTML(html, fragment=True).to_html()
                 # Surround with  <body> </body> tags so it is legal HTML.
                 # Because the call to markdown(...) produces a fragment.
