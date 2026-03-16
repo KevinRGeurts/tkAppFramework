@@ -9,9 +9,9 @@ in the Observer design pattern.
 
 ## Requirements
 
-justhtml>=1.9.0: [GitHub](https://github.com/emilstenstrom/justhtml), [PyPi](https://pypi.org/project/justhtml/)
-markdown>=3.10.2: [GitHub](https://github.com/Python-Markdown/markdown), [PyPi](https://pypi.org/project/Markdown/)
-UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
+1. justhtml>=1.9.0: [GitHub](https://github.com/emilstenstrom/justhtml), [PyPi](https://pypi.org/project/justhtml/)
+2. markdown>=3.10.2: [GitHub](https://github.com/Python-Markdown/markdown), [PyPi](https://pypi.org/project/Markdown/)
+3. UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
 
 ## Credit where credit is due
 
