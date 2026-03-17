@@ -9,17 +9,18 @@ import logging
 from tkinter.font import Font
 
 # Local imports
-from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
+from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget, TkWidgetXHTMLParserInterface
 from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
 
 
-class TextWidgetTestMock:
+class TextWidgetTestMock(TkWidgetXHTMLParserInterface):
     """
     Class serves as a mock-up of a tkinter Text widget, for testing XHTMLParserForTkTextWidget class.
-    It provides required call back functions and stores some parameter values from the call back functions
-    to be used in assertEqual(...) tests.
+    It extends required methods defined by TkWidgetXHTMLParserInterface class and stores some parameter values
+    from the method calls to be used in assertEqual(...) tests.
     """
     def __init__(self):
+        super().__init__()
         # List contains tuples (starting_index, ending_index, inserted_text), as (string, string, string)
         self._inserted_text=[]
         self._text_length=0
@@ -28,51 +29,48 @@ class TextWidgetTestMock:
         #List contains tuples (tagName, options_dict), as (string, dict)
         self._configed_tags=[]
 
-    def _insert_text(self, starting_index='', text=''):
+    def insert_text(self, starting_index='', text=''):
         """
-        Call back method used by XHTML parser to insert text into Text widget.
+        Method used by XHTML parser to insert text into Text widget.
         :parameter start_index: tkinter Text widget index to start any text insertions, as string
         :parameter text: The text to insert into the Text widget, as string
         :return: tkinter Text widget index at the end of any text insertions, as string
         """
-        assert(type(starting_index)==str)
-        assert(type(text)==str)
+        super().insert_text(starting_index, text)
         self._text_length += len(text)
         ending_index = self._text_length
         self._inserted_text.append((str(starting_index), str(ending_index), text))
         return str(ending_index)
 
-    def _tag_text(self, starting_index='', ending_index='', tagName=''):
+    def tag_text(self, starting_index='', ending_index='', tagName=''):
         """
-        Call back method used by XHTML parser to tag text in a Text widget.
+        Method used by XHTML parser to tag text in a Text widget.
         :parameter start_index: tkinter Text widget index of start of text to tag, as string
         :parameter ending_index: tkinter Text widget index of the end of any text to tag, as string
         :parameter tagName: The tagName with which to tag the text, as string
         :return: None
         """
-        assert(type(starting_index)==str)
-        assert(type(ending_index)==str)
-        assert(type(tagName)==str)
+        super().tag_text(starting_index, ending_index, tagName)
         self._added_tags.append((starting_index, ending_index, tagName))
         return None
 
-    def _config_tag(self, tagName='', options_dict={}):
+    def config_tag(self, tagName='', options_dict={}):
         """
-        Call back method used by XHTML parser to add and configure options for a tag in tkinter Text widget.
+        Method used by XHTML parser to add and configure options for a tag in tkinter Text widget.
         :parameter tagName: The tagName with which to tag the text, as string
         :parameter options_dict: The dictionary of configuration options for the tag, as dict with key = option_name, value = option_setting
         :return: None
         """
-        assert(type(tagName)==str)
-        assert(type(options_dict)==dict)
+        super().config_tag(tagName, options_dict)
         self._configed_tags.append((tagName, options_dict))
         return None
 
-    def _get_start_index(self):
+    def get_start_index(self):
         """
         Call back method used by XHTML parser to get the current insertion index for the tkinter Text widget.
         :return: The current index, as string
         """
+        super().get_start_index()
         index = self._text_length
         return str(index)
 
@@ -80,7 +78,7 @@ class TextWidgetTestMock:
 class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
     def test_init_populate_tag_map(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         self.assertEqual(7, len(parser._tag_map))
         exp_val = 'tag_h1'
         act_val = parser._tag_map['h1'][0]
@@ -89,13 +87,13 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         
     def test_getTagIdSuffix(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         self.assertEqual('0', parser._getTagIdSuffix())
         self.assertEqual('1', parser._getTagIdSuffix())
 
     def test_build_tagName(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         self.assertEqual('tag_h1_0', parser.build_tagName('h1')[0])
         self.assertEqual('tag_em_1', parser.build_tagName('em')[0])
         act_val = parser.build_tagName('h1')
@@ -105,12 +103,12 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_build_tagName_fail(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         self.assertRaises(NoWidgetTagConfigurationAvailableForXHTMLTag, parser.build_tagName, 'unconfigured_xhtml_tag')
 
     def test_process_xhtml_1_element(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         parser.process_xhtml('<h1>This is a Heading Level 1</h1>')
         # Check text insertion
         act_val = mock._inserted_text
@@ -123,7 +121,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_2_nested_elements_middle(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         parser.process_xhtml('<h1>This is a <em>Heading</em> Level 1</h1>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -136,7 +134,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         
     def test_process_xhtml_2_nested_elements_end(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -149,7 +147,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_2_serial_elements(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock._insert_text, mock._tag_text, mock._config_tag, mock._get_start_index, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
         parser.process_xhtml('<body><h1>Heading</h1><p><em>emphasized text</em></p></body>')
         # Check text insertions
         act_val = mock._inserted_text

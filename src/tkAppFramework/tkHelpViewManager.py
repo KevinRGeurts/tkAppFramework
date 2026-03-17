@@ -16,6 +16,7 @@ Exported Functions:
 
 
 # Standard imports
+from optparse import Option
 import tkinter as tk
 from tkinter import ttk
 import logging
@@ -23,7 +24,7 @@ import logging
 # Local imports
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
-from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget
+from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget, TkWidgetXHTMLParserInterface
 
 
 class tkHelpViewManager(tkViewManager):
@@ -70,7 +71,7 @@ class tkHelpViewManager(tkViewManager):
         return None
 
 
-class HelpTextWidget(ttk.Labelframe, Subject):
+class HelpTextWidget(ttk.Labelframe, Subject, TkWidgetXHTMLParserInterface):
     """
     Class represents a tkinter label frame, the widget contents of which allow viewing of help topic content.
     Class is also a Subject in Observer design pattern.
@@ -81,6 +82,7 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         """
         ttk.Labelframe.__init__(self, parent, text="Help Topic Content")
         Subject.__init__(self)
+        TkWidgetXHTMLParserInterface.__init__(self)
 
         self._txt_content = tk.Text(self)
         self._txt_content.grid(column=0, row=0, sticky='NWSE') # Grid-2
@@ -98,9 +100,7 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         self._txt_content['xscrollcommand'] = self._scrollbar_hor.set
 
         # Create an XHTML parser object
-        self._parser = XHTMLParserForTkTextWidget(insert_txt_cb = self._insert_text, tag_txt_cb = self._tag_text,
-                                                  config_tag_cb = self._config_tag, start_index_cb = self._get_start_index,
-                                                  log_level = logging.DEBUG)
+        self._parser = XHTMLParserForTkTextWidget(self, log_level = logging.DEBUG)
     
     def processHelpContent(self, help_content='', help_format='txt'):
         """
@@ -139,49 +139,46 @@ class HelpTextWidget(ttk.Labelframe, Subject):
         self._parser.process_xhtml(help_content)
         return None
 
-    def _insert_text(self, starting_index='', text=''):
+    def insert_text(self, starting_index='', text=''):
         """
-        Call back method used by XHTML parser to insert text into Text widget.
+        Method used by XHTML parser to insert text into Text widget.
         :parameter start_index: tkinter Text widget index to start any text insertions, as string
         :parameter text: The text to insert into the Text widget, as string
         :return: tkinter Text widget index at the end of any text insertions, as string
         """
-        assert(type(starting_index)==str)
-        assert(type(text)==str)
+        super().insert_text(starting_index, text)
         self._txt_content.insert(starting_index, text)
         ending_index = self._txt_content.index(tk.INSERT)
         return ending_index
 
-    def _tag_text(self, starting_index='', ending_index='', tagName=''):
+    def tag_text(self, starting_index='', ending_index='', tagName=''):
         """
-        Call back method used by XHTML parser to tag text in a Text widget.
+        Method used by XHTML parser to tag text in a Text widget.
         :parameter start_index: tkinter Text widget index of start of text to tag, as string
         :parameter ending_index: tkinter Text widget index of the end of any text to tag, as string
         :parameter tagName: The tagName with which to tag the text, as string
         :return: None
         """
-        assert(type(starting_index)==str)
-        assert(type(ending_index)==str)
-        assert(type(tagName)==str)
+        super().tag_text(starting_index, ending_index, tagName)
         self._txt_content.tag_add(tagName, starting_index, ending_index)
         return None
 
-    def _config_tag(self, tagName='', options_dict={}):
+    def config_tag(self, tagName='', options_dict={}):
         """
-        Call back method used by XHTML parser to add and configure options for a tag in tkinter Text widget.
+        Method used by XHTML parser to add and configure options for a tag in tkinter Text widget.
         :parameter tagName: The tagName with which to tag the text, as string
         :parameter options_dict: The dictionary of configuration options for the tag, as dict with key = option_name, value = option_setting
         :return: None
         """
-        assert(type(tagName)==str)
-        assert(type(options_dict)==dict)
+        super().config_tag(tagName, options_dict)
         self._txt_content.tag_config(tagName, options_dict)
         return None
 
-    def _get_start_index(self):
+    def get_start_index(self):
         """
-        Call back method used by XHTML parser to get the current insertion index for the tkinter Text widget.
+        Method used by XHTML parser to get the current insertion index for the tkinter Text widget.
         :return: The current index, as string
         """
+        super().get_start_index()
         index = self._txt_content.index(tk.INSERT) 
         return index

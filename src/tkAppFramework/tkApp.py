@@ -96,7 +96,7 @@ class tkApp(ttk.Frame):
         (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
     """
     def __init__(self, parent, title = '', menu_dict = {}, app_info = AppAboutInfo(), file_types=[],
-                 log_level = logging.INFO) -> None:
+                 log_level = logging.INFO, theme_name=None) -> None:
         """
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         :parameter title: The title of the application, to appear on the app's main window, string
@@ -116,6 +116,8 @@ class tkApp(ttk.Frame):
         :parameter file_types: A list of file type tuples for saving and opening, in this format:
             [('Description1', '*.ext1'), ('Description2', '*.ext2'), ...]
         :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        :param theme_name: The name of the themed-tkinter theme to apply to the application, as string
+                           Note: If left as the default, None, the default theme for the OS will be used.
         """
         super().__init__(parent)
 
@@ -181,6 +183,15 @@ class tkApp(ttk.Frame):
         logger = logging.getLogger('tkApp_logger')
         logger.debug(f"Starting {self._appInfo.name} version {self._appInfo.version}")
         logger.debug(f"Menu configuration dictionary: {self._menuConfigDict}")
+
+        if theme_name is not None:
+            if type(theme_name)==str:
+                if theme_name in ttk.Style().theme_names():
+                    ttk.Style().theme_use(theme_name)
+                else:
+                    logger.debug(f"Theme name {theme_name} is not an available theme.")
+                    logger.debug(f"Available themes: {ttk.Style().theme_names()}")
+                    logger.debug(f"tkApp is using theme: {ttk.Style().theme_use()}")
 
     def getModel(self):
         """

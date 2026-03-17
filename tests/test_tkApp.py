@@ -6,6 +6,7 @@ This module provides unit tests for tkApp class.
 # Standard
 import unittest
 import tkinter as tk
+from tkinter import ttk
 import tempfile
 
 # Local
@@ -42,15 +43,15 @@ class Test_tkHelpApp(unittest.TestCase):
             self.assertTupleEqual(myapp.getAboutInfo(), info)
 
 
-
 class Test_tkApp(unittest.TestCase):
     def test_init_exit(self):
         root = tk.Tk()
-        app = TesttkApp(root, title='Test App')
+        app = TesttkApp(root, title='Test App', theme_name='classic')
         self.assertEqual(root.title(), 'Test App')
         self.assertIsInstance(app._view_manager, TesttkViewManager)
         self.assertIsInstance(app.getModel(), Model)
         self.assertIs(app.getModel(), app._model)
+        self.assertEqual(ttk.Style().theme_use(),'classic')
         self.assertIsNone(app.onFileExit())
 
     def test_getAppInfo(self):

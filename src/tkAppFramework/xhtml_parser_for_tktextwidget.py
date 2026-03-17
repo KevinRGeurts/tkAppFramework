@@ -23,37 +23,71 @@ import tkinter.font as tkFont
 from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLTag
 
 
+class TkWidgetXHTMLParserInterface(object):
+    """
+    This class defines methods that a tkinter Widget must extend inorder to use a XHTMLParserForTkTextWidget object.
+    Extension should be implemented by calling super().<method name> first in the extended method. The implementations
+    in this class perform type checking on method parameters using assert(...).
+    """
+    def insert_text(self, starting_index='', text=''):
+        """
+        Method used by XHTML parser to insert text into widget.
+        :parameter start_index: widget index to start any text insertions, as string
+        :parameter text: The text to insert into the widget, as string
+        :return: tkinter widget index at the end of any text insertions, as string
+        """
+        assert(type(starting_index)==str)
+        assert(type(text)==str)
+        ending_index = ''
+        return ending_index
+
+    def tag_text(self, starting_index='', ending_index='', tagName=''):
+        """
+        Method used by XHTML parser to tag text in a widget.
+        :parameter start_index: tkinter widget index of start of text to tag, as string
+        :parameter ending_index: tkinter widget index of the end of any text to tag, as string
+        :parameter tagName: The tagName with which to tag the text, as string
+        :return: None
+        """
+        assert(type(starting_index)==str)
+        assert(type(ending_index)==str)
+        assert(type(tagName)==str)
+        return None
+
+    def config_tag(self, tagName='', options_dict={}):
+        """
+        Method used by XHTML parser to add and configure options for a tag in tkinter widget.
+        :parameter tagName: The tagName with which to tag the text, as string
+        :parameter options_dict: The dictionary of configuration options for the tag, as dict with key = option_name, value = option_setting
+        :return: None
+        """
+        assert(type(tagName)==str)
+        assert(type(options_dict)==dict)
+        return None
+
+    def get_start_index(self):
+        """
+        Method used by XHTML parser to get the current insertion index for the tkinter widget.
+        :return: The current index, as string
+        """
+        index = ''
+        return index
+
+
 class XHTMLParserForTkTextWidget(object):
     """
     This class can be used to read XHTML formatted string and use a set of call back functions
     to insert equivalent formatted text into a tkinter Text widget object.
     """
-    def __init__(self, insert_txt_cb = None, tag_txt_cb = None, config_tag_cb = None, start_index_cb = None,
-                 log_level = logging.INFO):
+    def __init__(self, client = None, log_level = logging.INFO):
         """
         Initializes the XHTMLParserForTkTextWidget instance.
-        :parameter insert_txt_cb: Call back function for inserting text into a tkinter Text wdiget object, as callable
-            Signature: ending_index = func(starting_index, text), as str = func(str, str)
-        :parameter tag_txt_cb: Call back function for tagging text in a tkinter Text wdiget object, as callable
-            Signature: func(starting_index, ending_index, tagName), as None = func(str, str, str)
-        :parameter config_tag_cb: Call back function for creating and configuring a tag in a tkinter Text wdiget object, as callable
-            Signature: func(tagName, options_dict), as None = func(str, dict)
-        :parameter start_index_cb: Call back function for getting the current insertion index for a tkinter Text wdiget object, as callable
-            Signature: current_index = func(), as str = func()
+        :parameter client: An object that implements TkWidgetXHTMLParserInterface.
         :parameter log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
-        if insert_txt_cb is not None:
-            assert(callable(insert_txt_cb))
-        if tag_txt_cb is not None:
-            assert(callable(tag_txt_cb))
-        if config_tag_cb is not None:
-            assert(callable(config_tag_cb))
-        if start_index_cb is not None:
-            assert(callable(start_index_cb))
-        self._insert_txt_cb = insert_txt_cb
-        self._tag_txt_cb = tag_txt_cb
-        self._config_tag_cb = config_tag_cb
-        self._start_index_cb = start_index_cb
+        if client is not None:
+            assert(isinstance(client, TkWidgetXHTMLParserInterface))
+        self._client = client
         
         # Create a dictionary that maps XHTML tag onto tkinter Text widget "base" tagName
         #   key = XHTML tag (the opening tag) as string, without the '<>'
@@ -190,7 +224,7 @@ class XHTMLParserForTkTextWidget(object):
         # Create an ElementTree representing the XHTML string
         root = self._xhtml_string_to_elements_tree(xhtml_string)
         # Pass 1: Recurse the ElementTree to insert text into the Text widget, and to capture insertion indices.
-        index = self._start_index_cb()
+        index = self._client.get_start_index()
         self._process_element_text(element=root, start_index=index)
         # Pass 2: Recurse the ElementTree to tag text in the Text widget, using captured insertion indices
         self._process_element_tags(element=root)
@@ -212,7 +246,7 @@ class XHTMLParserForTkTextWidget(object):
         el_txt = element.text
         # Insert element's 'text' into the Text widget
         if el_txt is not None:
-            _ei = self._insert_txt_cb(_si, el_txt)
+            _ei = self._client.insert_text(_si, el_txt)
             logger.debug(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
         # Capture the start and end indices for the element's text
         self._elem_insert_indices[id(element)]=(_si, _ei)
@@ -224,7 +258,7 @@ class XHTMLParserForTkTextWidget(object):
         if el_tail is not None:
             _si = _ei
             # Insert the element's 'tail' text into the Text widget
-            _ei = self._insert_txt_cb(_si, el_tail)
+            _ei = self._client.insert_text(_si, el_tail)
             logger.debug(f"Inserted element tail text \'{el_tail}\' from indices {_si} to {_ei}.")
         return _ei
 
@@ -250,10 +284,10 @@ class XHTMLParserForTkTextWidget(object):
             # Get a tkinter Text widget tagName aand configuration for this element
             (tagName, config_dict) = self.build_tagName(el_tag)
             # Tag the text inserted for this element
-            self._tag_txt_cb(_si, _ei, tagName)
+            self._client.tag_text(_si, _ei, tagName)
             logger.debug(f"Tagged text from indices {_si} to {_ei} with {tagName}")
             # Configure the tag
-            self._config_tag_cb(tagName, config_dict)
+            self._client.config_tag(tagName, config_dict)
         except NoWidgetTagConfigurationAvailableForXHTMLTag:
             logger.debug(f"Parser ignored XHTML tag <{el_tag}>.")
         # Iterate through the direct children of element, and proccess them
