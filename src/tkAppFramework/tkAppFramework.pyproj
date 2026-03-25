@@ -44,6 +44,9 @@
     </Compile>
     <Compile Include="tkApp.py" />
     <Compile Include="tkHelpViewManager.py" />
+    <Compile Include="tkxhtmlviewerwidget.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="xhtml_parser_for_tktextwidget.py" />
     <Compile Include="tkUserQueryToolEmbedded.py">
       <SubType>Code</SubType>
