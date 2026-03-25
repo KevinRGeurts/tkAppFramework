@@ -22,8 +22,7 @@ in the Observer design pattern.
   by Mark Lutz, published by O'Reilly, 1996. In particular, ```tkApp``` takes a similar approach to Mr. Lutz's
   ```GuiMaker``` class by using a python dictionary to configure it's menu bar.
 - This framework also borrows concepts from Microsoft's Foundation Classes (MFC), which I learned in the late 1990's.
-- The Simulator Application framework leverages concepts from {stuff I read in tkinter docs and on stackoverflow
-  that I synthesized into the framework}
+- The Simulator Application framework leverages concepts from Mark Roseman's https://tkdocs.com/tutorial/eventloop.html.
 
 ## tkApp class
 
@@ -387,6 +386,22 @@ simapp.getModel().sim_adapter = DemoSimulatorAdapter(simapp.sim_output_queue)
 # Start the app's event loop running
 simapp.mainloop()
 ```
+
+## tkHelpApp
+
+The tkAppFramework provides an application for viewing a file of help content. It is launched when the Help | View Help...
+menu item of a tkApp is selected. The file to be displayed is specified in the ```tkApp.__init__(...)``` method's `app_info` parameter.
+The file can be in text (.txt), HTML (.xhtml), or markdown (.md) formats. Note that a limited set of markdown syntax is
+currently supported:
+
+- Level 1 (#), level 2 (##), and level 3 (###) headings
+- Emphasized text (`*emphasized text*` or `_emphasized text_`)
+- Unordered lists
+- Ordered lists
+- Anchors (```[anchor](url)```)
+- Code blocks (``` `code` ```)
+
+Markdown files are converted to xhtml using the `markdown` package. HTML and converted markdown files are "sanitized" using  the `justhtml` package.
 
 ## Unittests
 

@@ -1,0 +1,23 @@
+# Simulator Application Help
+
+This content is generally applicable to the Simulation Application, regardless of exactly what simulator engine it is serving.
+
+## Menu bar Usage:
+
+1. To start the simulator engine, select File | Start Simulator from the menu bar.
+2. To load a saved simulation state, and start the simulator engine from that state, select File | Load Simulation from the menu bar.
+3. To stop the simulator engine, select File | End Simulator from the menu bar.
+4. To exit the Simulation Application, select File | Exit from the menu bar.
+5. To view this help content, select Help | View Help... from the menu bar.
+6. To see information about the Simulator Application, select Help | About... from the menu bar.
+
+## While the Simulator is running:
+
+1. When the Simulator requires input from the user, a text prompt for this input will be displayed in the Query Prompt widget.
+2. Typically, type the requested response into the Query Response widget.
+3. Click the Enter button of the Send Query Response widget.
+4. Alternatively, if the simulator provides a menu of input choices to the user, these choices will be displayed in the Query Response - Menu widget.
+5. Choose a response from the Choices menu button.
+6. If you send an incorrect response, then a User Query Error message box will be displayed. After you click the Ok button in the message box, the query from the Simulator will be repeated.
+7. If you are asked to provide a path for opening or saving a file, then a File Open Path of File Save Path dialog will be displayed to help you select a path. When you click the Save or Open button in the dialog, the text for the path you selected will be displayed in the Query Response Widget, and you can click the Enter button to send the path to the Simulator.
+8. All output from the Simulator is displayed in the Simulation Output widget.

@@ -76,8 +76,8 @@ class tkSimulatorApp(tkApp):
         if len(title) == 0:
             title = "Simulator Application"
         if app_info is None:
-            help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
-            app_info = AppAboutInfo(name='Simulator Application', version='0.9.3', copyright='2025', author='Kevin R. Geurts',
+            help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.md'
+            app_info = AppAboutInfo(name='Simulator Application', version='0.9.4', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                                   help_file=help_file_path)
         if len(menu_dict) == 0:

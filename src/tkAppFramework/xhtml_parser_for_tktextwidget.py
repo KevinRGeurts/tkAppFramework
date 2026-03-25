@@ -41,17 +41,19 @@ class TkWidgetXHTMLParserInterface(object):
         ending_index = ''
         return ending_index
 
-    def tag_text(self, starting_index='', ending_index='', tagName=''):
+    def tag_text(self, starting_index='', ending_index='', tagName='', link_url=''):
         """
         Method used by XHTML parser to tag text in a widget.
         :parameter start_index: tkinter widget index of start of text to tag, as string
         :parameter ending_index: tkinter widget index of the end of any text to tag, as string
         :parameter tagName: The tagName with which to tag the text, as string
+        :parameter link_url: The URL to "bind" to tagName, as string
         :return: None
         """
         assert(type(starting_index)==str)
         assert(type(ending_index)==str)
         assert(type(tagName)==str)
+        assert(type(link_url)==str)
         return None
 
     def config_tag(self, tagName='', options_dict={}):
@@ -98,10 +100,16 @@ class XHTMLParserForTkTextWidget(object):
         # self._tag_id will be used as a suffix to provide a unique name for each tag.
         # This will be increment each time _getTagIDSuffix() method is called.
         self._tag_id=0
-        # Create a dictionary that maps TreeElement id's onto starting and ending indices in teh Text widget.
+        # Create a dictionary that maps TreeElement id's onto starting and ending indices in the Text widget.
         #   key = id(Element), as int
         #   value = (starting_index, ending_index), as (string, string)
         self._elem_insert_indices = {}
+        # Create a dictionary that maps a TreeElement's id onto an integer value. This is to be used
+        # when an ordered list is encountered in the ElementTree, and it is necessary to prepend
+        # a list item number at the front of the text for each list item.
+        #   key = id(Element), as int
+        #   value = current list item count, as int
+        self._elem_ol_counter = {}
         
         self._setup_logging(log_level)
 
@@ -121,7 +129,7 @@ class XHTMLParserForTkTextWidget(object):
         :return: Tuple (unique_tagName, config_dict):
                  unique_tagName = A unique tkinter Text widget tag name, of the form tag_{xhtml_tag}_{X}, where {X} is a unique integer
                                   converted to a string. As string.
-                config_dict = Dictionary of configuration options for the tag, as dict
+                 config_dict = Dictionary of configuration options for the tag, as dict
         """
         assert(type(xhtml_tag)==str)
         # Look up tkinter Text widget tag "base name" for this element
@@ -138,15 +146,18 @@ class XHTMLParserForTkTextWidget(object):
             (1) Create a dictionary of XHTML tag to tkinter Text widget tagName
             (2) Create a dictionarhy of configuration options for each tagName to match the formatting implied by the equivalent XHTML tag
         """
-        font_family='Helvetica'
+        # Create a font for regular body text
+        font_family='Arial'
         font_base_size = 12 # For regular body text, in points
         base_font = tkFont.Font(family=font_family, size=font_base_size, weight='normal')
-        base_font_height = base_font.metrics('linespace') # The height of the font, in pixels
+        # Create a font for code block text
+        font_family = 'Courier'
+        code_font = tkFont.Font(family=font_family, size=font_base_size, weight='normal')
+        # Some metrics that will be used throughout
+        base_font_height = base_font.metrics('linespace') # The height of the base font, in pixels
         header_size_step = 4 # The amount by which a header steps up in increments from header 3 to 2 to 1, in points.
-        # TODO: These are only prototype configurations for testing. Many need to be configures with a font.
         # <body> to tagName=tag_body
         options = {}
-        font = tkFont.Font(family=font_family, size=font_base_size, weight='normal')
         options['font']=base_font
         options['lmargin1']=f"{font_base_size}p" # How much to indent first line of text, in points
         options['lmargin2']=f"{font_base_size}p" # How much to indent successive lines of text, in points
@@ -169,7 +180,7 @@ class XHTMLParserForTkTextWidget(object):
         options['spacing3']=0.5*font_height
         value = ('tag_h1', options)
         self._tag_map['h1']=value
-        # <h1> to tagName=tag_h2
+        # <h2> to tagName=tag_h2
         options = {}
         font = tkFont.Font(family=font_family, size=font_base_size+2*header_size_step, weight='bold')
         options['font']= font
@@ -177,6 +188,14 @@ class XHTMLParserForTkTextWidget(object):
         options['spacing3']=0.5*font_height
         value = ('tag_h2', options)
         self._tag_map['h2']=value
+        # <h3> to tagName=tag_h3
+        options = {}
+        font = tkFont.Font(family=font_family, size=font_base_size+header_size_step, weight='bold')
+        options['font']= font
+        font_height = font.metrics('linespace') # The height of the font, in pixels
+        options['spacing3']=0.5*font_height
+        value = ('tag_h3', options)
+        self._tag_map['h3']=value
         # <em> to tagName=tag_em
         options = {}
         font = tkFont.Font(family=font_family, size=font_base_size, weight='bold')
@@ -184,22 +203,27 @@ class XHTMLParserForTkTextWidget(object):
         value = ('tag_em', options)
         self._tag_map['em']=value
         # <li> to tagName=tag_li, a list item
-        # TODO: Work out how to create bullets. This probably will need to be handled by inserting a bullet into the text
-        # in Pass 1 through the ElementTree.
         options = {}
         options['font']=base_font
         options['lmargin1']=f"{2*font_base_size}p"
-        options['lmargin2']=f"{4*font_base_size}p"
+        options['lmargin2']=f"{3*font_base_size}p"
         value = ('tag_li', options)
         self._tag_map['li']=value
         # <a> to tagName=tag_a, a url anchor
-        # TODO: Work out how to create bindings while parsing the Element tree in Pass 2.
         options = {}
         options['foreground']='blue'
+        options['underline']=1
         value = ('tag_a', options)
         self._tag_map['a']=value
+        # <code> to tagName=tag_code, a code block
+        options = {}
+        options['font']=code_font
+        options['lmargin1']=f"{2*font_base_size}p" # How much to indent first line of text, in points
+        options['lmargin2']=f"{2*font_base_size}p" # How much to indent successive lines of text, in points
+        value = ('tag_code', options)
+        self._tag_map['code']=value
 
-        # TODO: Create more entries in the map
+        # TODO: Create more entries in the map, as needed
         return None
 
     def _xhtml_string_to_elements_tree(self, xhtml_string=''):
@@ -230,29 +254,59 @@ class XHTMLParserForTkTextWidget(object):
         self._process_element_tags(element=root)
         return None
 
-    def _process_element_text(self, element=None, start_index=''):
+    def _process_element_text(self, element=None, start_index='', parent=None):
         """
         Utility method called by process_xhtml(...) method to process the text content of one element in the elements tree.
         :parameter element: The element in the element tree to process, as xml.etree.ElementTree.Element
         :parameter start_index: tkinter Text widget index to start any text insertions, as string
+        :parameter parent: The element in the element tree that is the parent of the element being processed,
+                           as xml.etree.ElementTree.Element
         :return: end_index, as string
                  end_index = tkinter Text widget index at the end of any text insertion
         """
+        if element is not None:
+            assert(isinstance(element, ET.Element))
+        if parent is not None:
+            assert(isinstance(parent, ET.Element))
+        
+        # Get the logger    
         logger = logging.getLogger('xhtml_parser_logger')
 
         _si = start_index
         _ei = start_index
         # Get the element's 'text', that is, the text of the element itself
         el_txt = element.text
+        # Get the element's xhtml tag
+        el_tag = element.tag
+        if el_tag == 'ol':
+            # We are entering an ordered list. We need to initialize and item counter for this list.
+            self._elem_ol_counter[id(element)] = 1
         # Insert element's 'text' into the Text widget
         if el_txt is not None:
+            if el_tag == 'li' and parent.tag == 'ul':
+                # We have an element of an unordered list, and we need to insert a "quirky dot" into the
+                # element's text. For now we'll just insert a '*', but later it may be better to get the
+                # unicode for a dot.
+                el_txt = f"* {el_txt}"
+                # We also need to modify the text of the element, so that later when tagging, we have the
+                # right text length.
+                element.text = el_txt
+            if el_tag == 'li' and parent.tag == 'ol':
+                # We have an element of an ordered list, and we need to insert a list item number into the
+                # element's text. 
+                list_item_number = self._elem_ol_counter[id(parent)]
+                el_txt = f"({list_item_number}) {el_txt}"
+                self._elem_ol_counter[id(parent)] += 1
+                # We also need to modify the text of the element, so that later when tagging, we have the
+                # right text length.
+                element.text = el_txt
             _ei = self._client.insert_text(_si, el_txt)
             logger.debug(f"Inserted element text \'{el_txt}\' from indices {_si} to {_ei}.")
         # Capture the start and end indices for the element's text
         self._elem_insert_indices[id(element)]=(_si, _ei)
         # Iterate through the direct children of element, and proccess them
         for j in range(len(element)):
-            _ei = self._process_element_text(element[j], _ei)
+            _ei = self._process_element_text(element[j], _ei, element)
         # Get any 'tail' text for the element
         el_tail = element.tail
         if el_tail is not None:
@@ -280,11 +334,16 @@ class XHTMLParserForTkTextWidget(object):
         _ei = f"{_si} +{l_intext}c"
         # Get the element's tag
         el_tag = element.tag
+        # Possible get the url if element is an anchor (hyperlink)
+        el_href = ''
+        if el_tag == 'a':
+            # Get the actual href
+            el_href = element.attrib['href']
         try:
             # Get a tkinter Text widget tagName aand configuration for this element
             (tagName, config_dict) = self.build_tagName(el_tag)
             # Tag the text inserted for this element
-            self._client.tag_text(_si, _ei, tagName)
+            self._client.tag_text(_si, _ei, tagName, el_href)
             logger.debug(f"Tagged text from indices {_si} to {_ei} with {tagName}")
             # Configure the tag
             self._client.config_tag(tagName, config_dict)

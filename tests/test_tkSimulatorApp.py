@@ -22,8 +22,8 @@ class Test_tkSimulatorApp(unittest.TestCase):
         self.assertEqual(root.title(), 'Simulator Application')
         self.assertIsInstance(simapp._view_manager, tkSimulatorViewManager)
         self.assertIsInstance(simapp.getModel(), SimulatorModel)
-        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.txt'
-        info = AppAboutInfo(name='Simulator Application', version='0.9.3', copyright='2025', author='Kevin R. Geurts',
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\SimApp_HelpFile.md'
+        info = AppAboutInfo(name='Simulator Application', version='0.9.4', copyright='2025', author='Kevin R. Geurts',
                            license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                            help_file=help_file_path)
         self.assertTupleEqual(simapp.getAboutInfo(), info)

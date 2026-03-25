@@ -16,10 +16,12 @@ Exported Functions:
 
 
 # Standard imports
-from optparse import Option
 import tkinter as tk
 from tkinter import ttk
+import tkinter.messagebox
 import logging
+from functools import partial
+import webbrowser
 
 # Local imports
 from tkAppFramework.tkViewManager import tkViewManager
@@ -100,7 +102,7 @@ class HelpTextWidget(ttk.Labelframe, Subject, TkWidgetXHTMLParserInterface):
         self._txt_content['xscrollcommand'] = self._scrollbar_hor.set
 
         # Create an XHTML parser object
-        self._parser = XHTMLParserForTkTextWidget(self, log_level = logging.DEBUG)
+        self._parser = XHTMLParserForTkTextWidget(self)
     
     def processHelpContent(self, help_content='', help_format='txt'):
         """
@@ -139,6 +141,22 @@ class HelpTextWidget(ttk.Labelframe, Subject, TkWidgetXHTMLParserInterface):
         self._parser.process_xhtml(help_content)
         return None
 
+    def onHyperlinkClick(self, event, url):
+        """
+        Handler called when user clicks on a hyperlink in the Text widget.
+        :parameter event: tkinter event that resulted in this handler being called
+        :parameter url: The url for the anchor that was clicked, as string
+        :return: None
+        """
+        # Show a message box with the hyperlink url, and ask the user if they want to launch a browser
+        # to view the link.
+        _title = 'Confirm okay to launch browser'
+        _msg = f"Do you wish to launch a browser to display URL: \"{url}\"?"
+        response = tkinter.messagebox.askyesno(title=_title, message=_msg, default=tkinter.messagebox.NO)
+        if response:
+            webbrowser.open(url)
+        return None
+
     def insert_text(self, starting_index='', text=''):
         """
         Method used by XHTML parser to insert text into Text widget.
@@ -151,16 +169,19 @@ class HelpTextWidget(ttk.Labelframe, Subject, TkWidgetXHTMLParserInterface):
         ending_index = self._txt_content.index(tk.INSERT)
         return ending_index
 
-    def tag_text(self, starting_index='', ending_index='', tagName=''):
+    def tag_text(self, starting_index='', ending_index='', tagName='', link_url=''):
         """
         Method used by XHTML parser to tag text in a Text widget.
         :parameter start_index: tkinter Text widget index of start of text to tag, as string
         :parameter ending_index: tkinter Text widget index of the end of any text to tag, as string
         :parameter tagName: The tagName with which to tag the text, as string
+        :parameter link_url: The URL to "bind" to tagName, as string
         :return: None
         """
         super().tag_text(starting_index, ending_index, tagName)
         self._txt_content.tag_add(tagName, starting_index, ending_index)
+        if len(link_url) > 0:
+            self._txt_content.tag_bind(tagName, '<Button-1>', partial(self.onHyperlinkClick, url=link_url))
         return None
 
     def config_tag(self, tagName='', options_dict={}):
