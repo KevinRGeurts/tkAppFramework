@@ -6,6 +6,7 @@ This module provides unit tests for the XHTMLParserForTkTextWidget class.
 # Standard imports
 import unittest
 import logging
+import tkinter as tk
 
 # Local imports
 from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget, TkWidgetXHTMLParserInterface
@@ -79,7 +80,22 @@ class TextWidgetTestMock(TkWidgetXHTMLParserInterface):
         return str(index)
 
 
-class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
+class TKinterTestCase(unittest.TestCase):
+    """
+    Reference: https://stackoverflow.com/questions/4083796/how-do-i-run-unittest-on-a-tkinter-app
+    These methods are going to be the same for every GUI test, so put them into a separate class
+    """
+    def setUp(self):
+        self.root=tk.Tk()
+
+    def tearDown(self):
+        if self.root:
+            self.root.destroy()
+
+
+# This class is a child to TKinterTestCase so that self.root is created in setUp, so that XHTMLParserForTkTextWidget
+# can create tkinter.font.Font objects.
+class Test_XHTMLParserForTkTextWidget(TKinterTestCase):
     def test_init_populate_tag_map(self):
         mock = TextWidgetTestMock()
         parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
