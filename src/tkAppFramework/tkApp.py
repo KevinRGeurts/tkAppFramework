@@ -45,6 +45,7 @@ from multiprocessing import Process
 # local imports
 from tkAppFramework.tkHelpViewManager import tkHelpViewManager
 from tkAppFramework.HelpModel import HelpModel
+from tkAppFramework.tk_app_about_dlg import tkAppAboutDialog
 
 
 # This function cannot be a method of tkApp, do to Process using pickle.
@@ -376,22 +377,13 @@ class tkApp(ttk.Frame):
             self._help_process.start()
         return None
 
-    # TODO: Investigate if instead of showinfo(...) we can create a pop-up dialog that contains a
-    # tkinter.Text widget, so that the app's "About" information can be "rich" formatted text.
-    # This would allow clickable hyperlink for source, bold, italic, etc. Requires investigation of 
-    # ability to auto tag text in the widget.
     def onHelpAbout(self):
         """
         Method called when menu item Help | About is selected.
         :return: None
         """
-        msg = self._appInfo.name + '\n'
-        msg += 'version ' + self._appInfo.version + '\n'
-        msg += 'Copyright (c) ' + self._appInfo.copyright + ' by ' + self._appInfo.author + '\n'
-        msg += 'Licensed under the ' + self._appInfo.license + '\n'
-        msg += 'Source: ' + self._appInfo.source
-        dialog_title = 'About ' + self._appInfo.name
-        showinfo(title=dialog_title, message=msg, parent=self.master)
+        dlg = tkAppAboutDialog(self._appInfo)
+        dlg.show_dialog()
         return None
 
     def _setup_logging(self, log_level=logging.INFO):

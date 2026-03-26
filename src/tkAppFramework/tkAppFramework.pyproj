@@ -47,6 +47,7 @@
     <Compile Include="tkxhtmlviewerwidget.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tk_app_about_dlg.py" />
     <Compile Include="xhtml_parser_for_tktextwidget.py" />
     <Compile Include="tkUserQueryToolEmbedded.py">
       <SubType>Code</SubType>

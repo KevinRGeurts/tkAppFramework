@@ -5,6 +5,8 @@ strucure it into data objects that can be used to insert equivalent formatted te
 Exported Classes:
     XHTMLParserForTkTextWidget -- This class can be used to read XHTML formatted string and use a set of call back functions
                                   to insert equivalent formatted text into a tkinter Text widget object.
+    TkWidgetXHTMLParserInterface -- This class defines methods that a tkinter Widget must extend in order to use a
+                                    XHTMLParserForTkTextWidget object.
 
 Exported Exceptions:
     None    
@@ -25,13 +27,15 @@ from tkAppFramework.exceptions import NoWidgetTagConfigurationAvailableForXHTMLT
 
 class TkWidgetXHTMLParserInterface(object):
     """
-    This class defines methods that a tkinter Widget must extend inorder to use a XHTMLParserForTkTextWidget object.
+    This class defines methods that a tkinter Widget must extend in order to use a XHTMLParserForTkTextWidget object.
     Extension should be implemented by calling super().<method name> first in the extended method. The implementations
     in this class perform type checking on method parameters using assert(...).
     """
     def insert_text(self, starting_index='', text=''):
         """
         Method used by XHTML parser to insert text into widget.
+        Extension should be implemented by calling super().insert_text(...) first in the extended method.
+        This implementation performs type checking on method parameters using assert(...).
         :parameter start_index: widget index to start any text insertions, as string
         :parameter text: The text to insert into the widget, as string
         :return: tkinter widget index at the end of any text insertions, as string
@@ -44,6 +48,8 @@ class TkWidgetXHTMLParserInterface(object):
     def tag_text(self, starting_index='', ending_index='', tagName='', link_url=''):
         """
         Method used by XHTML parser to tag text in a widget.
+        Extension should be implemented by calling super().tag_text(...) first in the extended method.
+        This implementation performs type checking on method parameters using assert(...).
         :parameter start_index: tkinter widget index of start of text to tag, as string
         :parameter ending_index: tkinter widget index of the end of any text to tag, as string
         :parameter tagName: The tagName with which to tag the text, as string
@@ -59,6 +65,8 @@ class TkWidgetXHTMLParserInterface(object):
     def config_tag(self, tagName='', options_dict={}):
         """
         Method used by XHTML parser to add and configure options for a tag in tkinter widget.
+        Extension should be implemented by calling super().config_tag(...) first in the extended method.
+        This implementation performs type checking on method parameters using assert(...).
         :parameter tagName: The tagName with which to tag the text, as string
         :parameter options_dict: The dictionary of configuration options for the tag, as dict with key = option_name, value = option_setting
         :return: None
@@ -70,6 +78,7 @@ class TkWidgetXHTMLParserInterface(object):
     def get_start_index(self):
         """
         Method used by XHTML parser to get the current insertion index for the tkinter widget.
+        Extension should be implemented by calling super().get_start_index() first in the extended method.
         :return: The current index, as string
         """
         index = ''

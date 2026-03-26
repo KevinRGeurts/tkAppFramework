@@ -6,7 +6,6 @@ This module provides unit tests for the XHTMLParserForTkTextWidget class.
 # Standard imports
 import unittest
 import logging
-from tkinter.font import Font
 
 # Local imports
 from tkAppFramework.xhtml_parser_for_tktextwidget import XHTMLParserForTkTextWidget, TkWidgetXHTMLParserInterface
@@ -83,7 +82,7 @@ class TextWidgetTestMock(TkWidgetXHTMLParserInterface):
 class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
     def test_init_populate_tag_map(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         self.assertEqual(9, len(parser._tag_map))
         exp_val = 'tag_h1'
         act_val = parser._tag_map['h1'][0]
@@ -92,13 +91,13 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         
     def test_getTagIdSuffix(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         self.assertEqual('0', parser._getTagIdSuffix())
         self.assertEqual('1', parser._getTagIdSuffix())
 
     def test_build_tagName(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         self.assertEqual('tag_h1_0', parser.build_tagName('h1')[0])
         self.assertEqual('tag_em_1', parser.build_tagName('em')[0])
         act_val = parser.build_tagName('h1')
@@ -107,12 +106,12 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_build_tagName_fail(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         self.assertRaises(NoWidgetTagConfigurationAvailableForXHTMLTag, parser.build_tagName, 'unconfigured_xhtml_tag')
 
     def test_process_xhtml_1_element(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<h1>This is a Heading Level 1</h1>')
         # Check text insertion
         act_val = mock._inserted_text
@@ -125,7 +124,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_2_nested_elements_middle(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<h1>This is a <em>Heading</em> Level 1</h1>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -138,7 +137,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
         
     def test_process_xhtml_2_nested_elements_end(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<h1>This is a Heading Level <em>1</em></h1>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -151,7 +150,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_2_serial_elements(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body><h1>Heading</h1><p><em>emphasized text</em></p></body>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -164,7 +163,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_unordered_list(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body><h2>Unordered list</h2><ul><li>Item 1</li><li>Item 2</li></ul></body>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -177,7 +176,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_ordered_list(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body><h2>Ordered list</h2><ol><li>Item 1</li><li>Item 2</li></ol></body>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -190,7 +189,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_code_block(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body>Regular <code>code block</code> regular</body>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -203,7 +202,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_heading_3(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body><h3>Heading level 3</h3></body>')
         # Check text insertions
         act_val = mock._inserted_text
@@ -216,7 +215,7 @@ class Test_XHTMLParserForTkTextWidget(unittest.TestCase):
 
     def test_process_xhtml_anchor(self):
         mock = TextWidgetTestMock()
-        parser = XHTMLParserForTkTextWidget(mock, logging.DEBUG)
+        parser = XHTMLParserForTkTextWidget(mock, logging.INFO)
         parser.process_xhtml('<body><a href="https://github.com/KevinRGeurts/tkAppFramework">GitHub</a></body>')
         # Check text insertions
         act_val = mock._inserted_text
