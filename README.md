@@ -2,16 +2,25 @@
 
 Source code: [GitHub](https://github.com/KevinRGeurts/tkAppFramework)
 ---
-tkAppFramework is a Python library that facilitates the creation of a GUI application using tkinter. It provides
-a base application class (tkApp), a base view manager class (tkViewManager), a base data and business logic
-class (Model), and a base class so that GUI widget managed by the view manager can act as observed subjects (Subject)
-in the Observer design pattern.
+tkAppFramework is a Python library that facilitates the creation of a GUI application using tkinter. It provides:
 
+1. a base application class (tkApp)
+2. a base view manager class (tkViewManager)
+3. a base data and business logic class (Model)
+4. a base class so that GUI widgets managed by the view manager can act as observed subjects (Subject) in the Observer design pattern
+5. an application class (tkHelpApp) launched to display help content (.txt, .html, or .md) when a tkApp's Help | View Help... menu item is selected
+6. a dialog class (tkAppAboutDialog) launched to display application "about" information when a tkApp's Help | About... menu item is selected
+7. a simulator application class (tkSimulatorApp) that can be used by any "simulator" (see requirements below) by implementing a SimulatorAdapter child class
+8. a reusable tkXHTMLViewerWidget when can be embedded as a child widget of any tkViewManager child class, and used to display HTML formatted text
+ 
 ## Requirements
 
 1. justhtml>=1.9.0: [GitHub](https://github.com/emilstenstrom/justhtml), [PyPi](https://pypi.org/project/justhtml/)
 2. markdown>=3.10.2: [GitHub](https://github.com/Python-Markdown/markdown), [PyPi](https://pypi.org/project/Markdown/)
 3. UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
+
+The `markdown` and `justhtml` packages are used by the `HelpModel` class, which is the business logic for `tkHelpApp`.
+The `UserResponseCollector` package is used by `tkSimulatorApp` to receive input requests from the simulator.
 
 ## Credit where credit is due
 
@@ -72,7 +81,7 @@ can be derived.
 Concrete implementation child classes likely will:
 - Implement ```readModelFromFile()``` method for reading model data from a file-like object.
     Notes:
-    - Before reading from a file, the model may need to clear exsisting data.    
+    - Before reading from a file, the model may need to clear existing data.    
     - After reading from a file, the model should call self.notify() to inform observers of changes.
 - Implement ```writeModelToFile()``` method for writing model data to a file-like object.
 
@@ -402,6 +411,9 @@ currently supported:
 - Code blocks (``` `code` ```)
 
 Markdown files are converted to xhtml using the `markdown` package. HTML and converted markdown files are "sanitized" using  the `justhtml` package.
+
+The path to the help content file is specified in the `help_file` field of the `AppAboutInfo` named tuple passed into `tkApp.__init__(...)`
+method as the `app_info` parameter.
 
 ## Unittests
 
