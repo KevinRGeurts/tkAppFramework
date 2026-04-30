@@ -38,6 +38,7 @@ from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -257,6 +258,90 @@ class DemoSimulatorAdapter(SimulatorAdapter):
         return None
 
 
+class DataGridDemoModel(Model):
+    """
+    A concrete implementation of Model for the demo datagrid application.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._count = 0
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, value):
+        self._count = value
+        self.notify()        
+
+
+class DataGridDemotkViewManager(tkViewManager):
+    """
+    Provide an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
+    and the tkDataGrid widget.
+    """
+    def _CreateWidgets(self):
+        """
+        Create the demo widget, register 
+        :return None:
+        """
+        dg = tkDataGridWidget(self, title='Demo Data Grid')
+        # Attach self as an observer of the subject demo widget
+        dg.attach(self)
+        # Register a handler function for updates from the subject datagrid widget
+        self.register_subject(dg, self.handle_datagrid_widget_update)
+        # Place datagrid widget in grid and set weights for stretching the column and row in the grid
+        # so that the demo widget resizes correctly.
+        dg.grid(column=0, row=0, sticky='NWES')
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        return None
+
+    def handle_model_update(self):
+        """
+        Handle updates from the model.
+        :return None:
+        """
+        print(f"Model count of button clicks is {self.getModel().count}")
+        return None
+    
+    def handle_datagrid_widget_update(self):
+        """
+        Handle updates from the datagrid widget.
+        :return None:
+        """
+        # Inform the model that the datagrid widget's state has changed (that is, a field value of a record has changed),
+        # so that the model can record the change.
+        # self.getModel().count += 1
+        return None
+
+
+class DataGridDemotkApp(tkAppFramework.tkApp.tkApp):
+    """
+    Provide implementations of _createViewManager() and _createModel() factory methods.
+    """
+    def __init__(self, parent):
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\HelpFile.txt'
+        info = tkAppFramework.tkApp.AppAboutInfo(name='DataGrid Demo Application', version='0.1', copyright='2026', author='John Q. Public',
+                                                 license='MIT License', source='GitHub', help_file=help_file_path)
+        super().__init__(parent, title="DataGrid Demo Application", app_info=info, file_types=[('Text file', '*.txt')])
+
+    def _createViewManager(self):
+        """
+        Concrete Implementation, which returns a DemotkViewManager instance.
+        :return: tkViewManager instance that will be the app's view manager
+        """
+        return DataGridDemotkViewManager(self)
+
+    def _createModel(self):
+        """
+        Concrete Implementation, which returns a DemoModel().
+        :return: DemoModel instance that will be the app's model
+        """
+        return DataGridDemoModel()
+
+
 def debug():
     """
     Code that is should be changed to what needs to be debugged.
@@ -278,7 +363,7 @@ if __name__ == '__main__':
     # Since the global UserQueryReceiver is a tkUserQueryReceiver, we have to construct a local one for the console
     receiver = UserResponseCollector.UserQueryReceiver.ConsoleUserQueryReceiver()
     command = UserQueryCommandMenu(receiver,
-                                   'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app', 'b':'Debug a case'})
+                                   'Which demo do you want to launch?', {'d':'Demo tkApp', 's':'Simulator app', 'g':'DataGrid app', 'b':'Debug a case'})
     response = command.Execute()
 
     match response:
@@ -302,11 +387,15 @@ if __name__ == '__main__':
             simapp.getModel().sim_adapter = DemoSimulatorAdapter(simapp.sim_output_queue)
             simapp.mainloop()
 
+        case 'g':
+
+            # DataGridDemotkApp
+
+            root = tk.Tk()
+            dgapp = DataGridDemotkApp(root)
+            dgapp.mainloop()
+
         case 'b':
 
             # Debug
             debug()
-
-
-
-     
