@@ -287,7 +287,9 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=[('field_1',FieldType.BOOL),('field_2',FieldType.LIST)], num_records=25)
+        dg = tkDataGridWidget(self, title='Demo Data Grid',
+                              fields_config=[('field_1',FieldType.BOOL),('field_2',FieldType.LIST),('field_3',FieldType.NUMBER)],
+                              num_records=25)
         # Attach self as an observer of the subject demo widget
         dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget

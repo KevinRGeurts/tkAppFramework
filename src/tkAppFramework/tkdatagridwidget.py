@@ -27,8 +27,14 @@ from tkAppFramework.ObserverPatternBase import Subject, Observer
 
 
 class FieldType(IntEnum):
+    """
+    This IntEnum class is used to specify the type of each field when configuring the tkDataGridWidget.
+    It actually makes sense to use an Enum here, so that clients do not need to know about the hierarchy of
+    tkDGElement classes to specify field types.
+    """
     BOOL = 1
     LIST = 2
+    NUMBER = 3
     # Add more field types as needed
 
 
@@ -226,6 +232,73 @@ class tkDGElementList(tkDGElement):
         return None
 
 
+class tkDGElementNumber(tkDGElement):
+    """
+    Class represents a number containing (int or float) element of a tkDataGridWidget.
+    """
+    def __init__(self, parent, x=0.0, y=0.0, w=1.0, h=0.25, min_val=None, max_val=None):
+        """
+        :parameter parent: tkinter widget that is the parent of this widget, assumed to be a tkDataGridWidget
+        :paramter x: The upper-left corner x-coordinate of the element in the data grid in inches, as float
+        :paramter y: The upper-left corner y-coordinate of the element in the data grid in inches, as float
+        :paramter w: The width of the element in the data grid in inches, as float
+        :paramter h: The height of the element in the data grid in inches, as float
+        :parameter min_val: The minimum value that can be entered in the element, as int or float
+        :parameter max_val: The maximum value that can be entered in the element, as int or float
+        """
+        super().__init__(parent, x, y, w, h)
+        self._element_widget = tk.Entry(self, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="white",
+                                              background="white", takefocus=1)
+        self._element_widget.grid(column=0, row=0, sticky='NWSE')
+        self.columnconfigure(0, weight=1) # Grid-2
+        self.rowconfigure(0, weight=1) # Grid-2
+        # Create control variable for the Entry and assign it
+        self._element_value = tk.StringVar()
+        self._element_widget['textvariable'] = self._element_value
+
+    # def onCheckbuttonClicked(self, canvas_id):
+    #     """
+    #     Called when a Checkbutton is clicked.
+    #     :parameter canvas_id: The canvas ID of the element widget that was clicked, as int
+    #     :return: None
+    #     """
+    #     print(f"Checkbutton with canvas ID {canvas_id} was clicked.")
+    #     self.notify()
+    #     return None
+
+    def get_state(self):
+        """
+        Get the state of the number element.
+        :return: Tuple (element type, element value), as (type, float or int)
+        """
+        elem_type = super().get_state()
+        value = self._element_value.get()
+        return (elem_type[0], value)
+
+    def set_state(self, value=None):
+        """
+        Set the state of the number element.
+        :paramter value: The value to set in the element.
+        :return: None
+        """
+        assert(type(value)==int or type(value)==float)
+        self._element_value.set(value)
+        super().set_state()
+        return None
+
+    def disable_element(self, disabled=True):
+        """
+        Used to set if the element widget will accept input.
+        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
+        :return None:
+        """
+        if disabled:
+            self._element_widget['state']=tk.DISABLED
+        else:
+            self._element_widget['state']=tk.NORMAL
+        return None
+
+
 class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
     """
     Class represents a tkinter label frame, the widget contents of which allow displayinbg and interacting with
@@ -372,6 +445,8 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
                         element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                     case FieldType.LIST:
                         element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                    case FieldType.NUMBER:
+                        element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 # We will stack the elements vertically, so only update next_y.
@@ -380,15 +455,6 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
             next_x += wid_w
             next_y = 0.0
         # Now some temporary code where we can just try stuff out as we learn.
-        # Make some entry widgets and insert them into the canvas
-        for i in range(25):
-            te = ttk.Entry(self._dg_canvas)
-            te.insert(index=0, string=f"Text Data {i}")
-            te_id = self._dg_canvas.create_window(f"{next_x}i", f"{next_y}i", height=f"{wid_h}i", width=f"{wid_w}i",
-                                                  anchor=tk.NW, window=te)
-            self._wids.append(te_id)
-            # We will stack the widgets vertically, so only update next_y.
-            next_y += wid_h
 
         return None
 
