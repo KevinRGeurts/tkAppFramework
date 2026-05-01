@@ -314,6 +314,7 @@ class DataGridDemotkViewManager(tkViewManager):
         Handle updates from the datagrid widget.
         :return None:
         """
+        print(f"View manager informed of data grid widget update.")
         # Inform the model that the datagrid widget's state has changed (that is, a field value of a record has changed),
         # so that the model can record the change.
         # self.getModel().count += 1

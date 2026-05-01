@@ -48,7 +48,8 @@ class tkDGElement(Subject):
         """
         Subject.__init__(self)
         self.attach(observer)
-        self._element_widget = None # The "useful" widget, not the border creating Frame
+        self._element_widget = None # The tkinter widget that is the element widget. It is assigned in the child class constructors.
+        self._element_value = None # The control variable for the element widget, if needed. It is assigned in the child class constructors.
         self._canvas_id = None
 
     @property
@@ -61,7 +62,10 @@ class tkDGElement(Subject):
         Note: Must be extended by child classes, because this base class implementation returns value=None.
         :return: Tuple (element type, element value), as (type, any)
         """
-        return (type(self), None)
+        value = None
+        if self._element_value is not None:
+            value = self._element_value.get()
+        return (type(self), value)
 
     def set_state(self, value=None):
         """
@@ -78,10 +82,13 @@ class tkDGElement(Subject):
         """
         Used to set if the element widget will accept input.
         :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
-        Note: Must be implemented by child classes, because this base clas implementation will raise NotImplementedError if called.
         :return None:
         """
-        raise NotImplementedError
+        if self._element_widget is not None:
+            if disabled:
+                self._element_widget['state']=tk.DISABLED
+            else:
+                self._element_widget['state']=tk.NORMAL
         return None
 
 
@@ -117,15 +124,6 @@ class tkDGElementBool(tkDGElement):
         self.notify()
         return None
 
-    def get_state(self):
-        """
-        Get the state of the boolean element.
-        :return: Tuple (element type, element value), as (type, any)
-        """
-        elem_type = super().get_state()
-        value = self._element_value.get()
-        return (elem_type[0], value)
-
     def set_state(self, value=None):
         """
         Set the state of the element.
@@ -137,18 +135,6 @@ class tkDGElementBool(tkDGElement):
         assert(type(value)==bool)
         self._element_value.set(int(value))
         super().set_state()
-        return None
-
-    def disable_element(self, disabled=True):
-        """
-        Used to set if the element widget will accept input.
-        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
-        :return None:
-        """
-        if disabled:
-            self._element_widget['state']=tk.DISABLED
-        else:
-            self._element_widget['state']=tk.NORMAL
         return None
 
 
@@ -188,15 +174,6 @@ class tkDGElementList(tkDGElement):
         self.notify()
         return None
 
-    def get_state(self):
-        """
-        Get the state of the list element.
-        :return: Tuple (element type, element value), as (type, any)
-        """
-        elem_type = super().get_state()
-        value = self._element_value.get()
-        return (elem_type[0], value)
-
     def set_state(self, value=None):
         """
         Set the state of the element.
@@ -208,18 +185,6 @@ class tkDGElementList(tkDGElement):
         assert(type(value)==str)
         self._element_value.set(value)
         super().set_state()
-        return None
-
-    def disable_element(self, disabled=True):
-        """
-        Used to set if the element widget will accept input.
-        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
-        :return None:
-        """
-        if disabled:
-            self._element_widget['state']=tk.DISABLED
-        else:
-            self._element_widget['state']=tk.NORMAL
         return None
 
 
@@ -259,15 +224,6 @@ class tkDGElementNumber(tkDGElement):
     #     self.notify()
     #     return None
 
-    def get_state(self):
-        """
-        Get the state of the number element.
-        :return: Tuple (element type, element value), as (type, float or int)
-        """
-        elem_type = super().get_state()
-        value = self._element_value.get()
-        return (elem_type[0], value)
-
     def set_state(self, value=None):
         """
         Set the state of the number element.
@@ -277,18 +233,6 @@ class tkDGElementNumber(tkDGElement):
         assert(type(value)==int or type(value)==float)
         self._element_value.set(value)
         super().set_state()
-        return None
-
-    def disable_element(self, disabled=True):
-        """
-        Used to set if the element widget will accept input.
-        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
-        :return None:
-        """
-        if disabled:
-            self._element_widget['state']=tk.DISABLED
-        else:
-            self._element_widget['state']=tk.NORMAL
         return None
 
 
@@ -413,8 +357,10 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         """
         value = element.get_state()
         print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}.")
+        self.notify()
         return None
         
+    # TODO: Enhance so that fields can be columns instead of rows.
     def _draw_element_separator_lines(self):
         """
         This utility function is used to draw the lines on the canvas which visuall separate the elements
@@ -455,6 +401,7 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         wid_h = self._row_h 
         wid_w = self._col_w
         # Add widgets...
+        upper_left_widget = None
         for field in self._fields_config:
             # TODO: Use field name in a not yet created header row.
             field_name = field[0]
@@ -469,6 +416,8 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
                         element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                     case FieldType.NUMBER:
                         element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                if upper_left_widget is None:
+                    upper_left_widget = element
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 # We will stack the elements vertically, so only update next_y.
@@ -477,6 +426,11 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
             next_x += wid_w + self._sep_w
             next_y = 0.0 + self._sep_w
         # Now some temporary code where we can just try stuff out as we learn.
+        # ...
+        
+        # Set focus to upper left widget in data grid, if it exists.
+        if upper_left_widget is not None:
+            upper_left_widget._element_widget.focus_set()
 
         return None
 
