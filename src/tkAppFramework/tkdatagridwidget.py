@@ -18,7 +18,6 @@ Exported Functions:
 # Standard imports
 import tkinter as tk
 from tkinter import ttk
-import tkinter.messagebox
 from functools import partial
 from enum import IntEnum
 
@@ -38,28 +37,19 @@ class FieldType(IntEnum):
     # Add more field types as needed
 
 
-# TODO: The Frame is used to create a border around the element in the canvas. Consider if it would be better to draw
-# a border within the canvas using lines. This might eliminate the need for the Frame and, for example, make focus
-# traversal work better.
-class tkDGElement(tk.Frame, Subject):
+class tkDGElement(Subject):
     """
     Class is the base class for classes that represent an element of a tkDataGridWidget. Class is a subject in Observer
     design pattern, in anticipation of being observed by tkDataGridWidet class.
     """
-    def __init__(self, parent=None, x=0.0, y=0.0, w=1.0, h=0.25):
+    def __init__(self, observer=None):
         """
-        :parameter parent: tkinter widget that is the parent of this element, assumed to be a tkDataGridWidget
-        :paramter x: The upper-left corner x-coordinate of the element in the data grid in inches, as float
-        :paramter y: The upper-left corner y-coordinate of the element in the data grid in inches, as float
-        :paramter w: The width of the element in the data grid in inches, as float
-        :paramter h: The height of the element in the data grid in inches, as float
+        :parameter observer: Observer object that observes this tkDGElement object, assumed to be a tkDataGridWidget object
         """
-        tk.Frame.__init__(self, parent.canvas, highlightbackground="black", highlightcolor="black", highlightthickness=1, bd=0, takefocus=1)
         Subject.__init__(self)
-        self.attach(parent)
+        self.attach(observer)
         self._element_widget = None # The "useful" widget, not the border creating Frame
-        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
-                                                      anchor=tk.NW, window=self)
+        self._canvas_id = None
 
     @property
     def canvasID(self):
@@ -107,15 +97,15 @@ class tkDGElementBool(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent, x, y, w, h)
-        self._element_widget = tk.Checkbutton(self, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="cyan",
+        super().__init__(parent)
+        self._element_widget = tk.Checkbutton(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="cyan",
                                               background="cyan", takefocus=1, command=partial(self.onCheckbuttonClicked, self._canvas_id) )
-        self._element_widget.grid(column=0, row=0, sticky='NWSE')
-        self.columnconfigure(0, weight=1) # Grid-2
-        self.rowconfigure(0, weight=1) # Grid-2
         # Create control variable for the Checkbutton and assign it
         self._element_value = tk.IntVar()
         self._element_widget['variable'] = self._element_value
+        # Place the widget on the canvas and store the canvas ID
+        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
+                                                      anchor=tk.NW, window=self._element_widget)
 
     def onCheckbuttonClicked(self, canvas_id):
         """
@@ -174,17 +164,18 @@ class tkDGElementList(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent, x, y, w, h)
+        super().__init__(parent)
         options_list = ('Option 1', 'Option 2', 'Option 3') # Temporary list of options, will need to be set by some method in the future 
-        # Create control variable for the OptionMenu. It is assigned in the construcgtor.
+        # Create control variable for the OptionMenu. It is assigned in the constructor below.
         self._element_value = tk.StringVar()
         self._element_value.set(options_list[1]) # Set default value to first option in list
-        self._element_widget = tk.OptionMenu(self, self._element_value, command=partial(self.onOptionSelected, self._canvas_id),
+        self._element_widget = tk.OptionMenu(parent.canvas, self._element_value, command=partial(self.onOptionSelected, self._canvas_id),
                                             *options_list)
+        # Use confugure because constructor doesn't take these options.
         self._element_widget.configure(relief="flat", highlightcolor="green", background="green", takefocus=1)
-        self._element_widget.grid(column=0, row=0, sticky='NWSE')
-        self.columnconfigure(0, weight=1) # Grid-2
-        self.rowconfigure(0, weight=1) # Grid-2
+        # Place the widget on the canvas and store the canvas ID
+        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
+                                                      anchor=tk.NW, window=self._element_widget)
 
     def onOptionSelected(self, canvas_id, option):
         """
@@ -232,6 +223,8 @@ class tkDGElementList(tkDGElement):
         return None
 
 
+# TODO: Consider if this should just be a text entry element, not made specific for numbers. That would allow
+# clients, for example, to display <invalid> or <empty> instead of a number, as needed.
 class tkDGElementNumber(tkDGElement):
     """
     Class represents a number containing (int or float) element of a tkDataGridWidget.
@@ -246,15 +239,15 @@ class tkDGElementNumber(tkDGElement):
         :parameter min_val: The minimum value that can be entered in the element, as int or float
         :parameter max_val: The maximum value that can be entered in the element, as int or float
         """
-        super().__init__(parent, x, y, w, h)
-        self._element_widget = tk.Entry(self, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="white",
+        super().__init__(parent)
+        self._element_widget = tk.Entry(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="white",
                                               background="white", takefocus=1)
-        self._element_widget.grid(column=0, row=0, sticky='NWSE')
-        self.columnconfigure(0, weight=1) # Grid-2
-        self.rowconfigure(0, weight=1) # Grid-2
         # Create control variable for the Entry and assign it
         self._element_value = tk.StringVar()
         self._element_widget['textvariable'] = self._element_value
+        # Place the widget on the canvas and store the canvas ID
+        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
+                                                      anchor=tk.NW, window=self._element_widget)
 
     # def onCheckbuttonClicked(self, canvas_id):
     #     """
@@ -335,6 +328,8 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         # Canvas row height and column width, in inches.
         self._row_h = 0.25 
         self._col_w = 1.0
+        # Element separator line width, in inches.
+        self._sep_w = 1./32.
 
         # Note: i=inches
         # Note: scrollregion=(w,n,e,s)
@@ -354,6 +349,7 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         self._dg_canvas['xscrollcommand'] = self._scrollbar_hor.set
 
         # Set up the data grid with the appropriate number of records and fields.
+        self._draw_element_separator_lines()
         self._setup_data_grid()
 
     # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
@@ -419,6 +415,32 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}.")
         return None
         
+    def _draw_element_separator_lines(self):
+        """
+        This utility function is used to draw the lines on the canvas which visuall separate the elements
+        into a grid.
+        :return: None
+        """
+        # First, draw vertical lines to separate fields/columns.
+        # Coordinate (canvas?) where next line should start, in inches
+        start_x = 0.0
+        start_y = 0.0
+        end_y = (self._num_records * self._row_h) + ((self._num_records+1)*self._sep_w)
+        for field_i in range(len(self._fields_config) + 1):
+                self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{start_x}i", f"{end_y}i",
+                                            width=f"{self._sep_w}i", tags='tag_element_separator_line')
+                start_x += self._col_w + self._sep_w
+        # Second, draw horizontal lines to separate records/rows.
+        start_x = 0.0
+        end_x = (len(self._fields_config) * self._col_w) + ((len(self._fields_config) +1)*self._sep_w)
+        start_y = 0.0
+        for rec_i in range(self._num_records +1):
+                self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{end_x}i", f"{start_y}i",
+                                            width=f"{self._sep_w}i", tags='tag_element_separator_line')
+                start_y += self._row_h + self._sep_w
+
+        return None
+    
     # TODO: Enhance so that fields can be columns instead of rows.
     def _setup_data_grid(self):
         """
@@ -427,8 +449,8 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         """
         # Coordinate (canvas?) where next widget shoud be inserted, in inches
         # Must set width and height for all widgets, so that these coordinates can be appropriately updated.
-        next_x = 0.0
-        next_y = 0.0
+        next_x = 0.0 + self._sep_w
+        next_y = 0.0 + self._sep_w
         # Widget height and width, in inches
         wid_h = self._row_h 
         wid_w = self._col_w
@@ -450,10 +472,10 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 # We will stack the elements vertically, so only update next_y.
-                next_y += wid_h
+                next_y += wid_h + self._sep_w
             # Moving to the next field/column, so update next_x and reset next_y.
-            next_x += wid_w
-            next_y = 0.0
+            next_x += wid_w + self._sep_w
+            next_y = 0.0 + self._sep_w
         # Now some temporary code where we can just try stuff out as we learn.
 
         return None
