@@ -20,11 +20,21 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.messagebox
 from functools import partial
+from enum import IntEnum
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer
 
 
+class FieldType(IntEnum):
+    BOOL = 1
+    LIST = 2
+    # Add more field types as needed
+
+
+# TODO: The Frame is used to create a border around the element in the canvas. Consider if it would be better to draw
+# a border within the canvas using lines. This might eliminate the need for the Frame and, for example, make focus
+# traversal work better.
 class tkDGElement(tk.Frame, Subject):
     """
     Class is the base class for classes that represent an element of a tkDataGridWidget. Class is a subject in Observer
@@ -118,7 +128,7 @@ class tkDGElementBool(tkDGElement):
         """
         elem_type = super().get_state()
         value = self._element_value.get()
-        return (elem_type, value)
+        return (elem_type[0], value)
 
     def set_state(self, value=None):
         """
@@ -188,7 +198,7 @@ class tkDGElementList(tkDGElement):
         """
         elem_type = super().get_state()
         value = self._element_value.get()
-        return (elem_type, value)
+        return (elem_type[0], value)
 
     def set_state(self, value=None):
         """
@@ -222,10 +232,13 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
     data records and fields. Class is a Subject in Observer design pattern so that it can be observed by a tkViewManager object.
     Class is an Observer in Observer design pattern so that it can observe tkDGElement objects.
     """
-    def __init__(self, parent, title='Data Grid') -> None:
+    # TODO: Pass in row heights and collumn widths?
+    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
+        :parameter fields_config: List of tuples (field name, FieldType Enum value), as [(string, int)]
+        :parameter num_records: The number of records to display in the data grid, as int
         """
         ttk.Labelframe.__init__(self, parent, text=title)
         Subject.__init__(self)
@@ -236,6 +249,19 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
 
         # Add a binding for window destruction, so that this tkDataGridWidget can detach itself from its subjects when it is destroyed.
         self.bind('<Destroy>', self.onDestroy, '+')
+
+        # Store fields and records configuraton info as class attributes.
+        assert(type(num_records)==int)
+        self._num_records = num_records
+        assert(type(fields_config)==list)
+        self._fields_config = fields_config
+
+        # Widget ID's for the widgets in the data grid.
+        self._wids = []
+
+        # Canvas row height and column width, in inches.
+        self._row_h = 0.25 
+        self._col_w = 1.0
 
         # Note: i=inches
         # Note: scrollregion=(w,n,e,s)
@@ -254,9 +280,12 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         self._scrollbar_hor.grid(column=0, row=1, sticky='NWSE')
         self._dg_canvas['xscrollcommand'] = self._scrollbar_hor.set
 
-        # Call the temp function that does some useful things while I'm learning.
-        self.test_data_grid()
+        # Set up the data grid with the appropriate number of records and fields.
+        self._setup_data_grid()
 
+    # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
+    # implemented in both tkDataGridWidget and tkViewManager. This will require careful thinking, since an Observer
+    # need not be a tkinter widget.
     def onDestroy(self, event):
         """
         Method called after ttk.LabelFrame is destroyed.
@@ -266,6 +295,8 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         self._detach_from_subjects()
         return None
         
+    # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
+    # implemented in both tkDataGridWidget and tkViewManager.
     def register_subject(self, subject = None, update_handler = None):
         """
         Register a subject tkDGElement object and the callable to handle subject updates.
@@ -279,9 +310,11 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         self._subjects[subject]=update_handler
         return None
     
+    # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
+    # implemented in both tkDataGridWidget and tkViewManager.
     def _detach_from_subjects(self):
         """
-        Detach tkViewManager from all subjects (tkDGElement objects). Called from onDestroy(...).
+        Detach tkDataGridWidget from all subjects (tkDGElement objects). Called from onDestroy(...).
         :return None:
         """
         for subject in self._subjects:
@@ -309,48 +342,51 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         parameter element: The tkDGElement object that is notifying the tkDataGridWidget of a change in state, as tkDGElement object
         :return None:
         """
-        print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}.")
+        value = element.get_state()
+        print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}.")
         return None
         
-    def test_data_grid(self):
+    # TODO: Enhance so that fields can be columns instead of rows.
+    def _setup_data_grid(self):
         """
-        This is a temporary function, while I learn how widgets are placed into a Canvas.
+        Set up the data grid with the appropriate array of tkDGElement widgets for the fields and records.
+        :return: None
         """
         # Coordinate (canvas?) where next widget shoud be inserted, in inches
         # Must set width and height for all widgets, so that these coordinates can be appropriately updated.
         next_x = 0.0
         next_y = 0.0
-        # Widget width and height, in inches
-        wid_h = 0.25 
-        wid_w = 1.0
+        # Widget height and width, in inches
+        wid_h = self._row_h 
+        wid_w = self._col_w
         # Add widgets...
-        # List of widget ID's
-        wids = []
+        for field in self._fields_config:
+            # TODO: Use field name in a not yet created header row.
+            field_name = field[0]
+            field_type = field[1]
+            for rec_i in range(self._num_records):
+                # TODO: Well, this is ugly, non-OO code...
+                element = None
+                match field_type:
+                    case FieldType.BOOL:
+                        element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                    case FieldType.LIST:
+                        element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                self.register_subject(element, partial(self.handle_element_update, element))
+                self._wids.append(element.canvasID)
+                # We will stack the elements vertically, so only update next_y.
+                next_y += wid_h
+            # Moving to the next field/column, so update next_x and reset next_y.
+            next_x += wid_w
+            next_y = 0.0
+        # Now some temporary code where we can just try stuff out as we learn.
         # Make some entry widgets and insert them into the canvas
         for i in range(25):
             te = ttk.Entry(self._dg_canvas)
             te.insert(index=0, string=f"Text Data {i}")
             te_id = self._dg_canvas.create_window(f"{next_x}i", f"{next_y}i", height=f"{wid_h}i", width=f"{wid_w}i",
                                                   anchor=tk.NW, window=te)
-            wids.append(te_id)
-            # We will stack the widgets vertically, so only update next_y.
-            next_y += wid_h
-        # Make some tkDGElementBool widgets and insert them into the canvas as a second column
-        next_x += wid_w
-        next_y = 0.0
-        for i in range(25):
-            be = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-            self.register_subject(be, partial(self.handle_element_update, be))
-            wids.append(be.canvasID)
-            # We will stack the widgets vertically, so only update next_y.
-            next_y += wid_h
-        # Make some tkDGElementList widgets and insert them into the canvas as a third column
-        next_x += wid_w
-        next_y = 0.0
-        for i in range(25):
-            le = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-            self.register_subject(le, partial(self.handle_element_update, le))
-            wids.append(le.canvasID)
+            self._wids.append(te_id)
             # We will stack the widgets vertically, so only update next_y.
             next_y += wid_h
 

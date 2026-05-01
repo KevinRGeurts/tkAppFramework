@@ -25,6 +25,7 @@ Exported Functions:
 
 
 # Standard
+from ctypes.wintypes import BOOL
 import tkinter as tk
 from tkinter import ttk
 import logging
@@ -38,7 +39,7 @@ from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
-from tkAppFramework.tkdatagridwidget import tkDataGridWidget
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -286,7 +287,7 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        dg = tkDataGridWidget(self, title='Demo Data Grid')
+        dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=[('field_1',FieldType.BOOL),('field_2',FieldType.LIST)], num_records=25)
         # Attach self as an observer of the subject demo widget
         dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget
