@@ -40,6 +40,7 @@ class tkDGElement(tk.Frame, Subject):
         """
         tk.Frame.__init__(self, parent.canvas, highlightbackground="black", highlightcolor="black", highlightthickness=1, bd=0, takefocus=1)
         Subject.__init__(self)
+        self.attach(parent)
         self._element_widget = None # The "useful" widget, not the border creating Frame
         self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
                                                       anchor=tk.NW, window=self)
@@ -91,13 +92,24 @@ class tkDGElementBool(tkDGElement):
         :paramter h: The height of the element in the data grid in inches, as float
         """
         super().__init__(parent, x, y, w, h)
-        self._element_widget = tk.Checkbutton(self, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="cyan", background="cyan", takefocus=1)
+        self._element_widget = tk.Checkbutton(self, justify=tk.CENTER, borderwidth=0, relief="flat", highlightcolor="cyan",
+                                              background="cyan", takefocus=1, command=partial(self.onCheckbuttonClicked, self._canvas_id) )
         self._element_widget.grid(column=0, row=0, sticky='NWSE')
         self.columnconfigure(0, weight=1) # Grid-2
         self.rowconfigure(0, weight=1) # Grid-2
         # Create control variable for the Checkbutton and assign it
         self._element_value = tk.IntVar()
         self._element_widget['variable'] = self._element_value
+
+    def onCheckbuttonClicked(self, canvas_id):
+        """
+        Called when a Checkbutton is clicked.
+        :parameter canvas_id: The canvas ID of the element widget that was clicked, as int
+        :return: None
+        """
+        print(f"Checkbutton with canvas ID {canvas_id} was clicked.")
+        self.notify()
+        return None
 
     def get_state(self):
         """
@@ -151,11 +163,23 @@ class tkDGElementList(tkDGElement):
         # Create control variable for the OptionMenu. It is assigned in the construcgtor.
         self._element_value = tk.StringVar()
         self._element_value.set(options_list[1]) # Set default value to first option in list
-        self._element_widget = tk.OptionMenu(self, self._element_value, *options_list)
+        self._element_widget = tk.OptionMenu(self, self._element_value, command=partial(self.onOptionSelected, self._canvas_id),
+                                            *options_list)
         self._element_widget.configure(relief="flat", highlightcolor="green", background="green", takefocus=1)
         self._element_widget.grid(column=0, row=0, sticky='NWSE')
         self.columnconfigure(0, weight=1) # Grid-2
         self.rowconfigure(0, weight=1) # Grid-2
+
+    def onOptionSelected(self, canvas_id, option):
+        """
+        Called when an OptionMenu selection is made.
+        :parameter canvas_id: The canvas ID of the element widget that had an option selected, as int
+        :paramter option: The option selected, as string
+        :return: None
+        """
+        print(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
+        self.notify()
+        return None
 
     def get_state(self):
         """
@@ -207,6 +231,12 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         Subject.__init__(self)
         Observer.__init__(self)
 
+        # Maintain a dictionary of Key=subject (child widget), Value=update handler callable
+        self._subjects = {}
+
+        # Add a binding for window destruction, so that this tkDataGridWidget can detach itself from its subjects when it is destroyed.
+        self.bind('<Destroy>', self.onDestroy, '+')
+
         # Note: i=inches
         # Note: scrollregion=(w,n,e,s)
         self._dg_canvas = tk.Canvas(self, width='5i', height='4i', scrollregion=('0i','0i','10i','10i'), background='gray75')
@@ -227,9 +257,60 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         # Call the temp function that does some useful things while I'm learning.
         self.test_data_grid()
 
+    def onDestroy(self, event):
+        """
+        Method called after ttk.LabelFrame is destroyed.
+        :return: None
+        """
+        # Detach this observer from it's subjects, the child widgets (tkDGElement objects) of the data grid
+        self._detach_from_subjects()
+        return None
+        
+    def register_subject(self, subject = None, update_handler = None):
+        """
+        Register a subject tkDGElement object and the callable to handle subject updates.
+        :parameter subject: The tkDGElement, an object of type Subject and type (tkDGElement)
+        :parameter update_handler: The callable function to handle updates for the subject
+        :return: None
+        """
+        assert(isinstance(subject, Subject))
+        assert(isinstance(subject, tkDGElement))
+        assert(callable(update_handler))
+        self._subjects[subject]=update_handler
+        return None
+    
+    def _detach_from_subjects(self):
+        """
+        Detach tkViewManager from all subjects (tkDGElement objects). Called from onDestroy(...).
+        :return None:
+        """
+        for subject in self._subjects:
+            subject.detach(self)
+        return None
+
+    def update(self, subject):
+        """
+        Implementation of Observer.update(). Acts as a switchboard based on which widget is notifying.
+        :parameter subject: Which widget instance is notifying the mediator?
+        :return None:
+        """
+        assert(isinstance(subject, Subject))
+        # Call the updater for the subject argument after looking it up in the _subjects dictionary.
+        self._subjects[subject]()
+        return None
+
     @property
     def canvas(self):
         return self._dg_canvas
+
+    def handle_element_update(self, element):
+        """
+        Handler function called when a tkDGElement object notifies the tkDataGridWidget of a change in state.
+        parameter element: The tkDGElement object that is notifying the tkDataGridWidget of a change in state, as tkDGElement object
+        :return None:
+        """
+        print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}.")
+        return None
         
     def test_data_grid(self):
         """
@@ -259,6 +340,7 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         next_y = 0.0
         for i in range(25):
             be = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+            self.register_subject(be, partial(self.handle_element_update, be))
             wids.append(be.canvasID)
             # We will stack the widgets vertically, so only update next_y.
             next_y += wid_h
@@ -267,6 +349,7 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         next_y = 0.0
         for i in range(25):
             le = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+            self.register_subject(le, partial(self.handle_element_update, le))
             wids.append(le.canvasID)
             # We will stack the widgets vertically, so only update next_y.
             next_y += wid_h
