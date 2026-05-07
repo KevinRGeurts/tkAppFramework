@@ -254,9 +254,6 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         Subject.__init__(self)
         Observer.__init__(self)
 
-        # Maintain a dictionary of Key=subject (child widget), Value=update handler callable
-        self._subjects = {}
-
         # Add a binding for window destruction, so that this tkDataGridWidget can detach itself from its subjects when it is destroyed.
         self.bind('<Destroy>', self.onDestroy, '+')
 
@@ -306,43 +303,6 @@ class tkDataGridWidget(ttk.Labelframe, Subject, Observer):
         """
         # Detach this observer from it's subjects, the child widgets (tkDGElement objects) of the data grid
         self._detach_from_subjects()
-        return None
-        
-    # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
-    # implemented in both tkDataGridWidget and tkViewManager.
-    def register_subject(self, subject = None, update_handler = None):
-        """
-        Register a subject tkDGElement object and the callable to handle subject updates.
-        :parameter subject: The tkDGElement, an object of type Subject and type (tkDGElement)
-        :parameter update_handler: The callable function to handle updates for the subject
-        :return: None
-        """
-        assert(isinstance(subject, Subject))
-        assert(isinstance(subject, tkDGElement))
-        assert(callable(update_handler))
-        self._subjects[subject]=update_handler
-        return None
-    
-    # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
-    # implemented in both tkDataGridWidget and tkViewManager.
-    def _detach_from_subjects(self):
-        """
-        Detach tkDataGridWidget from all subjects (tkDGElement objects). Called from onDestroy(...).
-        :return None:
-        """
-        for subject in self._subjects:
-            subject.detach(self)
-        return None
-
-    def update(self, subject):
-        """
-        Implementation of Observer.update(). Acts as a switchboard based on which widget is notifying.
-        :parameter subject: Which widget instance is notifying the mediator?
-        :return None:
-        """
-        assert(isinstance(subject, Subject))
-        # Call the updater for the subject argument after looking it up in the _subjects dictionary.
-        self._subjects[subject]()
         return None
 
     @property

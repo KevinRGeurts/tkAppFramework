@@ -28,6 +28,14 @@ class TesttkViewManager(tkViewManager):
     Class is a very simple child of tkViewManager, intended only to provide an implementations of _CreateWidgets(...)
     and handel_test_widget_update(), to facilitate unit testing.
     """
+    def __init__(self, parent) -> None:
+        """
+        :parameter parent: The parent widget of this widget, the tkinter App, which hereafter will be
+                           accessed as self.master.
+        """
+        tkViewManager.__init__(self, parent)
+        self._x=0
+
     def _CreateWidgets(self):
         """
         Concrete Implementation, does nothing, but does not raise NotImplementedError.
@@ -40,7 +48,7 @@ class TesttkViewManager(tkViewManager):
         Handle updates from the test widget:
         :return None:
         """
-        raise NotImplementedError
+        self._x += 1
         return None
 
 

@@ -22,16 +22,39 @@ class Observer:
     Child classes must implement the update(...) method.
     """
     def __init__(self):
-        pass
+        # Maintain a dictionary of Key=subject, Value=update handler callable
+        self._subjects = {}
+        
+    def register_subject(self, subject = None, update_handler = None):
+        """
+        Register a subject and the callable to handle that subject's updates.
+        :parameter subject: The Subject object to register, as Subject object
+        :parameter update_handler: The callable function to handle updates for subject
+        :return: None
+        """
+        assert(isinstance(subject, Subject))
+        assert(callable(update_handler))
+        self._subjects[subject]=update_handler
+        return None
+    
+    def _detach_from_subjects(self):
+        """
+        Detach this observer from all subjects. Called from onDestroy(...).
+        :return None:
+        """
+        for subject in self._subjects:
+            subject.detach(self)
+        return None
 
     def update(self, subject):
         """
-        Interface method called by Subject to notify observer of a change in state. Must be implemented by children.
-        Will raise NotImplementedError if called.
-        :parameter subject: Which Subject instance is notifying the Observer instance?
+        Acts as a switchboard based on which subject is notifying.
+        :parameter subject: Which Subject object is notifying this Observer object, as Subject object
         :return None:
         """
-        raise NotImplementedError
+        assert(isinstance(subject, Subject))
+        # Call the updater for the subject argument after looking it up in the _subjects dictionary.
+        self._subjects[subject]()
         return None
 
 

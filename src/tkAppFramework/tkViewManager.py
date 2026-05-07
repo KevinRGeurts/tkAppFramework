@@ -31,11 +31,10 @@ import tkinter as tk
 from tkinter import ttk
 
 # Local imports
-from tkAppFramework.ObserverPatternBase import Observer, Subject
-from tkAppFramework.model import Model
+from tkAppFramework.ObserverPatternBase import Observer
 
 
-class tkViewManager(ttk.Frame, Observer):
+class tkViewManager(Observer, ttk.Frame):
     """
     Defines the abstract base class tkViewManager. Concrete child implementations create widgets for tkApp concreate child implementations
     and handle the interactions between widgets.
@@ -58,11 +57,8 @@ class tkViewManager(ttk.Frame, Observer):
         :parameter parent: The parent widget of this widget, the tkinter App, which hereafter will be
                            accessed as self.master.
         """
-        ttk.Frame.__init__(self, parent)
         Observer.__init__(self)
-
-        # Maintain a dictionary of Key=subject (child widget), Value=update handler callable
-        self._subjects = {}
+        ttk.Frame.__init__(self, parent)
 
         # Register the (data and business logic) model as a subject
         self.register_subject(subject=self.getModel(), update_handler=self.handle_model_update)
@@ -79,28 +75,6 @@ class tkViewManager(ttk.Frame, Observer):
         # Detach this observer from it's subjects, the child widgets of the mediator / view manager
         self._detach_from_subjects()
         return None
-        
-    def register_subject(self, subject = None, update_handler = None):
-        """
-        Register a subject (child widget or model) and the callable to handle subject updates.
-        :parameter subject: The child widget or model subject, an object of type Subject and type (tk.Widget of Model)
-        :parameter update_handler: The callable function to handle updates for the subject
-        :return: None
-        """
-        assert(isinstance(subject, Subject))
-        assert(isinstance(subject, tk.Widget) or isinstance(subject, Model))
-        assert(callable(update_handler))
-        self._subjects[subject]=update_handler
-        return None
-    
-    def _detach_from_subjects(self):
-        """
-        Detach tkViewManager from all subjects (child widgets). Called from onDestroy(...).
-        :return None:
-        """
-        for subject in self._subjects:
-            subject.detach(self)
-        return None
 
     def _CreateWidgets(self):
         """
@@ -111,17 +85,6 @@ class tkViewManager(ttk.Frame, Observer):
         :return None:
         """
         raise NotImplementedError
-        return None
-
-    def update(self, subject):
-        """
-        Implementation of Observer.update(). Acts as a switchboard based on which widget is notifying.
-        :parameter subject: Which widget instance is notifying the mediator?
-        :return None:
-        """
-        assert(isinstance(subject, Subject))
-        # Call the updater for the subject argument after looking it up in the _subjects dictionary.
-        self._subjects[subject]()
         return None
 
     def handle_model_update(self):
@@ -139,5 +102,3 @@ class tkViewManager(ttk.Frame, Observer):
         :return: The model of the app, instance of Model
         """
         return self.master.getModel()
-
-   

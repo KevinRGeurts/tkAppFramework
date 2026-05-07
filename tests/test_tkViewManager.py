@@ -46,7 +46,8 @@ class Test_tkViewManager(unittest.TestCase):
         cw = TestWidget(vm)
         cw.attach(vm)
         vm.register_subject(cw,vm.handle_test_widget_update)
-        self.assertRaises(NotImplementedError, vm.update, cw)
+        vm.update(cw)
+        self.assertEqual(1, vm._x)
 
     def test_handle_model_update(self):
         root = tk.Tk()
