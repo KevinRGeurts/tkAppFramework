@@ -31,9 +31,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="HelpModel.py" />
-    <Compile Include="json_archivable.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="main.py" />
     <Compile Include="model.py">
       <SubType>Code</SubType>
