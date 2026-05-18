@@ -35,3 +35,13 @@ class NoWidgetTagConfigurationAvailableForXHTMLTag(tkAppFrameworkError):
         # self.X_info = kwargs.get('X_info')
 
 
+class tkDGElementTextInvalidEntryError(tkAppFrameworkError):
+    """
+    Custom exception to be raised when a user enters invalid text into a tkDGElementText Entry widget.
+    Arguments expected in **kwargs: none currently
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        # self.X_info = kwargs.get('X_info')
+
+

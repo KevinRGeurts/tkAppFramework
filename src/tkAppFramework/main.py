@@ -39,7 +39,8 @@ from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
-from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, tkDGElementText
+from exceptions import tkDGElementTextInvalidEntryError
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -287,16 +288,18 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        dg = tkDataGridWidget(self, title='Demo Data Grid',
-                              fields_config=[('field_1',FieldType.BOOL),('field_2',FieldType.LIST),('field_3',FieldType.NUMBER)],
-                              num_records=25)
+        field_configurations = [('Base',FieldType.TEXT,'editable'),
+                                ('Add to',FieldType.BOOL,'editable'),
+                                ('Multiply by',FieldType.LIST,'default_value'),
+                                ('Result',FieldType.TEXT,'read_only')]
+        self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5)
         # Attach self as an observer of the subject demo widget
-        dg.attach(self)
+        self._dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget
-        self.register_subject(dg, self.handle_datagrid_widget_update)
+        self.register_subject(self._dg, self.handle_datagrid_widget_update)
         # Place datagrid widget in grid and set weights for stretching the column and row in the grid
         # so that the demo widget resizes correctly.
-        dg.grid(column=0, row=0, sticky='NWES')
+        self._dg.grid(column=0, row=0, sticky='NWES')
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         return None
@@ -314,7 +317,14 @@ class DataGridDemotkViewManager(tkViewManager):
         Handle updates from the datagrid widget.
         :return None:
         """
-        print(f"View manager informed of data grid widget update.")
+        mod_elem = self._dg._modified_element
+        print(f"View manager informed of data grid widget element update from tkDGElement with canvas ID {mod_elem.canvasID}. Elements state is {mod_elem.get_state()[1]}.")
+        # Raise an error for invalid entry, if the modified element is a text element, and the user has entered
+        # "invalid" as the text. This is just to test the handling of invalid entries.
+        if mod_elem.get_state()[0] == tkDGElementText:
+            if mod_elem.get_state()[1] == 'invalid':
+                msg = f"Invalid entry of 'invalid' in tkDGElementText with canvas ID {mod_elem.canvasID}."
+                raise tkDGElementTextInvalidEntryError(error_msg = msg)
         # Inform the model that the datagrid widget's state has changed (that is, a field value of a record has changed),
         # so that the model can record the change.
         # self.getModel().count += 1

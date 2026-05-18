@@ -3,7 +3,11 @@ This module provides Observer and Subject classes that can be a parent of classe
 
 Exported Classes:
     Observer -- Base class for all objects that will be an Observer in an Observer design pattern.
-        All Observer child classes must implement the update(...) method.
+        All Observer child classes should:
+            (1) Call register_subject(subject, update_handler) for each Subject object that the Observer child class should observe.
+            (2) Define and implement the update_handler functions that are registered with register_subject(...).
+                These functions will be called when the Subject object notifies this Observer object by calling notify() on itself.
+            (3) Call _detach_from_subjects(), for example, from onDestroy(...), to detach this Observer object from all Subject objects that it is observing.
     Subject -- Base class for all objects that will be a Subject in an Observer design pattern.
         Subjects should attach(...) and detach(...) Observers, and notify() them of changes in state.
 

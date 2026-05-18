@@ -92,8 +92,10 @@ tkViewManager is an Observer. Concrete child implementations of tkViewManager wi
 child widgets, which are typically child implementations of tkinter.Labelframes and also Subjects.
 
 ### Observer class
-Observer is a base class for all objects that will be an Observer in an Observer design pattern.
-All Observer child classes must implement the ```update(...)``` method.
+Observer is a base class for all objects that will be an Observer in an Observer design pattern. All Observer child classes should:
+- Call ```register_subject(subject, update_handler)``` for each Subject object that the Observer child class should observe.
+- Define and implement the update_handler functions that are registered with ```register_subject(...)```. These functions will be called when the Subject object notifies this Observer object by calling ```notify()``` on itself.
+- Call ```_detach_from_subjects()```, for example, from ```onDestroy(...)```, to detach this Observer object from all Subject objects that it is observing.
 
 ### Subject class
 Subject is a base class for all objects that will be a Subject in an Observer design pattern.
