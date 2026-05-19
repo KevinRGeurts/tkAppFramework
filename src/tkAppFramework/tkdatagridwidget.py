@@ -93,6 +93,87 @@ class tkDGElement(Subject):
                 self._element_widget['state']=tk.NORMAL
         return None
 
+    def _setup_widget_bindings(self):
+        """
+        Used to set up the tkinter event bindings for the element widget. Should be called in the child class
+        constructors after the element widget is created.
+        :return: None
+        """
+        if self._element_widget is not None:
+            self._element_widget.bind('<FocusIn>', self.onFocusIn, add='+')
+            self._element_widget.bind('<FocusOut>', self.onFocusOut, add='+')
+            self._element_widget.bind('<KeyPress-Up>', self.onKeyPressUp, add='+')
+            self._element_widget.bind('<KeyPress-Down>', self.onKeyPressDown, add='+')
+            self._element_widget.bind('<KeyPress-Right>', self.onKeyPressRight, add='+')
+            self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
+        return None
+
+    def onFocusIn(self, event):
+        """
+        Handler for the FocusIn event. Call handler in element widget's grandparent tkDataGridWidget to
+        update it's tracking of currently focused element to this element widget.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onFocusIn(self)
+        return None
+
+    def onFocusOut(self, event):
+        """
+        Handler for the FocusOut event. Call handler in element widget's grandparent tkDataGridWidget to
+        update it's tracking of currently focused element to None.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onFocusOut(self)
+        return None
+
+    def onKeyPressDown(self, event):
+        """
+        Handler for the down-arrow key press event. Call handler in element widget's grandparent tkDataGridWidget to
+        move focus to the element widget below the currently focused element widget, if it exists.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onKeyPressDown(event)
+        return None
+
+    def onKeyPressUp(self, event):
+        """
+        Handler for the up-arrow key press event. Call handler in element widget's grandparent tkDataGridWidget to
+        move focus to the element widget above the currently focused element widget, if it exists.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onKeyPressUp(event)
+        return None
+
+    def onKeyPressRight(self, event):
+        """
+        Handler for the right-arrow key press event. Call handler in element widget's grandparent tkDataGridWidget to
+        move focus to the element widget to the right of the currently focused element widget, if it exists.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onKeyPressRight(event)
+        return None
+
+    def onKeyPressLeft(self, event):
+        """
+        Handler for the left-arrow key press event. Call handler in element widget's grandparent tkDataGridWidget to
+        move focus to the element widget to the left of the currently focused element widget, if it exists.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onKeyPressLeft(event)
+        return None
+
 
 class tkDGElementBool(tkDGElement):
     """
@@ -109,6 +190,7 @@ class tkDGElementBool(tkDGElement):
         super().__init__(parent)
         self._element_widget = tk.Checkbutton(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
                                               takefocus=1, command=partial(self.onCheckbuttonClicked, self._canvas_id) )
+        self._setup_widget_bindings()       
         # Create control variable for the Checkbutton and assign it
         self._element_value = tk.IntVar()
         self._element_widget['variable'] = self._element_value
@@ -159,6 +241,7 @@ class tkDGElementList(tkDGElement):
         self._element_value.set(options_list[1]) # Set default value to first option in list
         self._element_widget = tk.OptionMenu(parent.canvas, self._element_value, command=partial(self.onOptionSelected, self._canvas_id),
                                             *options_list)
+        self._setup_widget_bindings()       
         # Use confugure because constructor doesn't take these options.
         self._element_widget.configure(relief="flat", takefocus=1)
         # Place the widget on the canvas and store the canvas ID
@@ -206,6 +289,7 @@ class tkDGElementText(tkDGElement):
         # Create the Entry widget for the element.
         self._element_widget = tk.Entry(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
                                               takefocus=1, validate='focusout')
+        self._setup_widget_bindings()       
         # Place the widget on the canvas and store the canvas ID
         self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
                                                       anchor=tk.NW, window=self._element_widget)
@@ -275,6 +359,7 @@ class tkDGElementFieldHeader(tkDGElement):
         # Create the Entry widget for the element.
         self._element_widget = tk.Entry(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
                                               takefocus=1, validate='focusout')
+        self._setup_widget_bindings()       
         # Place the widget on the canvas and store the canvas ID
         self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
                                                       anchor=tk.NW, window=self._element_widget)
@@ -360,15 +445,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._scrollbar_hor.grid(column=0, row=1, sticky='NWSE')
         self._dg_canvas['xscrollcommand'] = self._scrollbar_hor.set
 
-        # TODO: These should NOT be bind_all() calls. Investigate what else will work.
-        # TODO: Will also need to respond to focus-in and focus-out events, so that self._focused_element is
-        # correctly maintained, for example when mousing around.
-        # Add some key bindings.
-        self.bind_all('<KeyPress-Up>', self.onKeyPressUp)
-        self.bind_all('<KeyPress-Down>', self.onKeyPressDown)
-        self.bind_all('<KeyPress-Right>', self.onKeyPressRight)
-        self.bind_all('<KeyPress-Left>', self.onKeyPressLeft)
-
         # Store currently focused element widget, as tkDGElement object.
         self._focused_element = None
         # Store most recently modified element widget, as tkDGElement object.
@@ -377,6 +453,28 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Set up the data grid with the appropriate number of records and fields.
         self._draw_element_separator_lines()
         self._setup_data_grid()
+
+    def onFocusIn(self, element):
+        """
+        Handler for the FocusIn events. Update it's tracking of currently focused element to the event's widget.
+        Note: Intended to be called from tkDGElement.onFocusIn(...).
+        :parameter element: The tkDGElement object that Has the element widget that received focus, as tkDGElement object
+        :return: None
+        """
+        print(f"tkDataGridWidget received FocusIn event from tkDGElement with canvas ID {element.canvasID}.")
+        self._focused_element = element
+        self._draw_focus_rectangle(element)
+        return None
+
+    def onFocusOut(self, element):
+        """
+        Handler for the FocusOut event. Update it's tracking of currently focused element to None.
+        :parameter element: The tkDGElement object that Has the element widget that lost focus, as tkDGElement object
+        :return: None
+        """
+        print(f"tkDataGridWidget received FocusOut event from tkDGElement with canvas ID {element.canvasID}.")
+        self._focused_element = None
+        return None
 
     def onKeyPressUp(self, event):
         """
@@ -556,6 +654,31 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._modified_element = None
         return None
         
+    # TODO: Do to rounding, leaves behind a narrow red "shadow". Think about how to address this.
+    def _draw_focus_rectangle(self, element):
+        """
+        Draw a rectangle around the element widget that has focus.
+        :parameter element: The tkDGElement object that has focus, as tkDGElement object
+        :return: None
+        """
+        assert(isinstance(element, tkDGElement))
+        # Remove any existing focus rectangle. (Okay if the tagged rectangle doesn't exist.)
+        self._dg_canvas.delete('tag_focus_rectangle')
+        # Get the root window to get the DPI for converting inches to pixels.
+        root = self.winfo_toplevel()
+        dpi = root.winfo_fpixels('1i')
+        # Get the coordinates of the element widget on the canvas, which should be in pixels.
+        coords = self._dg_canvas.coords(element.canvasID)
+        # Calculate the coordinates of the rectangle to draw around the element widget, in pixels.
+        x0 = coords[0] - self._sep_w * dpi
+        y0 = coords[1] - self._sep_w * dpi
+        x1 = x0 + (self._col_w + self._sep_w) * dpi
+        y1 = y0 + (self._row_h + self._sep_w) * dpi
+        # Draw a rectangle around the element widget.
+        self._dg_canvas.create_rectangle(x0, y0, x1, y1, outline='red', width=f'{self._sep_w}i',
+                                         tags='tag_focus_rectangle')
+        return None
+    
     # TODO: Enhance so that fields can be columns instead of rows.
     def _draw_element_separator_lines(self):
         """
