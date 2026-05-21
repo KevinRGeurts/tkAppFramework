@@ -761,24 +761,23 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         into a grid.
         :return: None
         """
+        # Note: start_x, start_y, end_x, end_y are coordinates (canvas?) where lines should start and end, in inches
         # First, draw vertical lines to separate fields/columns.
-        # Coordinate (canvas?) where next line should start, in inches
-        start_x = 0.0
         start_y = 0.0
         # Remember that we need to account for the field header row, hence the +1's and +2's below.
         end_y = ((self._num_records+1) * self._row_h) + ((self._num_records+2)*self._sep_w)
         for field_i in range(len(self._fields_config) + 1):
+                start_y = 0.0
+                start_x = (field_i * self._col_w) + (field_i * self._sep_w)
                 self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{start_x}i", f"{end_y}i",
                                             width=f"{self._sep_w}i", tags='tag_element_separator_line')
-                start_x += self._col_w + self._sep_w
         # Second, draw horizontal lines to separate records/rows.
-        start_x = 0.0
         end_x = (len(self._fields_config) * self._col_w) + ((len(self._fields_config) +1)*self._sep_w)
-        start_y = 0.0
+        start_x = 0.0
         for rec_i in range(self._num_records + 2):
+                start_y = (rec_i * self._row_h) + (rec_i * self._sep_w)
                 self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{end_x}i", f"{start_y}i",
                                             width=f"{self._sep_w}i", tags='tag_element_separator_line')
-                start_y += self._row_h + self._sep_w
 
         return None
     
@@ -788,29 +787,28 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         Set up the data grid with the appropriate array of tkDGElement widgets for the fields and records.
         :return: None
         """
-        # Coordinate (canvas?) where next widget shoud be inserted, in inches
-        # Must set width and height for all widgets, so that these coordinates can be appropriately updated.
-        next_x = 0.0 + self._sep_w
-        next_y = 0.0 + self._sep_w
+        # Note: next_x, next_y are coordinates (canvas?) where next widget should be inserted, in inches
+        # Must set width and height for all widgets, so that these coordinates can be appropriately calculated.
         # Widget height and width, in inches
         wid_h = self._row_h 
         wid_w = self._col_w
         # Add widgets...
         upper_left_element = None
+        field_index = 0
         for field in self._fields_config:
-            # TODO: Use field name in a not yet created header row.
+            next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
             field_name = field[0]
             field_type = field[1]
             field_format = field[2]
             # Handle the field header element for this field/column.
-            element = tkDGElementFieldHeader(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+            element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h)
             self.register_subject(element, partial(self.handle_element_update, element))
             element.set_state(field_name)
             self._apply_element_format_to_one_element('field_header', element)
-            next_y += wid_h + self._sep_w
             # End handling the field header element for this field/column.
             rec_list = []
             for rec_i in range(self._num_records):
+                next_y = ((rec_i + 1) * wid_h) + ((rec_i + 2) * self._sep_w)
                 # TODO: Well, this is ugly, non-OO code...
                 element = None
                 match field_type:
@@ -828,17 +826,12 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 rec_list.append(element)
-                # We will stack the elements vertically, so only update next_y.
-                next_y += wid_h + self._sep_w
             # Store the list of tkDGElement objects for this field in the _grid_elements dictionary.
             self._grid_elements[field_name] = rec_list
             # Configure the field's element widgets with the appropriate format.
             self._apply_element_format_to_field_elements(field_format, field_name)
-            # Moving to the next field/column, so update next_x and reset next_y.
-            next_x += wid_w + self._sep_w
-            next_y = 0.0 + self._sep_w 
-        # Now some temporary code where we can just try stuff out as we learn.
-        # ...
+            # Advance field_index for next iteration of field loop.
+            field_index += 1
         
         # Set focus to upper left widget in data grid, if it exists.
         if upper_left_element is not None:
