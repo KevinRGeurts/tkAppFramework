@@ -16,6 +16,7 @@ Exported Functions:
 
 
 # Standard imports
+from signal import CTRL_BREAK_EVENT
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
@@ -44,16 +45,52 @@ class tkDGElement(Subject):
     Class is the base class for classes that represent an element of a tkDataGridWidget. Class is a subject in Observer
     design pattern, in anticipation of being observed by tkDataGridWidet class.
     """
-    def __init__(self, observer=None):
+    def __init__(self, observer=None, x=0.0, y=0.0, w=1.0, h=0.25):
         """
         :parameter observer: Observer object that observes this tkDGElement object, assumed to be a tkDataGridWidget object
+            Note: This is also the grandparent of the element widget, since the element widget is a child of a canvas that is a child of the tkDataGridWidget.
+        :paramter x: The upper-left corner x-coordinate of the element in the data grid's canvas in inches, as float
+        :paramter y: The upper-left corner y-coordinate of the element in the data grid's canvas in inches, as float
+        :paramter w: The width of the element in the data grid's canvas in inches, as float
+        :paramter h: The height of the element in the data grid's canvas in inches, as float
         """
         Subject.__init__(self)
         self.attach(observer)
-        self._element_widget = None # The tkinter widget that is the element widget. It is assigned in the child class constructors.
-        self._element_value = None # The control variable for the element widget, if needed. It is assigned in the child class constructors.
-        self._canvas_id = None
+        self._canvas_id = None # Required so that canvas ID is available in _create_element_widget() method,
+                               # in case it is needed, for example in a partial for a widget command callback.
+        # Create teh element's control variable first, in case it is needed for creating the element widget, since the control variable might be used in the widget constructor.
+        self._element_value = self._create_element_value()
+        self._element_widget = self._create_element_widget()
+        self._setup_widget_bindings()
+        # TODO: This is not OO, but don't see yet how to avoid it, since there is inconsistence between
+        # widgets in how the control variable is bound to the widget.
+        if type(self._element_widget) == tk.Entry:
+           self._element_widget['textvariable'] = self._element_value
+        elif type(self._element_widget) == tk.OptionMenu:
+            # Constructor will have handled the binding of the control variable to the OptionMenu widget, so
+            pass
+        else:
+           self._element_widget['variable'] = self._element_value
+        self._canvas_id = observer.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
+                                                        anchor=tk.NW, window=self._element_widget)
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        raise NotImplementedError("The _create_element_widget() method must be implemented by child classes of tkDGElement.")
+        return None        
 
+    def _create_element_widget(self):
+        """
+        Factory method to create the element widget. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: The tkinter widget that is the element widget, as tkinter widget object
+        """
+        raise NotImplementedError("The _create_element_widget() method must be implemented by child classes of tkDGElement.")
+        return None
+    
     @property
     def canvasID(self):
         return self._canvas_id
@@ -181,22 +218,31 @@ class tkDGElementBool(tkDGElement):
     """
     def __init__(self, parent, x=0.0, y=0.0, w=1.0, h=0.25):
         """
-        :parameter parent: tkinter widget that is the parent of this widget, assumed to be a tkDataGridWidget
+        :parameter parent: tkinter widget that will be the parent of the element's widget, assumed to be a tkDataGridWidget
         :paramter x: The upper-left corner x-coordinate of the element in the data grid in inches, as float
         :paramter y: The upper-left corner y-coordinate of the element in the data grid in inches, as float
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent)
-        self._element_widget = tk.Checkbutton(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
-                                              takefocus=1, command=partial(self.onCheckbuttonClicked, self._canvas_id) )
-        self._setup_widget_bindings()       
-        # Create control variable for the Checkbutton and assign it
-        self._element_value = tk.IntVar()
-        self._element_widget['variable'] = self._element_value
-        # Place the widget on the canvas and store the canvas ID
-        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
-                                                      anchor=tk.NW, window=self._element_widget)
+        super().__init__(parent, x, y, w, h)
+
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        control_var = tk.IntVar()
+        return control_var
+
+    def _create_element_widget(self):
+        """
+        Factory method to create the tk.Checkbutton element widget.
+        :return: The tkinter widget that is the element widget, as tkinter widget object
+        """
+        widget = tk.Checkbutton(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
+                                takefocus=1, command=partial(self.onCheckbuttonClicked, self._canvas_id) )
+        return widget
 
     def onCheckbuttonClicked(self, canvas_id):
         """
@@ -205,6 +251,7 @@ class tkDGElementBool(tkDGElement):
         :return: None
         """
         print(f"Checkbutton with canvas ID {canvas_id} was clicked.")
+        self._element_widget.focus_set()
         self.notify()
         return None
 
@@ -234,19 +281,29 @@ class tkDGElementList(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent)
+        super().__init__(parent, x, y, w, h)
+
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        control_var = tk.StringVar()
+        return control_var
+
+    def _create_element_widget(self):
+        """
+        Factory method to create the tk.OptionMenu element widget.
+        :return: The tkinter widget that is the element widget, as tkinter widget object
+        """
         options_list = ('Option 1', 'Option 2', 'Option 3') # Temporary list of options, will need to be set by some method in the future 
-        # Create control variable for the OptionMenu. It is assigned in the constructor below.
-        self._element_value = tk.StringVar()
-        self._element_value.set(options_list[1]) # Set default value to first option in list
-        self._element_widget = tk.OptionMenu(parent.canvas, self._element_value, command=partial(self.onOptionSelected, self._canvas_id),
-                                            *options_list)
-        self._setup_widget_bindings()       
-        # Use confugure because constructor doesn't take these options.
-        self._element_widget.configure(relief="flat", takefocus=1)
-        # Place the widget on the canvas and store the canvas ID
-        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
-                                                      anchor=tk.NW, window=self._element_widget)
+        self._element_value.set(options_list[0]) # Set default value to first option in list
+        widget = tk.OptionMenu(self._observers[0].canvas, self._element_value, command=partial(self.onOptionSelected,
+                               self._canvas_id), *options_list)
+        # Use configure to set the options for the OptionMenu, since the constructor does not allow setting all of the desired options.
+        widget.configure(relief="flat", takefocus=1)
+        return widget
 
     def onOptionSelected(self, canvas_id, option):
         """
@@ -256,6 +313,7 @@ class tkDGElementList(tkDGElement):
         :return: None
         """
         print(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
+        self._element_widget.focus_set()
         self.notify()
         return None
 
@@ -285,24 +343,34 @@ class tkDGElementText(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent)
-        # Create the Entry widget for the element.
-        self._element_widget = tk.Entry(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
-                                              takefocus=1, validate='focusout')
-        self._setup_widget_bindings()       
-        # Place the widget on the canvas and store the canvas ID
-        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
-                                                      anchor=tk.NW, window=self._element_widget)
+        super().__init__(parent, x, y, w, h)
+
         # Register the OnEntryChanged and OnInvalidEntryChange methods with tkinter.
         OnEntryChangedCommand = self._element_widget.register(partial(self.OnEntryChanged, self._canvas_id))
         OnInvalidEntryChangeCommand = self._element_widget.register(self.OnInvalidEntryChange)
         # Congigure the Entry widget to call the appropriate method when a change is made to the text entry.
         self._element_widget.configure(validatecommand=OnEntryChangedCommand)
         self._element_widget.configure(invalidcommand=OnInvalidEntryChangeCommand)
-        # Create control variable for the Entry and assign it
-        self._element_value = tk.StringVar()
-        self._element_widget['textvariable'] = self._element_value
+
         self._entry_is_valid = True
+
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        control_var = tk.StringVar()
+        return control_var
+
+    def _create_element_widget(self):
+        """
+        Factory method to create the tk.Entry element widget.
+        :return: The tkinter widget that is the element widget, as tkinter widget object
+        """
+        widget = tk.Entry(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
+                          takefocus=1, validate='focusout')
+        return widget
 
     def OnEntryChanged(self, canvas_id):
         """
@@ -355,18 +423,25 @@ class tkDGElementFieldHeader(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent)
-        # Create the Entry widget for the element.
-        self._element_widget = tk.Entry(parent.canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
-                                              takefocus=1, validate='focusout')
-        self._setup_widget_bindings()       
-        # Place the widget on the canvas and store the canvas ID
-        self._canvas_id = parent.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
-                                                      anchor=tk.NW, window=self._element_widget)
-        # Create control variable for the Entry and assign it
-        self._element_value = tk.StringVar()
-        self._element_widget['textvariable'] = self._element_value
-        self._entry_is_valid = True
+        super().__init__(parent, x, y, w, h)
+
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        control_var = tk.StringVar()
+        return control_var
+
+    def _create_element_widget(self):
+        """
+        Factory method to create the tk.Entry element widget.
+        :return: he tkinter widget that is the element widget, as tkinter widget object
+        """
+        widget = tk.Entry(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
+                          takefocus=0, validate='focusout')
+        return widget
 
     def set_state(self, value=None):
         """
