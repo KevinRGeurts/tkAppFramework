@@ -261,7 +261,7 @@ app.mainloop()
 
 ## Demonstration
 
-To run the Demo Application, type ```python tkAppFramework.main``` in a terminal window. Note, that this assumes that the
+To run the Demo Application, type ```python -m tkAppFramework.main``` in a terminal window. Note, that this assumes that the
 tkAppFramework package has been installed in your Python environment. In the terminal window, choose option (d).
 The Demo Application is the same as the code shown above in the Usage section of this document. If you choose option (s),
 then a simple demonstration of the Simulator Application will be launched.

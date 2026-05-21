@@ -40,7 +40,7 @@ from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, tkDGElementText
-from exceptions import tkDGElementTextInvalidEntryError
+from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -337,7 +337,7 @@ class DataGridDemotkViewManager(tkViewManager):
         if mod_elem.get_state()[0] == tkDGElementText:
             if mod_elem.get_state()[1] == 'invalid':
                 msg = f"Invalid entry of 'invalid' in tkDGElementText with canvas ID {mod_elem.canvasID}."
-                raise tkDGElementTextInvalidEntryError(error_msg = msg)
+                raise tkDGElementTextInvalidEntryError(msg)
         # Inform the model that the datagrid widget's state has changed (that is, a field value of a record has changed),
         # so that the model can record the change.
         # self.getModel().count += 1

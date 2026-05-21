@@ -16,7 +16,6 @@ Exported Functions:
 
 
 # Standard imports
-from signal import CTRL_BREAK_EVENT
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
@@ -325,6 +324,7 @@ class tkDGElementList(tkDGElement):
         """
         print(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
         self._element_value.set(option)
+        self._element_widget.focus_set()
         self.notify()
         return None
 
@@ -412,7 +412,7 @@ class tkDGElementText(tkDGElement):
             self.notify()
             return True
         except tkDGElementTextInvalidEntryError as e:
-            showerror(title='Data Grid Text Entry Error', message=e.error_msg, parent=self.parent)
+            showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
             return False
 
     def OnInvalidEntryChange(self):
@@ -421,6 +421,8 @@ class tkDGElementText(tkDGElement):
         :return None:
         """
         self._entry_is_valid = False
+        # Keep focus on the Entry widget, so that user can correct the invalid entry.
+        self._element_widget.focus_set()
         self.notify()
         return None
 

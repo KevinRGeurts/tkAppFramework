@@ -20,8 +20,11 @@ Logging:
 class tkAppFrameworkError(Exception):
     """
     Base exception class for all custom exceptions specific to tkAppFramework package.
+    Arguments expected in **kwargs: none currently
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        # self.X_info = kwargs.get('X_info')
 
 
 class NoWidgetTagConfigurationAvailableForXHTMLTag(tkAppFrameworkError):
