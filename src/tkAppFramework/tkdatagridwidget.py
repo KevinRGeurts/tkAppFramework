@@ -673,11 +673,15 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(isinstance(element, tkDGElement))
         if elem_format in self._element_formats:
             text_color, cell_color, read_only = self._element_formats[elem_format]
-            element.disable_element(read_only)
             element._element_widget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
+            # TODO: Fix this horribly non-OO code.
+            if element.get_state()[0] == tkDGElementFieldHeader:
+                element._element_widget.configure(font=tk.font.nametofont('TkHeadingFont'))
+            if element.get_state()[0] == tkDGElementText:
+                element._element_widget.configure(readonlybackground=cell_color)
+            element.disable_element(read_only)
         return None
 
-    # TODO: Refactor so that this method calls _apply_element_format_to_one_element() for each element, instead of having the formatting code in both methods.
     def _apply_element_format_to_field_elements(self, format_name = 'an_element_format', field_name = 'a_field_name'):
         """
         Apply a named element format to all the element widgets for a field.
@@ -688,16 +692,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(type(format_name)==str)
         assert(type(field_name)==str)
         if format_name in self._element_formats:
-            text_color, cell_color, read_only = self._element_formats[format_name]
             if field_name in self._grid_elements:
                 for element in self._grid_elements[field_name]:
-                    element._element_widget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
-                    # TODO: Fix this horribly non-OO code.
-                    if element.get_state()[0] == tkDGElementFieldHeader:
-                        element._element_widget.configure(font=('TkDefaultFont', 10, 'bold'))
-                    if element.get_state()[0] == tkDGElementText:
-                        element._element_widget.configure(readonlybackground=cell_color)
-                    element.disable_element(read_only)
+                    self._apply_element_format_to_one_element(format_name, element)
         return None
 
     # TODO: Consider if this method should be moved to ObserverPatternBase.Observer class, since it has now been
