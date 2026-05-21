@@ -143,13 +143,27 @@ class tkDGElement(Subject):
             self._element_widget.bind('<KeyPress-Down>', self.onKeyPressDown, add='+')
             self._element_widget.bind('<KeyPress-Right>', self.onKeyPressRight, add='+')
             self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
+            self._element_widget.bind('<<ContextMenu>>', self.onContextMenu, add='+')
+        return None
+
+    def onContextMenu(self, event):
+        """
+        Handler for the <<ContextMenu>> virtual event. Call handler in element widget's grandparent tkDataGridWidget to
+        handle the contextual menu.
+        :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
+        :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
+        :return: None
+        """
+        self._element_widget.focus_set()
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        self._element_widget.master.master.onContextMenu(event, self)
         return None
 
     def onFocusIn(self, event):
         """
         Handler for the FocusIn event. Call handler in element widget's grandparent tkDataGridWidget to
         update it's tracking of currently focused element to this element widget.
-        :parameter event: The tkinter event object for the key press event
+        :parameter event: The tkinter event object for the FocusIn event
         :return: None
         """
         # Note: First master is the canvas, second master is the tkDataGridWidget
@@ -160,7 +174,7 @@ class tkDGElement(Subject):
         """
         Handler for the FocusOut event. Call handler in element widget's grandparent tkDataGridWidget to
         update it's tracking of currently focused element to None.
-        :parameter event: The tkinter event object for the key press event
+        :parameter event: The tkinter event object for the FocusOut event
         :return: None
         """
         # Note: First master is the canvas, second master is the tkDataGridWidget
@@ -281,7 +295,7 @@ class tkDGElementList(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent, x, y, w, h)
+        super().__init__(parent, x, y, w, h)        
 
     def _create_element_value(self):
         """
@@ -297,10 +311,7 @@ class tkDGElementList(tkDGElement):
         Factory method to create the tk.OptionMenu element widget.
         :return: The tkinter widget that is the element widget, as tkinter widget object
         """
-        options_list = ('Option 1', 'Option 2', 'Option 3') # Temporary list of options, will need to be set by some method in the future 
-        self._element_value.set(options_list[0]) # Set default value to first option in list
-        widget = tk.OptionMenu(self._observers[0].canvas, self._element_value, command=partial(self.onOptionSelected,
-                               self._canvas_id), *options_list)
+        widget = tk.OptionMenu(self._observers[0].canvas, self._element_value, '')
         # Use configure to set the options for the OptionMenu, since the constructor does not allow setting all of the desired options.
         widget.configure(relief="flat", takefocus=1)
         return widget
@@ -313,7 +324,7 @@ class tkDGElementList(tkDGElement):
         :return: None
         """
         print(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
-        self._element_widget.focus_set()
+        self._element_value.set(option)
         self.notify()
         return None
 
@@ -321,13 +332,27 @@ class tkDGElementList(tkDGElement):
         """
         Set the state of the element.
         :paramter value: The value to set in the element.
-        Note: Must be extended by child classes, because this base class implementation does nothing with value parameter.
-              It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
-        :return: None
+=        :return: None
         """
         assert(type(value)==str)
+        # TODO: Check that value is in the list of options for the OptionMenu.
         self._element_value.set(value)
         super().set_state()
+        return None
+
+    def set_menu_choices(self, choices=()):
+        """
+        Set the choices for the OptionMenu element widget.
+        :parameter choices: The choices to set for the OptionMenu, as tuple of strings
+        """
+        assert(type(choices)==tuple)
+        # See: https://stackoverflow.com/questions/17580218/changing-the-options-of-a-optionmenu-when-clicking-a-button
+        self._element_value.set('')
+        self._element_widget['menu'].delete(0, 'end')
+        for choice in choices:
+            self._element_widget['menu'].add_command(label=choice, command=tk._setit(self._element_value, choice,
+                                                                                     callback=partial(self.onOptionSelected, self._canvas_id) ) )
+        self.set_state(choices[0])
         return None
 
 
@@ -528,6 +553,21 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Set up the data grid with the appropriate number of records and fields.
         self._draw_element_separator_lines()
         self._setup_data_grid()
+
+    @property
+    def num_records(self):
+        return self._num_records
+
+    def onContextMenu(self, event, element):
+        """
+        Handler for the <<ContextMenu>> virtual event. Display handle the contextual menu.
+        :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
+        :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
+        :return: None
+        """
+        print(f"tkDataGridWidget received <<ContextMenu>> virtual event from tkDGElement with canvas ID {element.canvasID}.")
+        # TODO: Implement the contextual menu.
+        return None
 
     def onFocusIn(self, element):
         """

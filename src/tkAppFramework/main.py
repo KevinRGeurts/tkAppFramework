@@ -302,8 +302,21 @@ class DataGridDemotkViewManager(tkViewManager):
         self._dg.grid(column=0, row=0, sticky='NWES')
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+        # TODO: Temporary ... for testing ...
+        self._proof_of_concept()
         return None
 
+    # TODO: Remove this when it no longer serves its POC purpose.
+    def _proof_of_concept(self):
+        """
+        This method can be used to do some proof of concept action on the data grid.
+        :return None:
+        """
+        for i in range(self._dg.num_records):
+            element = self._dg.get_grid_element('Multiply by', i)
+            element.set_menu_choices(('Option A', 'Option B', 'Option C', 'Option D'))
+        return None
+    
     def handle_model_update(self):
         """
         Handle updates from the model.
