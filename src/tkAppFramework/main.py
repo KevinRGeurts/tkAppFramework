@@ -275,7 +275,18 @@ class DataGridDemoModel(Model):
     @count.setter
     def count(self, value):
         self._count = value
-        self.notify()        
+        self.notify()
+        
+    def compute_result(self, base, add_to, multiply_by):
+        """
+        Compute a result based on the given base, add_to, and multiply_by values. This is just an example of a method
+        that the model might have to perform some business logic for the datagrid demo app.
+        :param base: A number to be used as the base value in the computation.
+        :param add_to: A number to be added to the base value.
+        :param multiply_by: A number to multiply the sum of the base and add_to values by.
+        :return: The result of (base + add_to) * multiply_by
+        """
+        return (base + add_to) * multiply_by
 
 
 class DataGridDemotkViewManager(tkViewManager):
@@ -289,7 +300,7 @@ class DataGridDemotkViewManager(tkViewManager):
         :return None:
         """
         field_configurations = [('Base',FieldType.TEXT,'editable'),
-                                ('Add to',FieldType.BOOL,'editable'),
+                                ('Add 2 to',FieldType.BOOL,'editable'),
                                 ('Multiply by',FieldType.LIST,'default_value'),
                                 ('Result',FieldType.TEXT,'read_only')]
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5)
@@ -313,8 +324,12 @@ class DataGridDemotkViewManager(tkViewManager):
         :return None:
         """
         for i in range(self._dg.num_records):
+            # Initialze the 'Multiply by' field for each record.
             element = self._dg.get_grid_element('Multiply by', i)
-            element.set_menu_choices(('Option A', 'Option B', 'Option C', 'Option D'))
+            element.set_menu_choices(('1.0', '2.0', '3.0', '4.0'))
+            # Initialize the 'Base' field for each record.
+            element = self._dg.get_grid_element('Base', i)
+            element.set_state(str(i))
         return None
     
     def handle_model_update(self):
@@ -338,9 +353,26 @@ class DataGridDemotkViewManager(tkViewManager):
             if mod_elem.get_state()[1] == 'invalid':
                 msg = f"Invalid entry of 'invalid' in tkDGElementText with canvas ID {mod_elem.canvasID}."
                 raise tkDGElementTextInvalidEntryError(msg)
-        # Inform the model that the datagrid widget's state has changed (that is, a field value of a record has changed),
-        # so that the model can record the change.
-        # self.getModel().count += 1
+        # Determine the record index of the modified element.
+        (field_name, record_index) = self._dg.get_element_coords(mod_elem)
+        try:
+            # Get the current Result value for the record.
+            current_result = float(self._dg.get_grid_element('Result', record_index).get_state()[1])
+        except:
+            current_result = -99.99
+        try:
+            # Get the values required by the model for a computation out of the record's fields
+            base_val = float(self._dg.get_grid_element('Base', record_index).get_state()[1])
+            add_to_val = 2.0 if self._dg.get_grid_element('Add 2 to', record_index).get_state()[1] == 1.0 else 0.0
+            multiply_by_val = float(self._dg.get_grid_element('Multiply by', record_index).get_state()[1])
+            # Ask the model to compute a result based on the values from the record's fields.
+            result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
+            # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
+            # This prevents an infinite loop of updates.
+            if result != current_result:
+                self._dg.get_grid_element('Result', record_index).set_state(str(result))
+        except:
+            pass
         return None
 
 
