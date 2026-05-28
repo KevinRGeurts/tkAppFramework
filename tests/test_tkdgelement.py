@@ -8,12 +8,20 @@ import unittest
 
 
 # Local
+
 from tkAppFramework.tkdatagridwidget import tkDGElement
 from tkAppFramework.ObserverPatternBase import Observer
 
 
 
 class Test_tkDGElement(unittest.TestCase):
+    def setUp(self):
+        self.root=tk.Tk()
+
+    def tearDown(self):
+        if self.root:
+            self.root.destroy()
+
     def test_init(self):
         o = Observer()
         e = tkDGElement(o)

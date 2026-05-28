@@ -24,6 +24,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="datagriddemoapp.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="exceptions.py">
       <SubType>Code</SubType>
     </Compile>

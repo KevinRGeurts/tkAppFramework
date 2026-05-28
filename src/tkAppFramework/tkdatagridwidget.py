@@ -16,11 +16,13 @@ Exported Functions:
 
 
 # Standard imports
+from ast import Lambda
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
 from functools import partial
 from enum import IntEnum
+from xml.sax.handler import property_declaration_handler
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer
@@ -90,6 +92,10 @@ class tkDGElement(Subject):
         raise NotImplementedError("The _create_element_widget() method must be implemented by child classes of tkDGElement.")
         return None
     
+    @property
+    def elementWidget(self):
+        return self._element_widget
+
     @property
     def canvasID(self):
         return self._canvas_id
@@ -397,6 +403,20 @@ class tkDGElementText(tkDGElement):
                           takefocus=1, validate='focusout')
         return widget
 
+    def disable_element(self, disabled=True):
+        """
+        Used to set if the element widget will accept input.
+        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
+        :return None:
+        """
+        if self._element_widget is not None:
+            if disabled:
+                # So text content can still be selected and copied, but not changed.
+                self._element_widget['state']='readonly'
+            else:
+                self._element_widget['state']=tk.NORMAL
+        return None
+
     def OnEntryChanged(self, canvas_id):
         """
         Event handler for changes to text entry.
@@ -470,6 +490,20 @@ class tkDGElementFieldHeader(tkDGElement):
                           takefocus=0, validate='focusout')
         return widget
 
+    def disable_element(self, disabled=True):
+        """
+        Used to set if the element widget will accept input.
+        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
+        :return None:
+        """
+        if self._element_widget is not None:
+            if disabled:
+                # So text content can still be selected and copied, but not changed.
+                self._element_widget['state']='readonly'
+            else:
+                self._element_widget['state']=tk.NORMAL
+        return None
+
     def set_state(self, value=None):
         """
         Set the state of the text element.
@@ -502,11 +536,12 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         ttk.Labelframe.__init__(self, parent, text=title)
 
         # Dictionary of element format configurations, where Key=format name as string, Value=configuration tuple (text color, cell color, read only), as (string, (string, string, boolean))
+        # Hex RGB color source: https://color-register.org
         self._element_formats = {}
         self.create_element_format(format_name='field_header', text_color='black', cell_color='#808080', read_only=True)
         self.create_element_format(format_name='editable', text_color='black', cell_color='white', read_only=False)
         self.create_element_format(format_name='read_only', text_color='black', cell_color='cyan', read_only=True)
-        self.create_element_format(format_name='default_value', text_color='black', cell_color='green', read_only=False)
+        self.create_element_format(format_name='default_value', text_color='black', cell_color='#74BA00', read_only=False) # "Microsoft Green"
 
         # Add a binding for window destruction, so that this tkDataGridWidget can detach itself from its subjects when it is destroyed.
         self.bind('<Destroy>', self.onDestroy, '+')
@@ -560,6 +595,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     def num_records(self):
         return self._num_records
 
+    @property
+    def modifiedElement(self):
+        return self._modified_element
+
     def onContextMenu(self, event, element):
         """
         Handler for the <<ContextMenu>> virtual event. Display handle the contextual menu.
@@ -568,7 +607,40 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         print(f"tkDataGridWidget received <<ContextMenu>> virtual event from tkDGElement with canvas ID {element.canvasID}.")
-        # TODO: Implement the contextual menu.
+        self._create_context_menu(event)
+        return None
+
+    # TODO:
+    # Moved Copy, Paste, etc. to an Edit submenu if the context menu.
+    # (1) For a writeable text element, Copy should get it's text value and put it on the clipboard, and Paste should get the text value from the clipboard and put it in the element widget, if the clipboard value is a string.
+    #     If no text is selected, copy should get the entire text value of the element and put it on the clipboard. If text is selected, copy should get the selected text and put it on the clipboard. Paste should insert the clipboard text at the cursor position, or replace the selected text if there is a selection.
+    # (2): For a read-only text element, Copy should get it's text value and put it on the clipboard, but Paste should do nothing.
+    # (3): For a boolean element, Copy should get it's value and put it on the clipboard. Paste should only work it the clipboard value is a boolean, 0, or 1.
+    # (4): For a list element, Copy should get it's value and put it on the clipboard. Paste should only work if the clipboard value is one of the options for the list element.
+    # (5) Implication of all of this is probably that elements need to bind to the virtual events and have specific handling instead of the default handling.
+    # If Paste should do nothing, it should be disabled.
+    def _create_context_menu(self, event):
+        """
+        Create the contextual menu for the element widgets in the data grid.
+        :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
+        :return: The tkinter Menu widget that is the contextual menu, as tkinter Menu widget object
+        """
+        context_menu = tk.Menu(self)
+        context_menu.add_command(label='Copy', command=lambda: self._focused_element.elementWidget.event_generate('<<Copy>>'))
+        context_menu.add_command(label='Paste', command=lambda: self._focused_element.elementWidget.event_generate('<<Paste>>'))
+        # For adding options that do not have a built-in event, use a partial to call a handler method in this tkDataGridWidget class, and pass in the option as an argument to the handler method.
+        # TODO: Generalize by passing in a dictionary to the tkDataGridWidget constructor that defines labels and handlers.
+        for i in ('Placeholder 1', 'Placeholder 2'):
+             context_menu.add_command(label=i, command=partial(self.onContextMenuOptionSelected, i))
+        context_menu.post(event.x_root, event.y_root)
+
+    def onContextMenuOptionSelected(self, option):
+        """
+        Handler for when an option is selected from the contextual menu.
+        :parameter option: The option that was selected, as string
+        :return: None
+        """
+        print(f"Context menu option {option} was selected.")
         return None
 
     def onFocusIn(self, element):
@@ -720,7 +792,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if element.get_state()[0] == tkDGElementFieldHeader:
                 element._element_widget.configure(font=tk.font.nametofont('TkHeadingFont'))
             if element.get_state()[0] == tkDGElementText:
-                element._element_widget.configure(readonlybackground=cell_color)
+                element.elementWidget.configure(readonlybackground=cell_color)
             element.disable_element(read_only)
         return None
 
@@ -878,5 +950,3 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             self._focused_element = upper_left_element
 
         return None
-
-    
