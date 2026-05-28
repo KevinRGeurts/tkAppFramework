@@ -403,6 +403,17 @@ class tkDGElementText(tkDGElement):
                           takefocus=1, validate='focusout')
         return widget
 
+    def _setup_widget_bindings(self):
+        """
+        Used to extend the set up the tkinter event bindings for the text element widget.
+        :return: None
+        """
+        super()._setup_widget_bindings()
+        if self._element_widget is not None:
+            self._element_widget.bind('<KeyPress-Return>', self.onKeyPressReturnEnter, add='+')
+            self._element_widget.bind('<KeyPress-KP_Enter>', self.onKeyPressReturnEnter, add='+')
+        return None
+
     def disable_element(self, disabled=True):
         """
         Used to set if the element widget will accept input.
@@ -415,6 +426,15 @@ class tkDGElementText(tkDGElement):
                 self._element_widget['state']='readonly'
             else:
                 self._element_widget['state']=tk.NORMAL
+        return None
+
+    def onKeyPressReturnEnter(self, event):
+        """
+        Handler for the Return and key pad Enter key press events.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        self.OnEntryChanged(self._canvas_id)
         return None
 
     def OnEntryChanged(self, canvas_id):

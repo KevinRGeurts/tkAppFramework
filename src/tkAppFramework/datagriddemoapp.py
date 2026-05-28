@@ -121,6 +121,12 @@ class DataGridDemotkViewManager(tkViewManager):
             # This prevents an infinite loop of updates.
             if result != current_result:
                 self._dg.get_grid_element('Result', record_index).set_state(str(result))
+            # Handle the "default value" formatting for the "Multiply by" field.
+            mbve = self._dg.get_grid_element('Multiply by', record_index)
+            if multiply_by_val == 1.0:
+                self._dg._apply_element_format_to_one_element(elem_format='default_value', element=mbve)
+            else:
+                self._dg._apply_element_format_to_one_element(elem_format='editable', element=mbve)
         except:
             pass
         return None
