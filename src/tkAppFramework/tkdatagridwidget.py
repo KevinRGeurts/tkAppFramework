@@ -16,7 +16,6 @@ Exported Functions:
 
 
 # Standard imports
-from ast import Lambda
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showerror
@@ -572,6 +571,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(type(fields_config)==list)
         self._fields_config = fields_config
 
+        # Store the tkDGElementFieldHeader widgets in the data grid in a list.
+        self._header_elements = []
+
         # Store the tkDGElement widgets in the data grid in a dictionary of lists.
         # Key is field name as string, value is list of tkDGElement objects for that field, as {string: [tkDGElement objects]}
         self._grid_elements = {}
@@ -936,6 +938,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             self.register_subject(element, partial(self.handle_element_update, element))
             element.set_state(field_name)
             self._apply_element_format_to_one_element('field_header', element)
+            self._header_elements.append(element)
             # End handling the field header element for this field/column.
             rec_list = []
             for rec_i in range(self._num_records):
