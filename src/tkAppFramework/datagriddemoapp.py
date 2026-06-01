@@ -126,7 +126,7 @@ class DataGridDemotkViewManager(tkViewManager):
             if result != current_result:
                 self._dg.get_grid_element('Result', record_index).set_state(str(result))
         except:
-            pass
+            self._dg.get_grid_element('Result', record_index).clear_element_value()
         return None
 
 

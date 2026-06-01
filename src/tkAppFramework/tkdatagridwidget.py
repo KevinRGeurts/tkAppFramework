@@ -131,6 +131,16 @@ class tkDGElement(Subject):
         self.notify()
         return None
 
+    def clear_element_value(self):
+        """
+        Clear the element value. Must be implemented by child classes, since the way to clear the value will depend on the type of element.
+        Note: Must be extended by child classes, because this base class implementation does nothing with the element's value.
+              It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
+        :return: None
+        """
+        self.notify()
+        return None
+
     def set_default_value(self, def_value):
         """
         Set the default value for the element, which is used to reset the element to a default state when needed.
@@ -167,7 +177,22 @@ class tkDGElement(Subject):
             self._element_widget.bind('<KeyPress-Down>', self.onKeyPressDown, add='+')
             self._element_widget.bind('<KeyPress-Right>', self.onKeyPressRight, add='+')
             self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
+            self._element_widget.bind('<KeyPress-Delete>', self.onKeyPressDelete, add='+')
             self._element_widget.bind('<<ContextMenu>>', self.onContextMenu, add='+')
+        return None
+
+    def onKeyPressDelete(self, event):
+        """
+        Handler for the delete key press event. Delete key will restore the element's value to it's default, if
+        one exists, set a BOOL element to False, or set a TEXT element to an emtpy string.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        if self._default_value is not None:
+            self._element_value.set(self._default_value)
+        else:
+            self.clear_element_value()
+        self.notify()
         return None
 
     def onContextMenu(self, event):
@@ -307,6 +332,15 @@ class tkDGElementBool(tkDGElement):
         super().set_state()
         return None
 
+    def clear_element_value(self):
+        """
+        Clear the element value, by setting it to False.
+        :return: None
+        """
+        self.set_state(False)
+        # DON'T call super().clear_element_value(), because set_state() already calls notify().
+        return None
+
 
 class tkDGElementList(tkDGElement):
     """
@@ -365,6 +399,14 @@ class tkDGElementList(tkDGElement):
         # TODO: Check that value is in the list of options for the OptionMenu.
         self._element_value.set(value)
         super().set_state()
+        return None
+
+    def clear_element_value(self):
+        """
+        Clear the element value. Actually this does nothing, since there is no clear value for an OptionMenu, but method must be implemented since it is abstract in the base class.
+        :return: None
+        """
+        # Note. super().clear_element_value() is not called, since no change to the value is made.
         return None
 
     def set_menu_choices(self, choices=()):
@@ -495,8 +537,20 @@ class tkDGElementText(tkDGElement):
         :return: None
         """
         assert(type(value)==str)
-        self._element_value.set(value)
-        super().set_state()
+        old_value = self._element_value.get()
+        # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
+        if value != old_value:
+            self._element_value.set(value)
+            super().set_state()
+        return None
+
+    def clear_element_value(self):
+        """
+        Clear the element value, by setting it to ''.
+        :return: None
+        """
+        self.set_state('')
+        # DON"T call super().clear_element_value(), as set_state() already calls notify().
         return None
 
 
@@ -555,6 +609,15 @@ class tkDGElementFieldHeader(tkDGElement):
         assert(type(value)==str)
         self._element_value.set(value)
         super().set_state()
+        return None
+
+    def clear_element_value(self):
+        """
+        Clear the element value, by setting it to ''.
+        :return: None
+        """
+        self.set_state('')
+        # DON'T call super().clear_element_value(), because set_state() already calls notify().
         return None
 
 
