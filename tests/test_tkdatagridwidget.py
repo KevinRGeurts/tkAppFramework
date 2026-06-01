@@ -16,7 +16,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._root = tk.Tk()
         field_configurations = [('Editable Text Field',FieldType.TEXT,'editable'),
                                 ('Editable Bool Field',FieldType.BOOL,'editable'),
-                                ('Default List Field',FieldType.LIST,'default_value'),
+                                ('Default List Field',FieldType.LIST,'editable'),
                                 ('Read Only Text Field',FieldType.TEXT,'read_only')]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
@@ -27,7 +27,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
 
     def test_init_num_records_property(self):
         self.assertEqual(self._dgw.num_records, 2)
-        self.assertEqual(len(self._dgw._element_formats), 4)
+        self.assertEqual(len(self._dgw._element_formats), 3)
         self.assertEqual(len(self._dgw._fields_config), 4)
         self.assertEqual(len(self._dgw._header_elements), 4)
         self.assertEqual(len(self._dgw._grid_elements), 4)
@@ -66,7 +66,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
     def test_create_element_format(self):
         self._dgw.create_element_format()
         ef = self._dgw._element_formats['an_element_format']
-        self.assertTupleEqual(ef, ('black', 'white', True))
+        self.assertTupleEqual(ef, ('black', 'white', True, '#74BA00'))
 
     def test_onDestroy(self):
         ge = self._dgw.get_grid_element('Editable Text Field', 0)

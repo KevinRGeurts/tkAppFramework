@@ -3,6 +3,7 @@ Defines classes for a datagrid demo application, which is also used for unittest
 """
 
 # Standard
+import logging
 import tkinter as tk
 from tkinter import ttk
 import sysconfig
@@ -48,9 +49,10 @@ class DataGridDemotkViewManager(tkViewManager):
         """
         field_configurations = [('Base',FieldType.TEXT,'editable'),
                                 ('Add 2 to',FieldType.BOOL,'editable'),
-                                ('Multiply by',FieldType.LIST,'default_value'),
+                                ('Multiply by',FieldType.LIST,'editable'),
                                 ('Result',FieldType.TEXT,'read_only')]
-        self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5)
+        self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
+                                    log_level = logging.DEBUG)
         # Attach self as an observer of the subject demo widget
         self._dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget
@@ -73,6 +75,8 @@ class DataGridDemotkViewManager(tkViewManager):
             # Initialze the 'Multiply by' field for each record.
             element = self._dg.get_grid_element('Multiply by', i)
             element.set_menu_choices(('1.0', '2.0', '3.0', '4.0'))
+            element.set_default_value('2.0')
+            element.set_state('2.0')
             # Initialize the 'Base' field for each record.
             element = self._dg.get_grid_element('Base', i)
             element.set_state(str(i))
@@ -121,12 +125,6 @@ class DataGridDemotkViewManager(tkViewManager):
             # This prevents an infinite loop of updates.
             if result != current_result:
                 self._dg.get_grid_element('Result', record_index).set_state(str(result))
-            # Handle the "default value" formatting for the "Multiply by" field.
-            mbve = self._dg.get_grid_element('Multiply by', record_index)
-            if multiply_by_val == 1.0:
-                self._dg._apply_element_format_to_one_element(elem_format='default_value', element=mbve)
-            else:
-                self._dg._apply_element_format_to_one_element(elem_format='editable', element=mbve)
         except:
             pass
         return None

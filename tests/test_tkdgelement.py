@@ -29,7 +29,12 @@ class Test_tkDGElementText(unittest.TestCase):
         self.assertEqual(e.canvasID, 7)
         self.assertTupleEqual(e.get_state(),(tkDGElementText, ''))
 
-    def test_set_state(self):
+    def test_set_get_default_value(self):
+        e = self._dgw.get_grid_element('A Text Field', 0)
+        e.set_default_value('Default Text')
+        self.assertEqual(e.get_default_value(), 'Default Text')
+        
+    def test_set_get_state(self):
         e = self._dgw.get_grid_element('A Text Field', 0)
         e.set_state('1')
         self.assertTupleEqual(e.get_state(), (tkDGElementText, '1'))

@@ -16,6 +16,7 @@ Exported Functions:
 
 
 # Standard imports
+import logging
 import tkinter as tk
 from tkinter import font
 from tkinter import ttk
@@ -59,8 +60,9 @@ class tkDGElement(Subject):
         self.attach(observer)
         self._canvas_id = None # Required so that canvas ID is available in _create_element_widget() method,
                                # in case it is needed, for example in a partial for a widget command callback.
-        # Create teh element's control variable first, in case it is needed for creating the element widget, since the control variable might be used in the widget constructor.
+        # Create the element's control variable first, in case it is needed for creating the element widget, since the control variable might be used in the widget constructor.
         self._element_value = self._create_element_value()
+        self._default_value = None
         self._element_widget = self._create_element_widget()
         self._setup_widget_bindings()
         # TODO: This is not OO, but don't see yet how to avoid it, since there is inconsistence between
@@ -74,6 +76,7 @@ class tkDGElement(Subject):
            self._element_widget['variable'] = self._element_value
         self._canvas_id = observer.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
                                                         anchor=tk.NW, window=self._element_widget)
+    
     def _create_element_value(self):
         """
         Factory method to create the element widget's control variable. Must be implemented by child classes.
@@ -103,13 +106,19 @@ class tkDGElement(Subject):
     def get_state(self):
         """
         Get the state of the element.
-        Note: Must be extended by child classes, because this base class implementation returns value=None.
         :return: Tuple (element type, element value), as (type, any)
         """
         value = None
         if self._element_value is not None:
             value = self._element_value.get()
         return (type(self), value)
+
+    def get_default_value(self):
+        """
+        Get the default value for the element, which is used to reset the element to a default state when needed.
+        :return: The default value for the element, as any (or None if no default value is set).
+        """
+        return self._default_value
 
     def set_state(self, value=None):
         """
@@ -119,6 +128,16 @@ class tkDGElement(Subject):
               It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
         :return: None
         """
+        self.notify()
+        return None
+
+    def set_default_value(self, def_value):
+        """
+        Set the default value for the element, which is used to reset the element to a default state when needed.
+        :parameter def_value: The default value for the element, as any (or None, if the element has no default value).)
+        :return: None
+        """
+        self._default_value = def_value
         self.notify()
         return None
 
@@ -269,7 +288,8 @@ class tkDGElementBool(tkDGElement):
         :parameter canvas_id: The canvas ID of the element widget that was clicked, as int
         :return: None
         """
-        print(f"Checkbutton with canvas ID {canvas_id} was clicked.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Checkbutton with canvas ID {canvas_id} was clicked.")
         self._element_widget.focus_set()
         self.notify()
         return None
@@ -328,7 +348,8 @@ class tkDGElementList(tkDGElement):
         :paramter option: The option selected, as string
         :return: None
         """
-        print(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
         self._element_value.set(option)
         self._element_widget.focus_set()
         self.notify()
@@ -443,11 +464,12 @@ class tkDGElementText(tkDGElement):
         :parameter canvas_id: The canvas ID of the element widget into which text was entered, as int
         :return True: if text entry change is valid, False if invalid, boolean
         """
+        logger = logging.getLogger('tkDataGridWidget_logger')
         # Inform all observers of the change in the text entry
         try:
             # Validity here is an assumption only. If it isn't a good assumption, exception will be raised
             # when notify() is called, and OnInvalidEntryChange() will correct to False.
-            print(f"Entry with canvas ID {canvas_id} was changed.")
+            logger.debug(f"Entry with canvas ID {canvas_id} was changed.")
             self._entry_is_valid = True
             self.notify()
             return True
@@ -543,25 +565,29 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     Class is an Observer in Observer design pattern so that it can observe tkDGElement objects.
     """
     # TODO: Pass in row heights and collumn widths?
-    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0) -> None:
+    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
         :parameter fields_config: List of tuples (field name, FieldType Enum value, field format), as [(string, int, string)]
              note: Field format is a string that is the key to look up in the _element_formats dictionary for formatting element widgets in the data grid.
         :parameter num_records: The number of records to display in the data grid, as int
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
         Subject.__init__(self)
         Observer.__init__(self)
         ttk.Labelframe.__init__(self, parent, text=title)
 
-        # Dictionary of element format configurations, where Key=format name as string, Value=configuration tuple (text color, cell color, read only), as (string, (string, string, boolean))
+        # Set up logging for this class.
+        self._setup_logging(log_level)
+
+        # Dictionary of element format configurations, where Key=format name as string, Value=configuration tuple (text color, cell color, read only, default cell color), as (string, (string, string, boolean, string))
         # Hex RGB color source: https://color-register.org
         self._element_formats = {}
+        # default_cell_color = "Microsoft Green"
         self.create_element_format(format_name='field_header', text_color='black', cell_color='#808080', read_only=True)
         self.create_element_format(format_name='editable', text_color='black', cell_color='white', read_only=False)
         self.create_element_format(format_name='read_only', text_color='black', cell_color='cyan', read_only=True)
-        self.create_element_format(format_name='default_value', text_color='black', cell_color='#74BA00', read_only=False) # "Microsoft Green"
 
         # Add a binding for window destruction, so that this tkDataGridWidget can detach itself from its subjects when it is destroyed.
         self.bind('<Destroy>', self.onDestroy, '+')
@@ -629,7 +655,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
         :return: None
         """
-        print(f"tkDataGridWidget received <<ContextMenu>> virtual event from tkDGElement with canvas ID {element.canvasID}.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget received <<ContextMenu>> virtual event from tkDGElement with canvas ID {element.canvasID}.")
         self._create_context_menu(event)
         return None
 
@@ -663,7 +690,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter option: The option that was selected, as string
         :return: None
         """
-        print(f"Context menu option {option} was selected.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option {option} was selected.")
         return None
 
     def onFocusIn(self, element):
@@ -673,7 +701,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter element: The tkDGElement object that Has the element widget that received focus, as tkDGElement object
         :return: None
         """
-        print(f"tkDataGridWidget received FocusIn event from tkDGElement with canvas ID {element.canvasID}.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget received FocusIn event from tkDGElement with canvas ID {element.canvasID}.")
         self._focused_element = element
         self._draw_focus_rectangle(element)
         return None
@@ -684,7 +713,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter element: The tkDGElement object that Has the element widget that lost focus, as tkDGElement object
         :return: None
         """
-        print(f"tkDataGridWidget received FocusOut event from tkDGElement with canvas ID {element.canvasID}.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget received FocusOut event from tkDGElement with canvas ID {element.canvasID}.")
         self._focused_element = None
         return None
 
@@ -785,19 +815,24 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         else:
             return (field_name, record_index)
         
-    def create_element_format(self, format_name = "an_element_format", text_color = 'black', cell_color = 'white', read_only = True):
+    def create_element_format(self, format_name = "an_element_format", text_color = 'black', cell_color = 'white',
+                              read_only = True, default_cell_color='#74BA00'):
         """
         Create a named configuration for formatting element widgets in the data grid.
         :parameter format_name: The name of the format, as string
         :parameter text_color: The color of the text in the element widget, as string
         :parameter cell_color: The background color of the element widget, as string
         :parameter read_only: If True, the element widget will not accept input, as boolean
+        :parameter default_cell_color: The background color for the element widget if the value of the element
+                                       is the default value for that element, as string
+            Note: The default value for default_cell_color paramter is "Microsoft Green"
+        :return None:
         """
         assert(type(format_name)==str)
         assert(type(text_color)==str)
         assert(type(cell_color)==str)
         assert(type(read_only)==bool)
-        self._element_formats[format_name] = (text_color, cell_color, read_only)
+        self._element_formats[format_name] = (text_color, cell_color, read_only, default_cell_color)
         return None
 
     def _apply_element_format_to_one_element(self, elem_format='a_field_header', element=None):
@@ -809,7 +844,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(type(elem_format)==str)
         assert(isinstance(element, tkDGElement))
         if elem_format in self._element_formats:
-            text_color, cell_color, read_only = self._element_formats[elem_format]
+            text_color, cell_color, read_only, default_cell_color = self._element_formats[elem_format]
             element._element_widget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
             # TODO: Fix this horribly non-OO code.
             if element.get_state()[0] == tkDGElementFieldHeader:
@@ -856,8 +891,20 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         parameter element: The tkDGElement object that is notifying the tkDataGridWidget of a change in state, as tkDGElement object
         :return None:
         """
-        value = element.get_state()
-        print(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}.")
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        value = element.get_state()[1]
+        default_value = element.get_default_value()
+        logger.debug(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}. Elemeht has default value {default_value}")
+        # Handle formating the element widget appropriately based on if it has the default value or not.
+        if default_value is not None:
+            if value is not None:
+                elem_field = self.get_element_coords(element)[0]
+                elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
+                elem_format = self._element_formats[elem_config[2]]
+                if value == default_value:
+                    element._element_widget.configure(background=elem_format[3])
+                else:
+                    element._element_widget.configure(background=elem_format[1])  
         self._modified_element = element
         self.notify()
         self._modified_element = None
@@ -974,4 +1021,27 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             upper_left_element._element_widget.focus_set()
             self._focused_element = upper_left_element
 
+        return None
+
+    def _setup_logging(self, log_level=logging.INFO):
+        """
+        This method configures logging.
+        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        :return: None
+        """
+        # Create a logger with name 'tkDataGridWidget_logger'. This is NOT the root logger, which is one level up from here, and has no name.
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        # This is the threshold level for the logger itself, before it will pass to any handlers, which can have their own threshold.
+        # Should be able to control here what the stream handler receives and thus what ends up going to stderr.
+        # Use this key for now:
+        #   DEBUG = debug messages sent to this logger will end up on stderr
+        #   INFO = info messages sent to this logger will end up on stderr
+        logger.setLevel(log_level)
+        # Set up this highest level below root logger with a stream handler
+        sh = logging.StreamHandler()
+        # Set the threshold for the stream handler itself, which will come into play only after the logger threshold is met.
+        sh.setLevel(log_level)
+        # Add the stream handler to the logger
+        logger.addHandler(sh)
+            
         return None
