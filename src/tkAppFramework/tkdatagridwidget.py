@@ -17,6 +17,7 @@ Exported Functions:
 
 # Standard imports
 import tkinter as tk
+from tkinter import font
 from tkinter import ttk
 from tkinter.messagebox import showerror
 from functools import partial
@@ -755,7 +756,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         Return the tkDGElement object for a given field name and record index.
         :parameter field_name: The name of the field, as string
-        :parameter record_index: The index of the record, as int
+        :parameter record_index: The (0=based) index of the record, as int
         :return: The tkDGElement object for the given field name and record index, or None if no such element exists, as tkDGElement object or None
         """
         assert(type(field_name)==str)
@@ -770,7 +771,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         Return the field name and record index for a given tkDGElement object.
         :parameter element: The tkDGElement object for which to find the field name and record index, as tkDGElement object
-        :return: Tuple (field name, record index), as (string, int) or None if no such element exists
+        :return: Tuple (field name, 0-based record index), as (string, int) or None if no such element exists
         """
         assert(isinstance(element, tkDGElement))
         field_name = ''
@@ -812,7 +813,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             element._element_widget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
             # TODO: Fix this horribly non-OO code.
             if element.get_state()[0] == tkDGElementFieldHeader:
-                element._element_widget.configure(font=tk.font.nametofont('TkHeadingFont'))
+                element._element_widget.configure(font=font.nametofont('TkHeadingFont'))
             if element.get_state()[0] == tkDGElementText:
                 element.elementWidget.configure(readonlybackground=cell_color)
             element.disable_element(read_only)
@@ -936,6 +937,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             # Handle the field header element for this field/column.
             element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h)
             self.register_subject(element, partial(self.handle_element_update, element))
+            self._wids.append(element.canvasID)
             element.set_state(field_name)
             self._apply_element_format_to_one_element('field_header', element)
             self._header_elements.append(element)

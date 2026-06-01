@@ -10,6 +10,7 @@ import tkinter as tk
 # Local
 from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, FieldType, tkDGElementBool, tkDGElementList, tkDGElementFieldHeader
 
+
 class Test_tkDGElementText(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
