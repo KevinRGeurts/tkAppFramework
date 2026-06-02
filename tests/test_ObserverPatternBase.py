@@ -35,7 +35,10 @@ class Test_Subject(unittest.TestCase):
     def test_detach_missing_observer(self):
         obs = Observer()
         sub = Subject()
-        self.assertRaises(ValueError, sub.detach, obs)
+        try:
+            sub.detach(obs)
+        except ValueError as e:
+            self.assertTrue(False)
 
 
 class Test_Observer(unittest.TestCase):

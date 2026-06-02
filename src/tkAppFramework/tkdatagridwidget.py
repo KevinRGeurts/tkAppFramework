@@ -409,7 +409,7 @@ class tkDGElementList(tkDGElement):
         # Note. super().clear_element_value() is not called, since no change to the value is made.
         return None
 
-    def set_menu_choices(self, choices=()):
+    def set_menu_choices(self, choices):
         """
         Set the choices for the OptionMenu element widget.
         :parameter choices: The choices to set for the OptionMenu, as tuple of strings
@@ -788,9 +788,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
-            (field_name, record_index) = self.get_element_coords(self._focused_element)
+            (field_name, record_index) = self._get_element_coords(self._focused_element)
             if record_index > 0:
-                next_element = self.get_grid_element(field_name, record_index - 1)
+                next_element = self._get_grid_element(field_name, record_index - 1)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
@@ -803,9 +803,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
-            (field_name, record_index) = self.get_element_coords(self._focused_element)
+            (field_name, record_index) = self._get_element_coords(self._focused_element)
             if record_index < self._num_records - 1:
-                next_element = self.get_grid_element(field_name, record_index + 1)
+                next_element = self._get_grid_element(field_name, record_index + 1)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
@@ -818,11 +818,11 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
-            (field_name, record_index) = self.get_element_coords(self._focused_element)
+            (field_name, record_index) = self._get_element_coords(self._focused_element)
             field_config = [fc for fc in self._fields_config if fc[0]==field_name]
             field_index = self._fields_config.index(field_config[0])
             if field_index < len(self._fields_config) - 1:
-                next_element = self.get_grid_element(self._fields_config[field_index+1][0], record_index)
+                next_element = self._get_grid_element(self._fields_config[field_index+1][0], record_index)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
@@ -835,17 +835,141 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
-            (field_name, record_index) = self.get_element_coords(self._focused_element)
+            (field_name, record_index) = self._get_element_coords(self._focused_element)
             field_config = [fc for fc in self._fields_config if fc[0]==field_name]
             field_index = self._fields_config.index(field_config[0])
             if field_index > 0:
-                next_element = self.get_grid_element(self._fields_config[field_index-1][0], record_index)
+                next_element = self._get_grid_element(self._fields_config[field_index-1][0], record_index)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
         return None
 
-    def get_grid_element(self, field_name='a_field_name', record_index=0):
+    def clear_grid_element_value(self, field_name='a_field_name', record_index=0):
+        """
+        Clear the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        Note: (1) A FieldType.TEXT element will have its value set to ''
+              (2) A FieldType.BOOL element will have its value set to False
+              (3) A FieldType.LIST element will have its value unchanged.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.clear_element_value()
+        return None
+
+    def get_grid_element_value(self, field_name='a_field_name', record_index=0):
+        """
+        Return the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            return element.get_state()[1]
+        else:
+            return None
+
+    def get_grid_element_FieldType(self, field_name='a_field_name', record_index=0):
+        """
+        Return the FieldType of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The FieldType of the grid element for the given field name and record index, or None if no such element exists, as FieldType or None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        # TODO: This is not OO. Improve. Maybe by having the tkDGElement classes return their FieldType when get_state() is called, or by having a method in tkDGElement that returns its FieldType.
+        if element is not None:
+            elem_type = element.get_state()[0]
+            if elem_type == tkDGElementText:
+                return FieldType.TEXT
+            elif elem_type == tkDGElementBool:
+                return FieldType.BOOL
+            elif elem_type == tkDGElementList:
+                return FieldType.LIST
+            else:
+                return None
+        else:
+            return None
+
+    def get_grid_element_default_value(self, field_name='a_field_name', record_index=0):
+        """
+        Return the default value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The default value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            return element.get_default_value()
+        else:
+            return None
+
+    def set_grid_element_value(self, field_name='a_field_name', record_index=0, value=None):
+        """
+        Set the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter value: The value to set in the grid element, as any
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.set_state(value)
+        return None
+
+    def set_grid_element_default_value(self, field_name='a_field_name', record_index=0, value=None):
+        """
+        Set the default value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter value: The default value to set in the grid element, as any
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.set_default_value(value)
+        return None
+
+    def set_grid_element_list_choices(self, field_name='a_field_name', record_index=0, choices=tuple()):
+        """
+        Set the choices for a LIST grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter choices: The choices to set for the LIST grid element, as tuple of strings
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            if element.get_state()[0] == tkDGElementList:
+                element.set_menu_choices(choices)
+        return None
+    
+    def _get_grid_element(self, field_name='a_field_name', record_index=0):
         """
         Return the tkDGElement object for a given field name and record index.
         :parameter field_name: The name of the field, as string
@@ -860,7 +984,16 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 element = self._grid_elements[field_name][record_index]
         return element
 
-    def get_element_coords(self, element=None):
+    def get_modified_grid_element_location(self):
+        """
+        Return the field name and record index for the most recently modified grid element.
+        This method is intended to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :return: Tuple (field name, 0-based record index), as (string, int) or None if no such element exists
+        """
+        (field_name, record_index) = self._get_element_coords(self._modified_element)
+        return (field_name, record_index)
+    
+    def _get_element_coords(self, element=None):
         """
         Return the field name and record index for a given tkDGElement object.
         :parameter element: The tkDGElement object for which to find the field name and record index, as tkDGElement object
@@ -961,7 +1094,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Handle formating the element widget appropriately based on if it has the default value or not.
         if default_value is not None:
             if value is not None:
-                elem_field = self.get_element_coords(element)[0]
+                elem_field = self._get_element_coords(element)[0]
                 elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
                 elem_format = self._element_formats[elem_config[2]]
                 if value == default_value:

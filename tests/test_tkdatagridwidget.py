@@ -54,13 +54,60 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._dgw.onKeyPressLeft(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
         
-    def test_get_gird_element(self):
-        ge = self._dgw.get_grid_element('Default List Field', 1)
+    def test_get_grid_element(self):
+        ge = self._dgw._get_grid_element('Default List Field', 1)
         self.assertEqual(ge, self._dgw._grid_elements['Default List Field'][1])
+        self.assertIsNone(self._dgw._get_grid_element('Nonexistent Field', 0))
+        self.assertIsNone(self._dgw._get_grid_element('Default List Field', 100))
+
+    def test_get_grid_element_FieldType(self):
+        geft = self._dgw.get_grid_element_FieldType('Editable Text Field', 1)
+        self.assertEqual(geft, FieldType.TEXT)  
+       
+    def test_get_grid_element_value(self):
+        ge = self._dgw._get_grid_element('Editable Text Field', 1)
+        ge.set_state('Test Value')
+        gev = self._dgw.get_grid_element_value('Editable Text Field', 1)
+        self.assertEqual(gev, 'Test Value')
+
+    def test_get_grid_element_default_value(self):
+        ge = self._dgw._get_grid_element('Editable Text Field', 1)
+        ge.set_default_value('Test Default Value')
+        gev = self._dgw.get_grid_element_default_value('Editable Text Field', 1)
+        self.assertEqual(gev, 'Test Default Value')
+
+    def test_set_grid_element_value(self):
+        self._dgw.set_grid_element_value('Editable Text Field', 1, 'Test Value')
+        gev = self._dgw.get_grid_element_value('Editable Text Field', 1)
+        self.assertEqual(gev, 'Test Value')
+
+    def test_clear_grid_element_value(self):
+        self._dgw.set_grid_element_value('Editable Text Field', 1, 'Test Value')
+        gev = self._dgw.get_grid_element_value('Editable Text Field', 1)
+        self.assertEqual(gev, 'Test Value')
+        self._dgw.clear_grid_element_value('Editable Text Field', 1)
+        gev = self._dgw.get_grid_element_value('Editable Text Field', 1)
+        self.assertEqual(gev, '')
+        
+    def test_set_grid_element_default_value(self):
+        self._dgw.set_grid_element_default_value('Editable Text Field', 1, 'Test Default Value')
+        gev = self._dgw.get_grid_element_default_value('Editable Text Field', 1)
+        self.assertEqual(gev, 'Test Default Value')
+
+    def test_set_grid_element_list_choices(self):
+        self._dgw.set_grid_element_list_choices('Default List Field', 1, ('Test Option 1', 'Test Option 2'))
+        gev = self._dgw.get_grid_element_value('Default List Field', 1)
+        self.assertEqual(gev, 'Test Option 1')
 
     def test_get_element_coords(self):
-        ge = self._dgw.get_grid_element('Read Only Text Field', 1)
-        coords = self._dgw.get_element_coords(ge)
+        ge = self._dgw._get_grid_element('Read Only Text Field', 1)
+        coords = self._dgw._get_element_coords(ge)
+        self.assertTupleEqual(coords, ('Read Only Text Field', 1))
+
+    def test_modified_grid_element_coords(self):
+        ge = self._dgw._get_grid_element('Read Only Text Field', 1)
+        self._dgw._modified_element = ge
+        coords = self._dgw.get_modified_grid_element_location()
         self.assertTupleEqual(coords, ('Read Only Text Field', 1))
 
     def test_create_element_format(self):
@@ -69,10 +116,10 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertTupleEqual(ef, ('black', 'white', True, '#74BA00'))
 
     def test_onDestroy(self):
-        ge = self._dgw.get_grid_element('Editable Text Field', 0)
+        ge = self._dgw._get_grid_element('Editable Text Field', 0)
+        self.assertEqual(len(ge._observers), 1)
         self._dgw.onDestroy(None)
         self.assertEqual(len(ge._observers), 0)
-
 
 
 if __name__ == '__main__':

@@ -73,13 +73,11 @@ class DataGridDemotkViewManager(tkViewManager):
         """
         for i in range(self._dg.num_records):
             # Initialze the 'Multiply by' field for each record.
-            element = self._dg.get_grid_element('Multiply by', i)
-            element.set_menu_choices(('1.0', '2.0', '3.0', '4.0'))
-            element.set_default_value('2.0')
-            element.set_state('2.0')
+            self._dg.set_grid_element_list_choices('Multiply by', i, ('1.0', '2.0', '3.0', '4.0'))
+            self._dg.set_grid_element_default_value('Multiply by', i, '2.0')
+            self._dg.set_grid_element_value('Multiply by', i, '2.0')
             # Initialize the 'Base' field for each record.
-            element = self._dg.get_grid_element('Base', i)
-            element.set_state(str(i))
+            self._dg.set_grid_element_value('Base', i, str(i))
         return None
     
     def handle_model_update(self):
@@ -96,19 +94,18 @@ class DataGridDemotkViewManager(tkViewManager):
         and then updating the 'Result' field of the record with the new result from the model.
         :return None:
         """
-        mod_elem = self._dg.modifiedElement
-        print(f"View manager informed of data grid widget element update from tkDGElement with canvas ID {mod_elem.canvasID}. Elements state is {mod_elem.get_state()[1]}.")
-        # Raise an error for invalid entry, if the modified element is a text element, and the user has entered
-        # "invalid" as the text. This is just to test the handling of invalid entries.
-        if mod_elem.get_state()[0] == tkDGElementText:
-            if mod_elem.get_state()[1] == 'invalid':
-                msg = f"Invalid entry of 'invalid' in tkDGElementText with canvas ID {mod_elem.canvasID}."
-                raise tkDGElementTextInvalidEntryError(msg)
-        # Determine the record index of the modified element.
-        (field_name, record_index) = self._dg.get_element_coords(mod_elem)
+        # Determine the field name and record index of the modified element.
+        (field_name, record_index) = self._dg.get_modified_grid_element_location()
+        modified_value = self._dg.get_grid_element_value(field_name, record_index)
+        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
+        # Raise an error for invalid entry, if the modified element's value "invalid" as text string.
+        # This is just to test the handling of invalid entries.
+        if modified_value == 'invalid':
+            msg = f"Invalid entry of 'invalid' in data grid element at (field name = {field_name}, record index = {record_index})."
+            raise tkDGElementTextInvalidEntryError(msg)
         try:
             # Get the current Result value for the record.
-            current_result = float(self._dg.get_grid_element('Result', record_index).get_state()[1])
+            current_result = float(self._dg.get_grid_element_value('Result', record_index))
         except:
             # Arbitrary value to use for current_result if there is an error getting the current result, such as if the current result is not a valid float.
             # This will (likely) ensure that the first new result from the model will be different from the current result,
@@ -116,17 +113,17 @@ class DataGridDemotkViewManager(tkViewManager):
             current_result = -99.99
         try:
             # Get the values required by the model for a computation out of the record's fields
-            base_val = float(self._dg.get_grid_element('Base', record_index).get_state()[1])
-            add_to_val = 2.0 if self._dg.get_grid_element('Add 2 to', record_index).get_state()[1] == 1.0 else 0.0
-            multiply_by_val = float(self._dg.get_grid_element('Multiply by', record_index).get_state()[1])
+            base_val = float(self._dg.get_grid_element_value('Base', record_index))
+            add_to_val = 2.0 if self._dg.get_grid_element_value('Add 2 to', record_index) == 1.0 else 0.0
+            multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
             # Ask the model to compute a result based on the values from the record's fields.
             result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
             # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
             # This prevents an infinite loop of updates.
             if result != current_result:
-                self._dg.get_grid_element('Result', record_index).set_state(str(result))
+                self._dg.set_grid_element_value('Result', record_index, str(result))
         except:
-            self._dg.get_grid_element('Result', record_index).clear_element_value()
+            self._dg.clear_grid_element_value('Result', record_index)
         return None
 
 

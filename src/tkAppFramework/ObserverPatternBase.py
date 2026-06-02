@@ -89,7 +89,8 @@ class Subject:
         :return None:
         """
         if observer:
-            self._observers.remove(observer)
+            if observer in self._observers:
+                self._observers.remove(observer)
         return None
 
     def notify(self):
