@@ -679,7 +679,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Note: i=inches
         # Note: scrollregion=(w,n,e,s)
-        self._dg_canvas = tk.Canvas(self, width='5i', height='4i', scrollregion=('0i','0i','10i','10i'), background='gray75')
+        # Determine how big the scroll region needs to be (in inches) to fit the specified number of records and fields,
+        # plus the separator lines between the records and fields.
+        scroll_height = f"{(self._num_records+1)*self._row_h + (self._num_records+2)*self._sep_w}i"
+        num_fields = len(self._fields_config)
+        scroll_width = f"{num_fields*self._col_w + (num_fields+1)*self._sep_w}i"
+        self._dg_canvas = tk.Canvas(self, width='5i', height='4i',
+                                    scrollregion=('0i','0i',scroll_width,scroll_height), background='gray75')
         self._dg_canvas.grid(column=0, row=0, sticky='NWSE') # Grid-2
         self.columnconfigure(0, weight=1) # Grid-2
         self.rowconfigure(0, weight=1) # Grid-2
