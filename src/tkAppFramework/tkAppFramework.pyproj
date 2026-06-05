@@ -49,6 +49,9 @@
     <Compile Include="tkdatagridwidget.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tkdgelementtextvalidators.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tkHelpViewManager.py" />
     <Compile Include="tkxhtmlviewerwidget.py">
       <SubType>Code</SubType>

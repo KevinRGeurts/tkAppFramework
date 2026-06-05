@@ -4,18 +4,16 @@ Defines classes for a datagrid demo application, which is also used for unittest
 
 # Standard
 import logging
-import tkinter as tk
-from tkinter import ttk
 import sysconfig
-from math import sqrt
+from functools import partial
 
 # Local
 from tkAppFramework.tkViewManager import tkViewManager
-from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
-from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, tkDGElementText
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
+from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 
 
 class DataGridDemoModel(Model):
@@ -47,10 +45,15 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        field_configurations = [('Base',FieldType.TEXT,'editable'),
-                                ('Add 2 to',FieldType.BOOL,'editable'),
-                                ('Multiply by',FieldType.LIST,'editable'),
-                                ('Result',FieldType.TEXT,'read_only')]
+        field_configurations = [('Base', FieldType.TEXT, 'editable', None),
+                                ('Add 2 to', FieldType.BOOL, 'editable', None),
+                                ('Multiply by', FieldType.LIST, 'editable', None),
+                                ('Result', FieldType.TEXT, 'read_only', None)]
+        # field_configurations = [('Base', FieldType.TEXT, 'editable',
+        #                          partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000) ),
+        #                         ('Add 2 to', FieldType.BOOL, 'editable', None),
+        #                         ('Multiply by', FieldType.LIST, 'editable', None),
+        #                         ('Result', FieldType.TEXT, 'read_only', None)]
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.DEBUG)
         # Attach self as an observer of the subject demo widget
@@ -98,10 +101,10 @@ class DataGridDemotkViewManager(tkViewManager):
         (field_name, record_index) = self._dg.get_modified_grid_element_location()
         modified_value = self._dg.get_grid_element_value(field_name, record_index)
         print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
-        # Raise an error for invalid entry, if the modified element's value "invalid" as text string.
+        # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.
         # This is just to test the handling of invalid entries.
-        if modified_value == 'invalid':
-            msg = f"Invalid entry of 'invalid' in data grid element at (field name = {field_name}, record index = {record_index})."
+        if modified_value == '-99.99e-99':
+            msg = f"Invalid entry of '-99.99e-99' in data grid element at (field name = {field_name}, record index = {record_index})."
             raise tkDGElementTextInvalidEntryError(msg)
         try:
             # Get the current Result value for the record.

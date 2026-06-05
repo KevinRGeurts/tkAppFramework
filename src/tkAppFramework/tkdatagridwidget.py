@@ -507,11 +507,25 @@ class tkDGElementText(tkDGElement):
         :return True: if text entry change is valid, False if invalid, boolean
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Entry with canvas ID {canvas_id} was changed.")
+        # First test entry validity based on any validator associates with this element's field configuration.
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        owning_dgw = self._element_widget.master.master
+        (field_name, record_index) = owning_dgw._get_element_coords(self)
+        field_config = [fc for fc in owning_dgw._fields_config if fc[0]==field_name]
+        if len(field_config) > 0:
+            field_config = field_config[0]
+            validator = field_config[3]
+            if validator is not None:
+                try:
+                    validator(proposed_entry = self._element_value.get())
+                except tkDGElementTextInvalidEntryError as e:
+                    showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
+                    return False
         # Inform all observers of the change in the text entry
         try:
-            # Validity here is an assumption only. If it isn't a good assumption, exception will be raised
-            # when notify() is called, and OnInvalidEntryChange() will correct to False.
-            logger.debug(f"Entry with canvas ID {canvas_id} was changed.")
+            # Validity here is still only an assumption. Observer(s) could raise exception if they have
+            # a problem with the new entry value when notify() is called, and OnInvalidEntryChange() will correct to False.
             self._entry_is_valid = True
             self.notify()
             return True
@@ -632,8 +646,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
-        :parameter fields_config: List of tuples (field name, FieldType Enum value, field format), as [(string, int, string)]
-             note: Field format is a string that is the key to look up in the _element_formats dictionary for formatting element widgets in the data grid.
+        :parameter fields_config: List of tuples (field name, FieldType Enum value, field format, field validator), as [(string, int, string, callable)]
+             notes: (1) Field format is a string that is the key to look up in the _element_formats dictionary for formatting element widgets in the data grid.
+                    (2) Field validator is a callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field, or does nothing if the value is valid for the field.
         :parameter num_records: The number of records to display in the data grid, as int
         :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
