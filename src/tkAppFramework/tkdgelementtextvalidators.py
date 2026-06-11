@@ -1,20 +1,24 @@
 """
-This module defines the tkDGTextElemValidators class. It defines methods useful for validating text entries in
+This module defines the tkDGTextElemValidators class. It defines static methods useful for validating text entries in
 a tkDataGridWidget's tkDGElementText instances.
 
 Exported Classes:
-    
+    tkDGTextElemValidator - A class that defines static methods useful for validating text entries in a tkDataGridWidget's
+                            tkDGElementText instances.
 
 Exported Exceptions:
     None    
  
 Exported Functions:
-    None
+    tkDGTextElemValidator.validate_entry_is_integer(min_value = None, max_value = None, proposed_entry = '')
+    tkDGTextElemValidator.validate_entry_is_float(min_value = None, max_value = None, proposed_entry = '')
 
 Exceptions raised:
-    tkDGElementTextInvalidEntryError - Raised when ...
+    tkDGElementTextInvalidEntryError - Raised when a proposed entry is not valid for a tkDGElementText instance.
+                                       The error message will be informative to a user of the problem with the proposed entry.
 
 """
+
 
 # standard library imports
 import re

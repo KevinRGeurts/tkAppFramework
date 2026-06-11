@@ -16,6 +16,7 @@ Exported Functions:
 
 
 # Standard imports
+from dataclasses import field
 import logging
 import tkinter as tk
 from tkinter import font
@@ -28,6 +29,8 @@ from xml.sax.handler import property_declaration_handler
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
+from tkAppFramework.uomsysadapter import UoMSysAdapter
+from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
 
 
 class FieldType(IntEnum):
@@ -581,6 +584,17 @@ class tkDGElementFieldHeader(tkDGElement):
         :paramter h: The height of the element in the data grid in inches, as float
         """
         super().__init__(parent, x, y, w, h)
+        self._raw_state = '' # The state without any units
+        self._unit_group_id = None
+        self._unit_id = None
+        self._unit_name = ''
+        # Provide a "hint" for observers to access to determine what change has happend in units of measure.
+        # Tuple (old unit ID, new unit ID), as (Any|None, Any|None)
+        self._unit_change_hint = (None, None)
+
+    @property
+    def unitChangeHint(self):
+        return (self._unit_change_hint)
 
     def _create_element_value(self):
         """
@@ -600,6 +614,32 @@ class tkDGElementFieldHeader(tkDGElement):
                           takefocus=0, validate='focusout')
         return widget
 
+    def _setup_widget_bindings(self):
+        """
+        Used to extend the set up the tkinter event bindings for the field header element widget.
+        :return: None
+        """
+        super()._setup_widget_bindings()
+        if self._element_widget is not None:
+            self._element_widget.bind('<Double-1>', self.onDoubleClickBtn1, add='+')
+        return None
+
+    def onDoubleClickBtn1(self, event):
+        """
+        Handler for mouse button 1 double-click events.
+        :parameter event: The tkinter event object for the mouse button 1 double-click event
+        :return: None
+        """
+        if self._unit_group_id is not None:
+            # Display the unit selection dialog
+            # Note: First master is the canvas, second master is the tkDataGridWidget
+            dgw = self._element_widget.master.master
+            dlg = tkUnitSelectDlg(dgw, uom_adapter=dgw.uomAdapter, quantity_name=self._raw_state,
+                                  unit_group_id=self._unit_group_id, initial_unit_id=self._unit_id,
+                                  initial_unit_name=self._unit_name, apply_callback=self.set_units)
+            # Note: If dialog is "Okayed" then apply_callback will have been called to set units.
+        return None
+
     def disable_element(self, disabled=True):
         """
         Used to set if the element widget will accept input.
@@ -617,11 +657,15 @@ class tkDGElementFieldHeader(tkDGElement):
     def set_state(self, value=None):
         """
         Set the state of the text element.
-        :paramter value: The value to set in the element.
+        :paramter value: The raw (without unit name) value to set in the element.
         :return: None
         """
         assert(type(value)==str)
-        self._element_value.set(value)
+        self._raw_state = value
+        if (self._unit_group_id is not None) and (self._unit_id is not None) and (len(self._unit_name)>0):
+            self._element_value.set(f"{value} ({self._unit_name})")
+        else:
+            self._element_value.set(value)
         super().set_state()
         return None
 
@@ -634,6 +678,31 @@ class tkDGElementFieldHeader(tkDGElement):
         # DON'T call super().clear_element_value(), because set_state() already calls notify().
         return None
 
+    def set_units(self, unit_group_id=None, unit_id=None, unit_name=''):
+        """
+        :parameter unit_group_id: The ID of the unit group of the element, as Any or None
+            Note: Only once can the unit_group_id not be None
+        :parameter unit_id: The ID of the unit of the element, as Any or None
+        :parameter unit_name: The name of the unit of the element, as string (could be '')
+        :return: None
+        """
+        assert(isinstance(unit_name, str))
+        if self._unit_group_id is not None:
+            # Can only set the unit group of the element once!
+            assert(unit_group_id == self._unit_group_id)
+        self._unit_group_id = unit_group_id
+        if unit_id is not None:
+            if unit_id != self._unit_id:
+                self._unit_change_hint = (self._unit_id, unit_id)
+                # TODO: Convert the value in each element for this field to the new unit.
+                # Should be handled through notify() to the data grid widget.
+                pass
+        self._unit_id = unit_id
+        if unit_name != self._unit_name:
+            self._unit_name = unit_name
+            # Force a change in the units displayed in the element's text widget
+            self.set_state(self._raw_state) 
+        return None
 
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     """
@@ -642,15 +711,18 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     Class is an Observer in Observer design pattern so that it can observe tkDGElement objects.
     """
     # TODO: Pass in row heights and collumn widths?
-    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO) -> None:
+    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO, uom_adapter = None) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
-        :parameter fields_config: List of tuples (field name, FieldType Enum value, field format, field validator), as [(string, int, string, callable)]
+        :parameter fields_config: List of tuples (field name, FieldType Enum value, field format, field validator, field unit group),
+                                  as [(string, int, string, callable|None, UnitGroupID value|None)]
              notes: (1) Field format is a string that is the key to look up in the _element_formats dictionary for formatting element widgets in the data grid.
                     (2) Field validator is a callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field, or does nothing if the value is valid for the field.
+                        Set to None if there is no validation for the field, or if the field is not a TEXT field.
         :parameter num_records: The number of records to display in the data grid, as int
-        :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        :parameter log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+        :parameter uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
         """
         Subject.__init__(self)
         Observer.__init__(self)
@@ -658,6 +730,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Set up logging for this class.
         self._setup_logging(log_level)
+
+        if uom_adapter is not None:
+            assert(isinstance(uom_adapter, UoMSysAdapter))
+        self._uom = uom_adapter
 
         # Dictionary of element format configurations, where Key=format name as string, Value=configuration tuple (text color, cell color, read only, default cell color), as (string, (string, string, boolean, string))
         # Hex RGB color source: https://color-register.org
@@ -731,6 +807,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     @property
     def modifiedElement(self):
         return self._modified_element
+
+    @property
+    def uomAdapter(self):
+        return self._uom
 
     def onContextMenu(self, event, element):
         """
@@ -884,6 +964,25 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             element.clear_element_value()
         return None
 
+    def get_field_unitID(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement ID for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement ID for the given field name, or None if no such field name exists or the field has no associated unit ID,
+                 as any or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._unit_id
+        else:
+            return None
+
     def get_grid_element_value(self, field_name='a_field_name', record_index=0):
         """
         Return the value of the grid element for a given field name and record index. This method is intended
@@ -1021,16 +1120,19 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: Tuple (field name, 0-based record index), as (string, int) or None if no such element exists
         """
         assert(isinstance(element, tkDGElement))
-        field_name = ''
-        record_index = -1
-        for field_name in self._grid_elements:
-            if element in self._grid_elements[field_name]:
-                record_index = self._grid_elements[field_name].index(element)
-                break
-        if record_index == -1 or field_name == '':
-            return None
-        else:
-            return (field_name, record_index)
+        if isinstance(element, tkDGElementFieldHeader):
+            return (element._raw_state, None)
+        else: # NOT a field header element, but a record element
+            field_name = ''
+            record_index = -1
+            for field_name in self._grid_elements:
+                if element in self._grid_elements[field_name]:
+                    record_index = self._grid_elements[field_name].index(element)
+                    break
+            if record_index == -1 or field_name == '':
+                return None
+            else:
+                return (field_name, record_index)
         
     def create_element_format(self, format_name = "an_element_format", text_color = 'black', cell_color = 'white',
                               read_only = True, default_cell_color='#74BA00'):
@@ -1109,19 +1211,35 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return None:
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
+        (elem_field, elem_rec) = self._get_element_coords(element)
+        elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
         value = element.get_state()[1]
         default_value = element.get_default_value()
         logger.debug(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}. Elemeht has default value {default_value}")
         # Handle formating the element widget appropriately based on if it has the default value or not.
+        elem_field = self._get_element_coords(element)[0]
         if default_value is not None:
             if value is not None:
-                elem_field = self._get_element_coords(element)[0]
-                elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
+                
                 elem_format = self._element_formats[elem_config[2]]
                 if value == default_value:
                     element._element_widget.configure(background=elem_format[3])
                 else:
-                    element._element_widget.configure(background=elem_format[1])  
+                    element._element_widget.configure(background=elem_format[1])
+        # Handle units of measure changes
+        # TODO: the and clause of the next if is not OO!
+        if isinstance(element, tkDGElementFieldHeader) and (elem_config[1] != FieldType.BOOL):
+            # The hint in the field header tells us what unit change has occurred
+            hint = element.unitChangeHint
+            if hint[0] is not None and hint[1] is not None:
+                # Iterate through the field's records and perform the unit conversion
+                for rec_element in self._grid_elements[element._raw_state]:
+                    old_val = float(rec_element.get_state()[1])
+                    # TODO: Need to experiment to see of the round here works as expected/hoped
+                    # Intended to prevent round-trip conversions being weird, but without losing
+                    # too much precision. May ultimately need to store floats somewhere rather than strings.
+                    new_val = round(self._uom.convert(hint[0], hint[1], old_val),8)
+                    rec_element.set_state(str(new_val))
         self._modified_element = element
         self.notify()
         self._modified_element = None
@@ -1198,11 +1316,18 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             field_name = field[0]
             field_type = field[1]
             field_format = field[2]
+            field_unit_grp = field[4]
             # Handle the field header element for this field/column.
             element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h)
             self.register_subject(element, partial(self.handle_element_update, element))
             self._wids.append(element.canvasID)
-            element.set_state(field_name)
+            if field_unit_grp is not None:
+                uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
+                unames = self._uom.get_unit_names_for_unit(uids[0])
+                element.set_state(field_name)
+                element.set_units(field_unit_grp, uids[0], unames[0])
+            else:
+                element.set_state(field_name)
             self._apply_element_format_to_one_element('field_header', element)
             self._header_elements.append(element)
             # End handling the field header element for this field/column.

@@ -3,8 +3,8 @@ This module defines the tkAppAboutDialog class. It is a tkinter TopLevel window 
 formated application "about" information. The window grabs input and blocks until destoyed, so it acts as a modal dialog.
 
 Exported Classes:
-    tkXHTMLViewerWidget -- A tkinter TopLevel window (dialog) that uses a tkXHTMLViewerWidget to display
-                           formated application "about" information.
+    tkAppAboutDialog -- A tkinter TopLevel window (dialog) that uses a tkXHTMLViewerWidget to display
+                        formated application "about" information.
 
 Exported Exceptions:
     None    

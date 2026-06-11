@@ -14,7 +14,7 @@ from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, F
 class Test_tkDGElementText(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None)], num_records=1)
+        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None, None)], num_records=1)
         self._dgw.grid()
 
     def tearDown(self):
@@ -62,7 +62,7 @@ class Test_tkDGElementText(unittest.TestCase):
 class Test_tkDGElementFieldHeader(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None)], num_records=1)
+        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None, None)], num_records=1)
         self._dgw.grid()
         self._header_element = self._dgw._header_elements[0]  # Get the header element for the first field.
 
@@ -93,7 +93,7 @@ class Test_tkDGElementFieldHeader(unittest.TestCase):
 
     def test_bindings(self):
         e = self._header_element
-        exp_val = ('<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<Double-Button-1>', '<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
@@ -106,7 +106,7 @@ class Test_tkDGElementFieldHeader(unittest.TestCase):
 class Test_tkDGElementBool(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Boolean Field', FieldType.BOOL, 'editable')], num_records=1)
+        self._dgw = tkDataGridWidget(self._root, fields_config=[('A Boolean Field', FieldType.BOOL, 'editable', None, None)], num_records=1)
         self._dgw.grid()
 
     def tearDown(self):
@@ -149,7 +149,7 @@ class Test_tkDGElementBool(unittest.TestCase):
 class Test_tkDGElementList(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        self._dgw = tkDataGridWidget(self._root, fields_config=[('A List Field', FieldType.LIST, 'editable')], num_records=1)
+        self._dgw = tkDataGridWidget(self._root, fields_config=[('A List Field', FieldType.LIST, 'editable', None, None)], num_records=1)
         self._dgw.grid()
 
     def tearDown(self):

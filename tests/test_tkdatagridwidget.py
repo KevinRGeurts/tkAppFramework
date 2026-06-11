@@ -14,10 +14,10 @@ from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, F
 class Test_tkDataGridWidget(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        field_configurations = [('Editable Text Field',FieldType.TEXT,'editable', None),
-                                ('Editable Bool Field',FieldType.BOOL,'editable', None),
-                                ('Default List Field',FieldType.LIST,'editable', None),
-                                ('Read Only Text Field',FieldType.TEXT,'read_only', None)]
+        field_configurations = [('Editable Text Field',FieldType.TEXT,'editable', None, None),
+                                ('Editable Bool Field',FieldType.BOOL,'editable', None, None),
+                                ('Default List Field',FieldType.LIST,'editable', None, None),
+                                ('Read Only Text Field',FieldType.TEXT,'read_only', None, None)]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
 

@@ -52,11 +52,17 @@
     <Compile Include="tkdgelementtextvalidators.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tkdgw_unitselect_dlg.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tkHelpViewManager.py" />
     <Compile Include="tkxhtmlviewerwidget.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tk_app_about_dlg.py" />
+    <Compile Include="uomsysadapter.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="xhtml_parser_for_tktextwidget.py" />
     <Compile Include="tkUserQueryToolEmbedded.py">
       <SubType>Code</SubType>
