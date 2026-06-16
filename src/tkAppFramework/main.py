@@ -39,6 +39,7 @@ from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
 from tkAppFramework.datagriddemoapp import DataGridDemotkApp
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
 
@@ -262,9 +263,17 @@ def debug():
     """
     Code that is should be changed to what needs to be debugged.
     """
-    help_file = 'C:\\Users\\krgeu\\source\\repos\\tkAppFramework\\src\\tkAppFramework\\env\\Help\\tkAppFramework\\HelpFile.md'
-    help_format = 'md'
-    app = tkAppFramework.tkApp._launch_help_app(help_file, help_format)
+    # help_file = 'C:\\Users\\krgeu\\source\\repos\\tkAppFramework\\src\\tkAppFramework\\env\\Help\\tkAppFramework\\HelpFile.md'
+    # help_format = 'md'
+    # app = tkAppFramework.tkApp._launch_help_app(help_file, help_format)
+
+    _root = tk.Tk()
+    _dgw = tkDataGridWidget(_root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None, None)], num_records=1)
+    _dgw.grid()
+    _header_element = _dgw._header_elements[0]  # Get the header element for the first field.
+    e = _header_element
+    e.set_state('Text Field Name')
+
     return None
     
 

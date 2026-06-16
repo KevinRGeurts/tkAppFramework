@@ -27,7 +27,7 @@ from enum import IntEnum
 from xml.sax.handler import property_declaration_handler
 
 # Local imports
-from tkAppFramework.ObserverPatternBase import Subject, Observer
+from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.uomsysadapter import UoMSysAdapter
 from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
@@ -43,6 +43,35 @@ class FieldType(IntEnum):
     LIST = 2
     TEXT = 3
     # Add more field types as needed
+
+
+class FieldHeaderElementTextUpdateHint(UpdateHint):
+    """
+    
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'prev_raw_state' specifies the original (previous) raw state (text) of the tkDGElementFieldHeader,
+                             that is, the state excluding ' (unit name)', as string.
+        """
+        super().__init__(*args)
+        self.prev_raw_state = kwargs.get('prev_raw_state')
+
+
+class FieldHeaderElementUnitsUpdateHint(UpdateHint):
+    """
+    
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'prev_unit_id' specifies the original (previous) unit ID of the tkDGElementFieldHeader, as Any
+            'new_unit_id' specifies the newly set unit ID of the tkDGElementFieldHeader, as Any
+        """
+        super().__init__(*args)
+        self.prev_unit_id = kwargs.get('prev_unit_id')
+        self.new_unit_id = kwargs.get('new_unit_id')
 
 
 class tkDGElement(Subject):
@@ -123,15 +152,20 @@ class tkDGElement(Subject):
         """
         return self._default_value
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the element.
         :paramter value: The value to set in the element.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         Note: Must be extended by child classes, because this base class implementation does nothing with value parameter.
               It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
         :return: None
         """
-        self.notify()
+        if hints is not None:
+            self.notify(hints)
+        else:
+            self.notify()
         return None
 
     def clear_element_value(self):
@@ -588,13 +622,6 @@ class tkDGElementFieldHeader(tkDGElement):
         self._unit_group_id = None
         self._unit_id = None
         self._unit_name = ''
-        # Provide a "hint" for observers to access to determine what change has happend in units of measure.
-        # Tuple (old unit ID, new unit ID), as (Any|None, Any|None)
-        self._unit_change_hint = (None, None)
-
-    @property
-    def unitChangeHint(self):
-        return (self._unit_change_hint)
 
     def _create_element_value(self):
         """
@@ -634,9 +661,9 @@ class tkDGElementFieldHeader(tkDGElement):
             # Display the unit selection dialog
             # Note: First master is the canvas, second master is the tkDataGridWidget
             dgw = self._element_widget.master.master
-            dlg = tkUnitSelectDlg(dgw, uom_adapter=dgw.uomAdapter, quantity_name=self._raw_state,
-                                  unit_group_id=self._unit_group_id, initial_unit_id=self._unit_id,
-                                  initial_unit_name=self._unit_name, apply_callback=self.set_units)
+            tkUnitSelectDlg(dgw, uom_adapter=dgw.uomAdapter, quantity_name=self._raw_state,
+                            unit_group_id=self._unit_group_id, initial_unit_id=self._unit_id,
+                            initial_unit_name=self._unit_name, apply_callback=self.set_units)
             # Note: If dialog is "Okayed" then apply_callback will have been called to set units.
         return None
 
@@ -654,19 +681,27 @@ class tkDGElementFieldHeader(tkDGElement):
                 self._element_widget['state']=tk.NORMAL
         return None
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the text element.
         :paramter value: The raw (without unit name) value to set in the element.
+        :parameter hints: An optional list of hints to pass to Observer.update() to specify what types of 
+                          update have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
         assert(type(value)==str)
+        if self._raw_state != value:
+            _hint = FieldHeaderElementTextUpdateHint(prev_raw_state = self._raw_state)
+            if hints is not None:
+                hints.append(_hint)
+            else:
+                hints = [_hint]
         self._raw_state = value
         if (self._unit_group_id is not None) and (self._unit_id is not None) and (len(self._unit_name)>0):
             self._element_value.set(f"{value} ({self._unit_name})")
         else:
             self._element_value.set(value)
-        super().set_state()
+        super().set_state(hints=hints)
         return None
 
     def clear_element_value(self):
@@ -691,17 +726,15 @@ class tkDGElementFieldHeader(tkDGElement):
             # Can only set the unit group of the element once!
             assert(unit_group_id == self._unit_group_id)
         self._unit_group_id = unit_group_id
+        _hint = None
         if unit_id is not None:
             if unit_id != self._unit_id:
-                self._unit_change_hint = (self._unit_id, unit_id)
-                # TODO: Convert the value in each element for this field to the new unit.
-                # Should be handled through notify() to the data grid widget.
-                pass
+                _hint = FieldHeaderElementUnitsUpdateHint(prev_unit_id=self._unit_id, new_unit_id=unit_id)
         self._unit_id = unit_id
         if unit_name != self._unit_name:
             self._unit_name = unit_name
             # Force a change in the units displayed in the element's text widget
-            self.set_state(self._raw_state) 
+            self.set_state(self._raw_state, [_hint]) 
         return None
 
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
@@ -1204,20 +1237,55 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     def canvas(self):
         return self._dg_canvas
 
-    def handle_element_update(self, element):
+    def handle_element_update(self, element=None, hints=None):
         """
         Handler function called when a tkDGElement object notifies the tkDataGridWidget of a change in state.
         parameter element: The tkDGElement object that is notifying the tkDataGridWidget of a change in state, as tkDGElement object
+        :parameter hints: An optional lisg of hints provided by element to specify what types of 
+                          updates has occurred and details about them, as [ObserverPatterBase.UpdateHint object]
+        
         :return None:
         """
+        assert(isinstance(element, tkDGElement))
+        
         logger = logging.getLogger('tkDataGridWidget_logger')
         (elem_field, elem_rec) = self._get_element_coords(element)
-        elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
         value = element.get_state()[1]
         default_value = element.get_default_value()
         logger.debug(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}. Elemeht has default value {default_value}")
+
+        if hints is not None and isinstance(hints, list):
+            for hint in hints:
+                assert(isinstance(hint, UpdateHint))
+        
+                if isinstance(hint, FieldHeaderElementTextUpdateHint):
+                    # The raw state, i.e., the name of the field header has changed.
+                    # Look up the field configuration using the previous name.
+                    prev_field_name = hint.prev_raw_state
+                    if len(prev_field_name)>0: # So we skip the first state setting upon grid setup.
+                        elem_config = [fc for fc in self._fields_config if fc[0]==prev_field_name][0]
+                        # Update the field configuration with the new field name.
+                        self._fields_config.remove(elem_config)
+                        new_config = (element._raw_state, *elem_config[1:])
+                        self._fields_config.append(new_config)
+
+                # Handle units of measure changes
+                if isinstance(hint, FieldHeaderElementUnitsUpdateHint):
+                    # The hint tells us what unit change has occurred
+                    # Iterate through the field's records and perform the unit conversion
+                    elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
+                    # TODO: and clause of if below is NOT OO. Try to improve.
+                    if element._raw_state in self._grid_elements and (elem_config[1] != FieldType.BOOL):
+                        for rec_element in self._grid_elements[element._raw_state]:
+                            old_val = float(rec_element.get_state()[1])
+                            # TODO: Need to experiment to see of the round here works as expected/hoped
+                            # Intended to prevent round-trip conversions being weird, but without losing
+                            # too much precision. May ultimately need to store floats somewhere rather than strings.
+                            new_val = round(self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_val),8)
+                            rec_element.set_state(str(new_val))
+        
         # Handle formating the element widget appropriately based on if it has the default value or not.
-        elem_field = self._get_element_coords(element)[0]
+        elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
         if default_value is not None:
             if value is not None:
                 
@@ -1226,26 +1294,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     element._element_widget.configure(background=elem_format[3])
                 else:
                     element._element_widget.configure(background=elem_format[1])
-        # Handle units of measure changes
-        # TODO: the and clause of the next if is not OO!
-        if isinstance(element, tkDGElementFieldHeader) and (elem_config[1] != FieldType.BOOL):
-            # The hint in the field header tells us what unit change has occurred
-            hint = element.unitChangeHint
-            if hint[0] is not None and hint[1] is not None:
-                # Iterate through the field's records and perform the unit conversion
-                for rec_element in self._grid_elements[element._raw_state]:
-                    old_val = float(rec_element.get_state()[1])
-                    # TODO: Need to experiment to see of the round here works as expected/hoped
-                    # Intended to prevent round-trip conversions being weird, but without losing
-                    # too much precision. May ultimately need to store floats somewhere rather than strings.
-                    new_val = round(self._uom.convert(hint[0], hint[1], old_val),8)
-                    rec_element.set_state(str(new_val))
+        
         self._modified_element = element
         self.notify()
         self._modified_element = None
         return None
         
-    # TODO: Do to rounding, leaves behind a narrow red "shadow". Think about how to address this.
+    # TODO: Due to rounding, leaves behind a narrow red "shadow". Think about how to address this.
     def _draw_focus_rectangle(self, element):
         """
         Draw a rectangle around the element widget that has focus.
