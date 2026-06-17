@@ -133,10 +133,10 @@ class DataGridDemotkViewManager(tkViewManager):
         """
         field_configurations = [FieldConfiguration('Base', FieldType.TEXT, 'editable',
                                                    partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
-                                                   'gid_length'),
-                                FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length'),
-                                FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None),
-                                FieldConfiguration('Result', FieldType.TEXT, 'read_only', None, 'gid_length')]
+                                                   'gid_length', 'uid_meter', 'm'),
+                                FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
+                                FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
+                                FieldConfiguration('Result', FieldType.TEXT, 'read_only', None, 'gid_length', 'uid_meter', 'm')]
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.DEBUG,
                                     uom_adapter=DemoUoMSysAdapter())

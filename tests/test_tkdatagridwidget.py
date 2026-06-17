@@ -14,10 +14,10 @@ from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, F
 class Test_tkDataGridWidget(unittest.TestCase):
     def setUp(self):
         self._root = tk.Tk()
-        field_configurations = [FieldConfiguration('Editable Text Field',FieldType.TEXT,'editable', None, None),
-                                FieldConfiguration('Editable Bool Field',FieldType.BOOL,'editable', None, None),
-                                FieldConfiguration('Default List Field',FieldType.LIST,'editable', None, None),
-                                FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only', None, None)]
+        field_configurations = [FieldConfiguration('Editable Text Field',FieldType.TEXT,'editable'),
+                                FieldConfiguration('Editable Bool Field',FieldType.BOOL,'editable'),
+                                FieldConfiguration('Default List Field',FieldType.LIST,'editable'),
+                                FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only')]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
 
@@ -53,6 +53,10 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Bool Field'][0])
         self._dgw.onKeyPressLeft(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
+
+    def test_get_field_unitID(self):
+        unit_id = self._dgw.get_field_unitID('Editable Text Field')
+        self.assertEqual(unit_id, None)
         
     def test_get_grid_element(self):
         ge = self._dgw._get_grid_element('Default List Field', 1)

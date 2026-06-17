@@ -49,7 +49,8 @@ class FieldConfiguration:
     """
     This class represents a field in data grid.
     """
-    def __init__(self, name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None):
+    def __init__(self, name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None,
+                 unit_id=None, unit_name=''):
         """
         :parameter name: The name of the data field, as string
         :parameter field_type: The type of the data field, as FieldType Enum value
@@ -60,12 +61,16 @@ class FieldConfiguration:
                               or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
                               or if the field is not a TEXT field. As callable|None
         :parameter unit_group: The unit group ID for the field, or None if not applicable, as Any|None
+        :parameter unit_group: The current unit ID for the field, or None if not applicable, as Any|None
+        :parameter unit_name: The current unitname for the field, as string ('' if not applicable)
         """
         self._field_name = name
         self._field_type = field_type
         self._field_format = field_format
         self._field_validator = validator
         self._field_unit_group = unit_group
+        self._field_unit_id = unit_id
+        self._field_unit_name = unit_name
 
     @property
     def fieldName(self):
@@ -86,6 +91,22 @@ class FieldConfiguration:
     @property
     def fieldUnitGroup(self):
         return self._field_unit_group
+
+    @property
+    def fieldUnitID(self):
+        return self._field_unit_id
+
+    @fieldUnitID.setter
+    def fieldUnitID(self, value):
+        self._field_unit_id = value
+
+    @property
+    def fieldUnitName(self):
+        return self._field_unit_name
+
+    @fieldUnitName.setter
+    def fieldUnitName(self, value):
+        self._field_unit_name = value
 
 
 class FieldHeaderElementTextUpdateHint(UpdateHint):
@@ -654,19 +675,19 @@ class tkDGElementFieldHeader(tkDGElement):
     """
     Class represents a field header element of a tkDataGridWidget.
     """
-    def __init__(self, parent, x=0.0, y=0.0, w=1.0, h=0.25):
+    def __init__(self, parent, x=0.0, y=0.0, w=1.0, h=0.25, field_config=None):
         """
         :parameter parent: tkinter widget that is the parent of this widget, assumed to be a tkDataGridWidget
         :paramter x: The upper-left corner x-coordinate of the element in the data grid in inches, as float
         :paramter y: The upper-left corner y-coordinate of the element in the data grid in inches, as float
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
+        :parameter field_config: The field configuration this field header is associated with, as FieldConfiguration object
         """
         super().__init__(parent, x, y, w, h)
-        self._raw_state = '' # The state without any units
-        self._unit_group_id = None
-        self._unit_id = None
-        self._unit_name = ''
+        self._raw_state = '' # The state without any units, i.e., without the ' (unit name)' part.
+        assert(isinstance(field_config, FieldConfiguration))
+        self._field_config = field_config
 
     def _create_element_value(self):
         """
@@ -702,13 +723,13 @@ class tkDGElementFieldHeader(tkDGElement):
         :parameter event: The tkinter event object for the mouse button 1 double-click event
         :return: None
         """
-        if self._unit_group_id is not None:
+        if self._field_config.fieldUnitGroup is not None:
             # Display the unit selection dialog
             # Note: First master is the canvas, second master is the tkDataGridWidget
             dgw = self._element_widget.master.master
             tkUnitSelectDlg(dgw, uom_adapter=dgw.uomAdapter, quantity_name=self._raw_state,
-                            unit_group_id=self._unit_group_id, initial_unit_id=self._unit_id,
-                            initial_unit_name=self._unit_name, apply_callback=self.set_units)
+                            unit_group_id=self._field_config.fieldUnitGroup, initial_unit_id=self._field_config.fieldUnitID,
+                            initial_unit_name=self._field_config.fieldUnitName, apply_callback=self.set_units)
             # Note: If dialog is "Okayed" then apply_callback will have been called to set units.
         return None
 
@@ -742,8 +763,8 @@ class tkDGElementFieldHeader(tkDGElement):
             else:
                 hints = [_hint]
         self._raw_state = value
-        if (self._unit_group_id is not None) and (self._unit_id is not None) and (len(self._unit_name)>0):
-            self._element_value.set(f"{value} ({self._unit_name})")
+        if (self._field_config.fieldUnitGroup is not None) and (self._field_config.fieldUnitID is not None) and (len(self._field_config.fieldUnitName)>0):
+            self._element_value.set(f"{value} ({self._field_config.fieldUnitName})")
         else:
             self._element_value.set(value)
         super().set_state(hints=hints)
@@ -767,17 +788,13 @@ class tkDGElementFieldHeader(tkDGElement):
         :return: None
         """
         assert(isinstance(unit_name, str))
-        if self._unit_group_id is not None:
-            # Can only set the unit group of the element once!
-            assert(unit_group_id == self._unit_group_id)
-        self._unit_group_id = unit_group_id
         _hint = None
-        if unit_id is not None:
-            if unit_id != self._unit_id:
-                _hint = FieldHeaderElementUnitsUpdateHint(prev_unit_id=self._unit_id, new_unit_id=unit_id)
-        self._unit_id = unit_id
-        if unit_name != self._unit_name:
-            self._unit_name = unit_name
+        if self._field_config.fieldUnitID is not None:
+            if unit_id != self._field_config.fieldUnitID:
+                _hint = FieldHeaderElementUnitsUpdateHint(prev_unit_id=self._field_config.fieldUnitID, new_unit_id=unit_id)
+        self._field_config.fieldUnitID = unit_id
+        if unit_name != self._field_config.fieldUnitName:
+            self._field_config.fieldUnitName = unit_name
             # Force a change in the units displayed in the element's text widget
             self.set_state(self._raw_state, [_hint]) 
         return None
@@ -1061,7 +1078,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         else:
             field_header_element = None
         if field_header_element is not None:
-            return field_header_element._unit_id
+            return field_header_element._field_config.fieldUnitID
         else:
             return None
 
@@ -1420,7 +1437,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             field_format = field.fieldFormat
             field_unit_grp = field.fieldUnitGroup
             # Handle the field header element for this field/column.
-            element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h)
+            element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h, field_config=field)
             self.register_subject(element, partial(self.handle_element_update, element))
             self._wids.append(element.canvasID)
             if field_unit_grp is not None:
