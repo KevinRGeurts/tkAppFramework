@@ -45,9 +45,53 @@ class FieldType(IntEnum):
     # Add more field types as needed
 
 
+class FieldConfiguration:
+    """
+    This class represents a field in data grid.
+    """
+    def __init__(self, name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None):
+        """
+        :parameter name: The name of the data field, as string
+        :parameter field_type: The type of the data field, as FieldType Enum value
+        :parameter field_format: A string that is the key to looking up a format in the element format dictionary
+                                 maintained by a tkDataGridWidget, as string
+            Note: The value in the element format dictionary is used to format the element widgets for the records of the field.
+        :parameter validator: Callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field,
+                              or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
+                              or if the field is not a TEXT field. As callable|None
+        :parameter unit_group: The unit group ID for the field, or None if not applicable, as Any|None
+        """
+        self._field_name = name
+        self._field_type = field_type
+        self._field_format = field_format
+        self._field_validator = validator
+        self._field_unit_group = unit_group
+
+    @property
+    def fieldName(self):
+        return self._field_name
+
+    @property
+    def fieldType(self):
+        return self._field_type
+
+    @property
+    def fieldFormat(self):
+        return self._field_format
+
+    @property
+    def fieldValidator(self):
+        return self._field_validator
+
+    @property
+    def fieldUnitGroup(self):
+        return self._field_unit_group
+
+
 class FieldHeaderElementTextUpdateHint(UpdateHint):
     """
-    
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
+    raw text (the text that doesnt include ' (unit name)' changed.)
     """
     def __init__(self, *args, **kwargs):
         """
@@ -61,7 +105,8 @@ class FieldHeaderElementTextUpdateHint(UpdateHint):
 
 class FieldHeaderElementUnitsUpdateHint(UpdateHint):
     """
-    
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
+    units of measure changed.
     """
     def __init__(self, *args, **kwargs):
         """
@@ -549,10 +594,10 @@ class tkDGElementText(tkDGElement):
         # Note: First master is the canvas, second master is the tkDataGridWidget
         owning_dgw = self._element_widget.master.master
         (field_name, record_index) = owning_dgw._get_element_coords(self)
-        field_config = [fc for fc in owning_dgw._fields_config if fc[0]==field_name]
+        field_config = [fc for fc in owning_dgw._fields_config if fc.fieldName==field_name]
         if len(field_config) > 0:
             field_config = field_config[0]
-            validator = field_config[3]
+            validator = field_config.fieldValidator
             if validator is not None:
                 try:
                     validator(proposed_entry = self._element_value.get())
@@ -748,11 +793,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
-        :parameter fields_config: List of tuples (field name, FieldType Enum value, field format, field validator, field unit group),
-                                  as [(string, int, string, callable|None, UnitGroupID value|None)]
-             notes: (1) Field format is a string that is the key to look up in the _element_formats dictionary for formatting element widgets in the data grid.
-                    (2) Field validator is a callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field, or does nothing if the value is valid for the field.
-                        Set to None if there is no validation for the field, or if the field is not a TEXT field.
+        :parameter fields_config: List of FieldConfiguraton objects specifying the configuration of each field in the data grid,
+                                  as [FieldConfiguration object]
         :parameter num_records: The number of records to display in the data grid, as int
         :parameter log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         :parameter uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
@@ -783,6 +825,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(type(num_records)==int)
         self._num_records = num_records
         assert(type(fields_config)==list)
+        for fc in fields_config:
+            assert(isinstance(fc, FieldConfiguration))
         self._fields_config = fields_config
 
         # Store the tkDGElementFieldHeader widgets in the data grid in a list.
@@ -930,6 +974,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     self._focused_element = next_element
         return None
 
+    # TODO: This code throws exception if focus is moved from a field header element, (which can be focused with the mouse).
     def onKeyPressDown(self, event):
         """
         Handler for the down-arrow key press event. Moves focus to the element widget below the currently focused element widget, if it exists.
@@ -938,6 +983,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         if self._focused_element is not None:
             (field_name, record_index) = self._get_element_coords(self._focused_element)
+            # TODO: This is a bit of a hack, so that if a field header element has focus, the down arrow brings us down
+            # to the first record.
+            if record_index == None:
+                record_index = -1
             if record_index < self._num_records - 1:
                 next_element = self._get_grid_element(field_name, record_index + 1)
                 if next_element is not None:
@@ -953,10 +1002,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         if self._focused_element is not None:
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            field_config = [fc for fc in self._fields_config if fc[0]==field_name]
+            field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
             field_index = self._fields_config.index(field_config[0])
             if field_index < len(self._fields_config) - 1:
-                next_element = self._get_grid_element(self._fields_config[field_index+1][0], record_index)
+                next_element = self._get_grid_element(self._fields_config[field_index+1].fieldName, record_index)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
@@ -970,10 +1019,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         if self._focused_element is not None:
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            field_config = [fc for fc in self._fields_config if fc[0]==field_name]
+            field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
             field_index = self._fields_config.index(field_config[0])
             if field_index > 0:
-                next_element = self._get_grid_element(self._fields_config[field_index-1][0], record_index)
+                next_element = self._get_grid_element(self._fields_config[field_index-1].fieldName, record_index)
                 if next_element is not None:
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
@@ -1263,19 +1312,17 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     # Look up the field configuration using the previous name.
                     prev_field_name = hint.prev_raw_state
                     if len(prev_field_name)>0: # So we skip the first state setting upon grid setup.
-                        elem_config = [fc for fc in self._fields_config if fc[0]==prev_field_name][0]
+                        elem_config = [fc for fc in self._fields_config if fc.fieldName==prev_field_name][0]
                         # Update the field configuration with the new field name.
-                        self._fields_config.remove(elem_config)
-                        new_config = (element._raw_state, *elem_config[1:])
-                        self._fields_config.append(new_config)
+                        elem_config._field_name = element._raw_state
 
                 # Handle units of measure changes
                 if isinstance(hint, FieldHeaderElementUnitsUpdateHint):
                     # The hint tells us what unit change has occurred
                     # Iterate through the field's records and perform the unit conversion
-                    elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
+                    elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
                     # TODO: and clause of if below is NOT OO. Try to improve.
-                    if element._raw_state in self._grid_elements and (elem_config[1] != FieldType.BOOL):
+                    if element._raw_state in self._grid_elements and (elem_config.fieldType != FieldType.BOOL):
                         for rec_element in self._grid_elements[element._raw_state]:
                             old_val = float(rec_element.get_state()[1])
                             # TODO: Need to experiment to see of the round here works as expected/hoped
@@ -1285,11 +1332,11 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                             rec_element.set_state(str(new_val))
         
         # Handle formating the element widget appropriately based on if it has the default value or not.
-        elem_config = [fc for fc in self._fields_config if fc[0]==elem_field][0]
+        elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
         if default_value is not None:
             if value is not None:
                 
-                elem_format = self._element_formats[elem_config[2]]
+                elem_format = self._element_formats[elem_config.fieldFormat]
                 if value == default_value:
                     element._element_widget.configure(background=elem_format[3])
                 else:
@@ -1368,10 +1415,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         field_index = 0
         for field in self._fields_config:
             next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
-            field_name = field[0]
-            field_type = field[1]
-            field_format = field[2]
-            field_unit_grp = field[4]
+            field_name = field.fieldName
+            field_type = field.fieldType
+            field_format = field.fieldFormat
+            field_unit_grp = field.fieldUnitGroup
             # Handle the field header element for this field/column.
             element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h)
             self.register_subject(element, partial(self.handle_element_update, element))

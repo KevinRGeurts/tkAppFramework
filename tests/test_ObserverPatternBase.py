@@ -8,7 +8,13 @@ This module provides unit tests for:
 import unittest
 
 # Local imports
-from tkAppFramework.ObserverPatternBase import Subject, Observer
+from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
+
+
+class TestUpdateHint(UpdateHint):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        self._amount_to_add = kwargs.get('amount_to_add')
 
 
 class Test_Subject(unittest.TestCase):
@@ -26,6 +32,40 @@ class Test_Subject(unittest.TestCase):
         self.assertEqual(1, x)
         sub.detach(obs)
         self.assertRaises(ValueError, sub._observers.index, obs)
+
+    def test_notify_with_hint(self):
+        obs = Observer()
+        sub = Subject()
+        sub.attach(obs)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add
+        obs.register_subject(sub, f)
+        sub.notify([TestUpdateHint(amount_to_add=2)])
+        self.assertEqual(2, x)
+
+    def test_notify_with_hint_not_list(self):
+        obs = Observer()
+        sub = Subject()
+        sub.attach(obs)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add
+        obs.register_subject(sub, f)
+        self.assertRaises(AssertionError, sub.notify, TestUpdateHint(amount_to_add=2))
+
+    def test_notify_with_hint_UpdateHint(self):
+        obs = Observer()
+        sub = Subject()
+        sub.attach(obs)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add
+        obs.register_subject(sub, f)
+        self.assertRaises(AssertionError, sub.notify, 'not an UpdateHint object')
 
     def test_attach_nonobserver(self):
         obs = Subject()
@@ -81,6 +121,40 @@ class Test_Observer(unittest.TestCase):
         obs.register_subject(sub, f)
         obs.update(sub)
         self.assertEqual(1, x)
+
+    def test_update_with_hint(self):
+        obs = Observer()
+        sub = Subject()
+        self.assertRaises(KeyError, obs.update, sub)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add     
+        obs.register_subject(sub, f)
+        obs.update(sub, [TestUpdateHint(amount_to_add=2)])
+        self.assertEqual(2, x)
+
+    def test_update_with_hint_not_list(self):
+        obs = Observer()
+        sub = Subject()
+        self.assertRaises(KeyError, obs.update, sub)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add     
+        obs.register_subject(sub, f)
+        self.assertRaises(AssertionError, obs.update, sub, TestUpdateHint(amount_to_add=2))
+
+    def test_update_with_hint_not_UpdateHint(self):
+        obs = Observer()
+        sub = Subject()
+        self.assertRaises(KeyError, obs.update, sub)
+        x=0
+        def f(hints):
+            nonlocal x
+            x+=hints[0]._amount_to_add     
+        obs.register_subject(sub, f)
+        self.assertRaises(AssertionError, obs.update, sub, 'not an UpdateHint object')
         
 
 if __name__ == '__main__':

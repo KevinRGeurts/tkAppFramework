@@ -72,6 +72,10 @@ class Observer:
         :return: None
         """
         assert(isinstance(subject, Subject))
+        if hints is not None:
+            assert(isinstance(hints, list))
+            for hint in hints:
+                assert(isinstance(hint, UpdateHint))
         # Call the updater for the subject argument after looking it up in the _subjects dictionary.
         if hints is not None:
             self._subjects[subject](hints)
@@ -118,6 +122,10 @@ class Subject:
                           update have occurred and details about them, as [UpdateHint object]
         :return: None
         """
+        if hints is not None:
+            assert(isinstance(hints, list))
+            for hint in hints:
+                assert(isinstance(hint, UpdateHint))
         for o in self._observers:
             if hints is not None:
                 o.update(self, hints)

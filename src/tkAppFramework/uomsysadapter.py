@@ -63,3 +63,18 @@ class UoMSysAdapter(object):
         # Implement this method to return value converted to new units.
         raise NotImplementedError
         return 0.0
+
+    def get_base_unit_id_for_unit_group(self, unit_group_id):
+        """
+        Get the unit ID of the "base" unit in the unit group specified by unit_group_id.
+        Note: The "base" unit is uniquely defined by paticular Units of Measurement System (UoMSys)
+              for each unit group. Collectively for all unit groups, base units are the set of units
+              used "internally" by the application/model so that calculations are done consistently and
+              correctly. For a relatively simple application/model, it may not be necessary to implement this
+              method, because 
+        :param unit_group_id: The ID of the unit group to get the base unit ID of, as Any
+        :return: The base unit ID of the specified unit group, as [Any]
+        """
+        # Implement this method to return the appropriate unit ID based on the provided unit_group_id
+        raise NotImplementedError
+        return None

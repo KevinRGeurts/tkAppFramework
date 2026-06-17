@@ -11,13 +11,13 @@ from functools import partial
 from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
-from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
+from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, FieldConfiguration 
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
 
 
-class DemoUoMSystem(UoMSysAdapter):
+class DemoUoMSystem:
     """
     A demo units of measurement system class, used in the datagrid demo application to demonstrate how a
     UoMSysAdapter might be implemented for a specific unit system and how it might be used in the
@@ -131,12 +131,12 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        field_configurations = [('Base', FieldType.TEXT, 'editable',
-                                 partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
-                                 'gid_length'),
-                                ('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length'),
-                                ('Multiply by', FieldType.LIST, 'editable', None, None),
-                                ('Result', FieldType.TEXT, 'read_only', None, 'gid_length')]
+        field_configurations = [FieldConfiguration('Base', FieldType.TEXT, 'editable',
+                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
+                                                   'gid_length'),
+                                FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length'),
+                                FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None),
+                                FieldConfiguration('Result', FieldType.TEXT, 'read_only', None, 'gid_length')]
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.DEBUG,
                                     uom_adapter=DemoUoMSysAdapter())
