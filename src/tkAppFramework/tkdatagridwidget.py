@@ -42,6 +42,7 @@ class FieldType(IntEnum):
     BOOL = 1
     LIST = 2
     TEXT = 3
+    NUMBER = 4
     # Add more field types as needed
 
 
@@ -549,8 +550,6 @@ class tkDGElementText(tkDGElement):
         self._element_widget.configure(validatecommand=OnEntryChangedCommand)
         self._element_widget.configure(invalidcommand=OnInvalidEntryChangeCommand)
 
-        self._entry_is_valid = True
-
     def _create_element_value(self):
         """
         Factory method to create the element widget's control variable. Must be implemented by child classes.
@@ -629,7 +628,6 @@ class tkDGElementText(tkDGElement):
         try:
             # Validity here is still only an assumption. Observer(s) could raise exception if they have
             # a problem with the new entry value when notify() is called, and OnInvalidEntryChange() will correct to False.
-            self._entry_is_valid = True
             self.notify()
             return True
         except tkDGElementTextInvalidEntryError as e:
@@ -641,7 +639,6 @@ class tkDGElementText(tkDGElement):
         Called when OnEntryChanged returns False.
         :return None:
         """
-        self._entry_is_valid = False
         # Keep focus on the Entry widget, so that user can correct the invalid entry.
         self._element_widget.focus_set()
         self.notify()
@@ -798,6 +795,165 @@ class tkDGElementFieldHeader(tkDGElement):
             # Force a change in the units displayed in the element's text widget
             self.set_state(self._raw_state, [_hint]) 
         return None
+
+
+class tkDGElementNumber(tkDGElement):
+    """
+    Class represents a number (float or int) containing element of a tkDataGridWidget.
+    """
+    def __init__(self, parent, x=0.0, y=0.0, w=1.0, h=0.25):
+        """
+        :parameter parent: tkinter widget that is the parent of this widget, assumed to be a tkDataGridWidget
+        :paramter x: The upper-left corner x-coordinate of the element in the data grid in inches, as float
+        :paramter y: The upper-left corner y-coordinate of the element in the data grid in inches, as float
+        :paramter w: The width of the element in the data grid in inches, as float
+        :paramter h: The height of the element in the data grid in inches, as float
+        """
+        super().__init__(parent, x, y, w, h)
+        self._numeric_value = None
+        # Register the OnEntryChanged and OnInvalidEntryChange methods with tkinter.
+        OnEntryChangedCommand = self._element_widget.register(partial(self.OnEntryChanged, self._canvas_id))
+        OnInvalidEntryChangeCommand = self._element_widget.register(self.OnInvalidEntryChange)
+        # Congigure the Entry widget to call the appropriate method when a change is made to the text entry.
+        self._element_widget.configure(validatecommand=OnEntryChangedCommand)
+        self._element_widget.configure(invalidcommand=OnInvalidEntryChangeCommand)
+
+    def _create_element_value(self):
+        """
+        Factory method to create the element widget's control variable. Must be implemented by child classes.
+        Will raise NotImplementedError if called from the base class, since it must be implemented by child classes.
+        :return: TThe control variable for the element widget, as tkinter variable object
+        """
+        control_var = tk.StringVar()
+        return control_var
+
+    def _create_element_widget(self):
+        """
+        Factory method to create the tk.Entry element widget.
+        :return: The tkinter widget that is the element widget, as tkinter widget object
+        """
+        widget = tk.Entry(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
+                          takefocus=1, validate='focusout')
+        return widget
+
+    def _setup_widget_bindings(self):
+        """
+        Used to extend the set up the tkinter event bindings for the Number element widget.
+        :return: None
+        """
+        super()._setup_widget_bindings()
+        if self._element_widget is not None:
+            self._element_widget.bind('<KeyPress-Return>', self.onKeyPressReturnEnter, add='+')
+            self._element_widget.bind('<KeyPress-KP_Enter>', self.onKeyPressReturnEnter, add='+')
+        return None
+
+    def disable_element(self, disabled=True):
+        """
+        Used to set if the element widget will accept input.
+        :parameter disabled: True if the widget should be disabled, False if it should be enabled, boolean
+        :return None:
+        """
+        if self._element_widget is not None:
+            if disabled:
+                # So text content can still be selected and copied, but not changed.
+                self._element_widget['state']='readonly'
+            else:
+                self._element_widget['state']=tk.NORMAL
+        return None
+
+    def onKeyPressReturnEnter(self, event):
+        """
+        Handler for the Return and key pad Enter key press events.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        self.OnEntryChanged(self._canvas_id)
+        return None
+
+
+    def OnEntryChanged(self, canvas_id):
+        """
+        Event handler for changes to Number entry.
+        :parameter canvas_id: The canvas ID of the element widget into which text was entered, as int
+        :return True: if text entry change is valid, False if invalid, boolean
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Entry with canvas ID {canvas_id} was changed.")
+        # First test entry validity based on any validator associates with this element's field configuration.
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        owning_dgw = self._element_widget.master.master
+        (field_name, record_index) = owning_dgw._get_element_coords(self)
+        field_config = [fc for fc in owning_dgw._fields_config if fc.fieldName==field_name]
+        _proposed_entry = self._element_value.get()
+        if len(field_config) > 0:
+            field_config = field_config[0]
+            validator = field_config.fieldValidator
+            if validator is not None:
+                try:
+                    validator(proposed_entry = _proposed_entry)
+                except tkDGElementTextInvalidEntryError as e:
+                    showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
+                    return False
+        # Inform all observers of the change in the text entry
+        try:
+            # Validity here is still only an assumption. Observer(s) could raise exception if they have
+            # a problem with the new entry value when notify() is called, and OnInvalidEntryChange() will correct to False.
+            if (_proposed_entry is not None) and (len(_proposed_entry)>0):
+                self.set_state(float(_proposed_entry))
+            else:
+                self.set_state(None)
+            return True
+        except tkDGElementTextInvalidEntryError as e:
+            showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
+            return False
+
+    def OnInvalidEntryChange(self):
+        """
+        Called when OnEntryChanged returns False.
+        :return None:
+        """
+        # Keep focus on the Entry widget, so that user can correct the invalid entry.
+        self._element_widget.focus_set()
+        self.notify()
+        return None
+
+    def set_state(self, value=None):
+        """
+        Set the state of the number element.
+        :paramter value: The numeric value to set in the element, as float|int|None
+        :return: None
+        """
+        assert((value is None) or (type(value)==float) or (type(value)==int))
+        old_value = self._numeric_value
+        # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
+        if value != old_value:
+            self._numeric_value = value
+            if value is None:
+                self._element_value.set('')
+            else:
+                # TODO: Enable the ability to force text display into scientific notation.
+                # This probably implies another attribute in FieldConfiguration class.
+                self._element_value.set(str(round(value,8)))
+            self.notify()
+        return None
+
+    def clear_element_value(self):
+        """
+        Clear the element value, by setting it to None.
+        :return: None
+        """
+        self.set_state(None)
+        # DON"T call super().clear_element_value(), as set_state() already calls notify().
+        return None
+
+    def get_state(self):
+        """
+        Get the state of the number element.
+        :return: Tuple (element type, element value), as (type, int|float|None)
+        """
+        value = self._numeric_value
+        return (type(self), value)
+
 
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     """
@@ -1341,12 +1497,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     # TODO: and clause of if below is NOT OO. Try to improve.
                     if element._raw_state in self._grid_elements and (elem_config.fieldType != FieldType.BOOL):
                         for rec_element in self._grid_elements[element._raw_state]:
-                            old_val = float(rec_element.get_state()[1])
-                            # TODO: Need to experiment to see of the round here works as expected/hoped
-                            # Intended to prevent round-trip conversions being weird, but without losing
-                            # too much precision. May ultimately need to store floats somewhere rather than strings.
-                            new_val = round(self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_val),8)
-                            rec_element.set_state(str(new_val))
+                            old_val = rec_element.get_state()[1]
+                            new_val = self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_val)
+                            rec_element.set_state(new_val)
         
         # Handle formating the element widget appropriately based on if it has the default value or not.
         elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
@@ -1462,6 +1615,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                         element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                     case FieldType.TEXT:
                         element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                    case FieldType.NUMBER:
+                        element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                 # Tag the element's canvas ID with the field name, so we can "adress" all of a field's elements as a group.
                 # TODO: This may turn out to not actually be useful/needed.
                 self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)

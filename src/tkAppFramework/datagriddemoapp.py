@@ -131,12 +131,12 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        field_configurations = [FieldConfiguration('Base', FieldType.TEXT, 'editable',
+        field_configurations = [FieldConfiguration('Base', FieldType.NUMBER, 'editable',
                                                    partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
                                                    'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
-                                FieldConfiguration('Result', FieldType.TEXT, 'read_only', None, 'gid_length', 'uid_meter', 'm')]
+                                FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm')]
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.DEBUG,
                                     uom_adapter=DemoUoMSysAdapter())
@@ -164,7 +164,7 @@ class DataGridDemotkViewManager(tkViewManager):
             self._dg.set_grid_element_default_value('Multiply by', i, '2.0')
             self._dg.set_grid_element_value('Multiply by', i, '2.0')
             # Initialize the 'Base' field for each record.
-            self._dg.set_grid_element_value('Base', i, str(i))
+            self._dg.set_grid_element_value('Base', i, i)
         return None
     
     def handle_model_update(self):
@@ -186,6 +186,7 @@ class DataGridDemotkViewManager(tkViewManager):
         if record_index == None:
             # Assume the update is for a field header element, and is thus a units of measurement change.
             # Hopefully all that needs to be done has been done by the tkDataGridWidget.
+            # But do not take this branch out, because the else branch assumes record_index != None.
             pass
         else:
             # The update is for a record element, and is thus a value change.
@@ -198,7 +199,7 @@ class DataGridDemotkViewManager(tkViewManager):
                 raise tkDGElementTextInvalidEntryError(msg)
             try:
                 # Get the current Result value for the record.
-                current_result = round(float(self._dg.get_grid_element_value('Result', record_index)), 8)
+                current_result = self._dg.get_grid_element_value('Result', record_index)
             except:
                 # Arbitrary value to use for current_result if there is an error getting the current result, such as if the current result is not a valid float.
                 # This will (likely) ensure that the first new result from the model will be different from the current result,
@@ -206,7 +207,7 @@ class DataGridDemotkViewManager(tkViewManager):
                 current_result = -99.99
             try:
                 # Get the values required by the model for a computation out of the record's fields
-                base_val = float(self._dg.get_grid_element_value('Base', record_index))
+                base_val = self._dg.get_grid_element_value('Base', record_index)
                 base_val_uid = self._dg.get_field_unitID('Base')
                 # Make sure base value is in meters
                 base_val = self._dg.uomAdapter.convert(base_val_uid, 'uid_meter', base_val)
@@ -220,11 +221,11 @@ class DataGridDemotkViewManager(tkViewManager):
                 result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
                 result_uid = self._dg.get_field_unitID('Result')
                 # Convert result to correct units for grid
-                result = round(self._dg.uomAdapter.convert('uid_meter', result_uid, result), 8)
+                result = self._dg.uomAdapter.convert('uid_meter', result_uid, result)
                 # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
                 # This prevents an infinite loop of updates.
                 if result != current_result:
-                    self._dg.set_grid_element_value('Result', record_index, str(result))
+                    self._dg.set_grid_element_value('Result', record_index, result)
             except:
                 self._dg.clear_grid_element_value('Result', record_index)
         return None

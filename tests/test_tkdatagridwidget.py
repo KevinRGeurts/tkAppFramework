@@ -17,7 +17,8 @@ class Test_tkDataGridWidget(unittest.TestCase):
         field_configurations = [FieldConfiguration('Editable Text Field',FieldType.TEXT,'editable'),
                                 FieldConfiguration('Editable Bool Field',FieldType.BOOL,'editable'),
                                 FieldConfiguration('Default List Field',FieldType.LIST,'editable'),
-                                FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only')]
+                                FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only'),
+                                FieldConfiguration('Read Only Number Field',FieldType.TEXT,'read_only')]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
 
@@ -28,12 +29,12 @@ class Test_tkDataGridWidget(unittest.TestCase):
     def test_init_num_records_property(self):
         self.assertEqual(self._dgw.num_records, 2)
         self.assertEqual(len(self._dgw._element_formats), 3)
-        self.assertEqual(len(self._dgw._fields_config), 4)
-        self.assertEqual(len(self._dgw._header_elements), 4)
-        self.assertEqual(len(self._dgw._grid_elements), 4)
+        self.assertEqual(len(self._dgw._fields_config), 5)
+        self.assertEqual(len(self._dgw._header_elements), 5)
+        self.assertEqual(len(self._dgw._grid_elements), 5)
         self.assertEqual(len(self._dgw._grid_elements['Editable Text Field']), 2)
-        self.assertEqual(len(self._dgw._wids), 12)
-        self.assertEqual(len(self._dgw._subjects), 12)
+        self.assertEqual(len(self._dgw._wids), 15)
+        self.assertEqual(len(self._dgw._subjects), 15)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
         self.assertEqual(self._dgw.canvas, self._dgw._dg_canvas)
 

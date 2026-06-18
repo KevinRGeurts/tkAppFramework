@@ -9,7 +9,7 @@ import unittest
 import tkinter as tk
 
 # Local
-from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, FieldType, tkDGElementBool, tkDGElementList, tkDGElementFieldHeader, FieldConfiguration
+from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, FieldType, tkDGElementBool, tkDGElementList, tkDGElementFieldHeader, tkDGElementNumber, FieldConfiguration
 
 
 class Test_tkDGElementText(unittest.TestCase):
@@ -58,6 +58,54 @@ class Test_tkDGElementText(unittest.TestCase):
         e.set_state('Some Text')
         e.clear_element_value()
         self.assertTupleEqual(e.get_state(), (tkDGElementText, ''))
+
+
+class Test_tkDGElementNumber(unittest.TestCase):
+    def setUp(self):
+        self._root = tk.Tk()
+        self._dgw = tkDataGridWidget(self._root, fields_config=[FieldConfiguration('A Number Field', FieldType.NUMBER, 'editable', None, None, None, '')], num_records=1)
+        self._dgw.grid()
+
+    def tearDown(self):
+        if self._root:
+            self._root.destroy()
+
+    def test_init_canvasID_prop_get_state(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        self.assertEqual(e._observers[0], self._dgw)
+        self.assertIsInstance(e.elementWidget, tk.Entry)
+        self.assertIsInstance(e._element_value, tk.StringVar)
+        self.assertEqual(e.canvasID, 7)
+        self.assertTupleEqual(e.get_state(),(tkDGElementNumber, None))
+
+    def test_set_get_default_value(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        e.set_default_value(5.7)
+        self.assertEqual(e.get_default_value(), 5.7)
+        
+    def test_set_get_state(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        e.set_state(1.6)
+        self.assertTupleEqual(e.get_state(), (tkDGElementNumber, 1.6))
+
+    def test_disable_element_elementWidget_prop(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        self.assertEqual(e.elementWidget['state'], tk.NORMAL)
+        e.disable_element(True)
+        self.assertEqual(e.elementWidget['state'], 'readonly')
+        e.disable_element(False)
+        self.assertEqual(e.elementWidget['state'], tk.NORMAL)
+
+    def test_bindings(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        exp_val = ('<Key-KP_Enter>', '<Key-Return>', '<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        self.assertTupleEqual(e.elementWidget.bind(), exp_val)
+
+    def test_clear_element_value(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        e.set_state(9.23)
+        e.clear_element_value()
+        self.assertTupleEqual(e.get_state(), (tkDGElementNumber, None))
 
 
 class Test_tkDGElementFieldHeader(unittest.TestCase):
