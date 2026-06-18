@@ -82,7 +82,7 @@ class tkDGTextElemValidator(object):
         # User regular expression to check if the proposed entry is a valid floating point value.
         txt_res = re.match(r'^[+-]?\d+$', proposed_entry) or \
                   re.match(r'^[+-]?((\d+\.\d*)|(\d*\.\d+))$', proposed_entry) or \
-                  re.match(r'^[+-]?((\d+\.?\d*)|(\d*\.?\d+))e[+-]?\d+$', proposed_entry)
+                  re.match(r'^[+-]?((\d+\.?\d*)|(\d*\.?\d+))[eE][+-]?\d+$', proposed_entry)
         if txt_res is not None:
             float_res = float(txt_res[0])    
             if (min_value is None) or (float_res >= min_value):

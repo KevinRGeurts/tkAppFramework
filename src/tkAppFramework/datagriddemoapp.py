@@ -131,8 +131,9 @@ class DataGridDemotkViewManager(tkViewManager):
         Create the demo widget, register 
         :return None:
         """
-        field_configurations = [FieldConfiguration('Base', FieldType.NUMBER, 'editable',
-                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
+        field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
+                                FieldConfiguration('Base', FieldType.NUMBER, 'editable',
+                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=None),
                                                    'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
@@ -159,12 +160,15 @@ class DataGridDemotkViewManager(tkViewManager):
         :return None:
         """
         for i in range(self._dg.num_records):
+            # Initialize the "Record Index" field for each record.
+            self._dg.set_grid_element_value('Record Index', i, str(i))
             # Initialze the 'Multiply by' field for each record.
             self._dg.set_grid_element_list_choices('Multiply by', i, ('1.0', '2.0', '3.0', '4.0'))
             self._dg.set_grid_element_default_value('Multiply by', i, '2.0')
             self._dg.set_grid_element_value('Multiply by', i, '2.0')
             # Initialize the 'Base' field for each record.
             self._dg.set_grid_element_value('Base', i, i)
+            self._dg.set_grid_element_default_value('Base', i, i)
         return None
     
     def handle_model_update(self):

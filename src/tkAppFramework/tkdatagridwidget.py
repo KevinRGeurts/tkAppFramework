@@ -292,11 +292,13 @@ class tkDGElement(Subject):
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
-        if self._default_value is not None:
-            self._element_value.set(self._default_value)
-        else:
-            self.clear_element_value()
-        self.notify()
+        # If the element is for a field that is read-only format, do nothing.
+        if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
+            if self._default_value is not None:
+                self._element_value.set(self._default_value)
+            else:
+                self.clear_element_value()
+            self.notify()
         return None
 
     def onContextMenu(self, event):
@@ -931,11 +933,18 @@ class tkDGElementNumber(tkDGElement):
             if value is None:
                 self._element_value.set('')
             else:
-                # TODO: Enable the ability to force text display into scientific notation.
-                # This probably implies another attribute in FieldConfiguration class.
-                self._element_value.set(str(round(value,8)))
+                self._element_value.set(self._format_value(value))
             self.notify()
         return None
+
+    def _format_value(self, value):
+        """
+        This utility function applies logic to format a float or int value as a string, so that scientific notation is
+        used if the number is particularly small or large.
+        """
+        assert(isinstance(value, int) or isinstance(value, float))
+        formatted_value = '{:.8G}'.format(value)
+        return formatted_value
 
     def clear_element_value(self):
         """
@@ -1208,6 +1217,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         Note: (1) A FieldType.TEXT element will have its value set to ''
               (2) A FieldType.BOOL element will have its value set to False
               (3) A FieldType.LIST element will have its value unchanged.
+              (4) A FieldType.Number element will have its text value set to '' and its numeric value set to None.
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
         :return: None
@@ -1274,6 +1284,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 return FieldType.BOOL
             elif elem_type == tkDGElementList:
                 return FieldType.LIST
+            elif elem_type == tkDGElementNumber:
+                return FieldType.NUMBER
             else:
                 return None
         else:
@@ -1423,7 +1435,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             # TODO: Fix this horribly non-OO code.
             if element.get_state()[0] == tkDGElementFieldHeader:
                 element._element_widget.configure(font=font.nametofont('TkHeadingFont'))
-            if element.get_state()[0] == tkDGElementText:
+            if element.get_state()[0] == tkDGElementText or element.get_state()[0] == tkDGElementNumber:
                 element.elementWidget.configure(readonlybackground=cell_color)
             element.disable_element(read_only)
         return None
