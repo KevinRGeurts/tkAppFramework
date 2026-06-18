@@ -16,15 +16,14 @@ Exported Functions:
 
 
 # Standard imports
-from dataclasses import field
 import logging
 import tkinter as tk
-from tkinter import font
+from tkinter import font, filedialog
 from tkinter import ttk
 from tkinter.messagebox import showerror
 from functools import partial
 from enum import IntEnum
-from xml.sax.handler import property_declaration_handler
+from os import getcwd
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
@@ -306,7 +305,6 @@ class tkDGElement(Subject):
         Handler for the <<ContextMenu>> virtual event. Call handler in element widget's grandparent tkDataGridWidget to
         handle the contextual menu.
         :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
-        :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
         :return: None
         """
         self._element_widget.focus_set()
@@ -1080,7 +1078,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"tkDataGridWidget received <<ContextMenu>> virtual event from tkDGElement with canvas ID {element.canvasID}.")
-        self._create_context_menu(event)
+        context_menu = self._create_context_menu(event, element)
+        context_menu.post(event.x_root, event.y_root)
         return None
 
     # TODO:
@@ -1092,22 +1091,137 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     # (4): For a list element, Copy should get it's value and put it on the clipboard. Paste should only work if the clipboard value is one of the options for the list element.
     # (5) Implication of all of this is probably that elements need to bind to the virtual events and have specific handling instead of the default handling.
     # If Paste should do nothing, it should be disabled.
-    def _create_context_menu(self, event):
+    def _create_context_menu(self, event, element):
         """
         Create the contextual menu for the element widgets in the data grid.
         :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
+        :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
         :return: The tkinter Menu widget that is the contextual menu, as tkinter Menu widget object
         """
         context_menu = tk.Menu(self)
-        context_menu.add_command(label='Copy', command=lambda: self._focused_element.elementWidget.event_generate('<<Copy>>'))
-        context_menu.add_command(label='Paste', command=lambda: self._focused_element.elementWidget.event_generate('<<Paste>>'))
+
+        # Create "Edit" cascade menu
+        edit_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=edit_menu_obj, label='Edit')
+        # Create commands under "Edit"
+        edit_menu_obj.add_command(label='Copy', command=lambda: self._focused_element.elementWidget.event_generate('<<Copy>>'))
+        edit_menu_obj.add_command(label='Paste', command=lambda: self._focused_element.elementWidget.event_generate('<<Paste>>'))
+
+        # Create "Export" cascade menu
+        xport_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=xport_menu_obj, label='Export')
+        # Create commands under "Export"
+        xport_menu_obj.add_command(label='PostScript', command=self.onExportPostscriptContextMenuOptionSelected)
+        xport_menu_obj.add_command(label='CSV', command=self.onExportCSVContextMenuOptionSelected)
+        xport_menu_obj.add_command(label='JSON', command=self.onExportJSONContextMenuOptionSelected)
+
+        # Create "Insert" cascade menu
+        insert_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=insert_menu_obj, label='Insert')
+        # Create commands under "Export"
+        insert_menu_obj.add_command(label='Row above', command=partial(self.onInsertRowContextMenuOptionSelected, 'above', element))
+        insert_menu_obj.add_command(label='Row below', command=partial(self.onInsertRowContextMenuOptionSelected, 'below', element))
+        insert_menu_obj.add_command(label='Column left', command=partial(self.onInsertColumnContextMenuOptionSelected, 'left', element))
+        insert_menu_obj.add_command(label='Column right', command=partial(self.onInsertColumnContextMenuOptionSelected, 'right', element))
+
+        # Create "Unit change" command on context menu
+        context_menu.add_command(label='Unit change', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
+
+        # TODO: Disable commands as required.
+        # (1) Disable Unit change if element's field does not have units configured
+        # (2) Disable Edit|Paste if element is read-only format
+
         # For adding options that do not have a built-in event, use a partial to call a handler method in this tkDataGridWidget class, and pass in the option as an argument to the handler method.
         # TODO: Generalize by passing in a dictionary to the tkDataGridWidget constructor that defines labels and handlers.
-        for i in ('Placeholder 1', 'Placeholder 2'):
-             context_menu.add_command(label=i, command=partial(self.onContextMenuOptionSelected, i))
-        context_menu.post(event.x_root, event.y_root)
+        # This would be so that a client can add it's own specific contextual menu options.
+        for i in ('Client Placeholder 1', 'Client Placeholder 2'):
+             context_menu.add_command(label=i, command=partial(self.onClientContextMenuOptionSelected, i))
 
-    def onContextMenuOptionSelected(self, option):
+        return context_menu
+
+    def onUnitChangeContextMenuOptionSelected(self, element):
+        """
+        Handler called when Insert | Row above or Insert | Row below is selected from the contextual menu.
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to change units for grid element with canvas ID {element.canvasID} was selected.")
+        # TODO: Call the unit change function on the field header element for the element's field
+        (elem_field, elem_rec) = self._get_element_coords(element)
+        field_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
+        header_elem = [he for he in self._header_elements if he._raw_state==field_config.fieldName][0]
+        header_elem.onDoubleClickBtn1(None)
+        return None
+
+    def onInsertRowContextMenuOptionSelected(self, where, element):
+        """
+        Handler called when Insert | Row above or Insert | Row below is selected from the contextual menu.
+        :parameter where: Should the row be inserted above or below
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to insert row {where} grid element with canvas ID {element.canvasID} was selected.")
+        # TODO: Implement row insertion
+        return None
+
+    def onInsertColumnContextMenuOptionSelected(self, where, element):
+        """
+        Handler called when Insert | Column left or Insert | Column right is selected from the contextual menu.
+        :parameter where: Should the column be inserted to the left or right
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to insert column to the {where} of grid element with canvas ID {element.canvasID} was selected.")
+        # TODO: Implement column insertion
+        return None
+
+    def onExportPostscriptContextMenuOptionSelected(self):
+        """
+        Handler called when Export|Postscript is selected from the contextual menu.
+        :return: None
+        """
+        initial_dir = getcwd()
+        # Pop up tkFileDialog for save
+        response = filedialog.asksaveasfilename(defaultextension='eps', filetypes=[('Encapsulated PostScript file', '*.eps')],
+                                                initialdir=initial_dir, title='Select file to write PostScript to')
+        if len(response)>0: # User did not cancel
+            # TODO: Use height and width parameters to generate postscript for entire canvas, not just the
+            # visible area.
+            self._dg_canvas.postscript(colormode='color', file=response)
+        return None
+
+    def onExportCSVContextMenuOptionSelected(self):
+        """
+        Handler called when Export|CSV is selected from the contextual menu.
+        :return: None
+        """
+        initial_dir = getcwd()
+        # Pop up tkFileDialog for save
+        response = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[('Comma Separated Values file', '*.csv')],
+                                                initialdir=initial_dir, title='Select file to write CSV to')
+        if len(response)>0: # User did not cancel
+            # TODO: Convert the data grid to csv and write to the selected file
+            pass
+        return None
+
+    def onExportJSONContextMenuOptionSelected(self):
+        """
+        Handler called when Export|JSON is selected from the contextual menu.
+        :return: None
+        """
+        initial_dir = getcwd()
+        # Pop up tkFileDialog for save
+        response = filedialog.asksaveasfilename(defaultextension='json', filetypes=[('Java Script Object Notation file', '*.json')],
+                                                initialdir=initial_dir, title='Select file to write JSON to')
+        if len(response)>0: # User did not cancel
+            # TODO: Convert the data grid to JSON and write to the selected file
+            pass
+        return None
+
+    def onClientContextMenuOptionSelected(self, option):
         """
         Handler for when an option is selected from the contextual menu.
         :parameter option: The option that was selected, as string
@@ -1512,6 +1626,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                             old_val = rec_element.get_state()[1]
                             new_val = self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_val)
                             rec_element.set_state(new_val)
+                            # If element has a default value, it must be converted as well.
+                            # TODO: Consider if this requirement is sufficient justification for refactoring so that data grid elements
+                            # understand "base units" and store values in those units.
+                            old_default_val = rec_element.get_default_value()
+                            if old_default_val is not None:
+                                new_default_val = self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_default_val)
+                                rec_element.set_default_value(new_default_val)
         
         # Handle formating the element widget appropriately based on if it has the default value or not.
         elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
