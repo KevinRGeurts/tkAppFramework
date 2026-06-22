@@ -140,6 +140,19 @@ class FieldHeaderElementUnitsUpdateHint(UpdateHint):
         self.new_unit_id = kwargs.get('new_unit_id')
 
 
+class DataGridAddRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has add a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'new_record_index' specifies the index of the new record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.new_record_index = kwargs.get('new_record_index')
+
+
 class tkDGElement(Subject):
     """
     Class is the base class for classes that represent an element of a tkDataGridWidget. Class is a subject in Observer
@@ -969,7 +982,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     Class is an Observer in Observer design pattern so that it can observe tkDGElement objects.
     """
     # TODO: Pass in row heights and collumn widths?
-    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO, uom_adapter = None) -> None:
+    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO, uom_adapter = None, fields_are_cols = True) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
@@ -978,6 +991,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter num_records: The number of records to display in the data grid, as int
         :parameter log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         :parameter uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
+        :parameter fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows
+                                    in the grid. Only True is currently supported. As boolean.
         """
         Subject.__init__(self)
         Observer.__init__(self)
@@ -985,6 +1000,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Set up logging for this class.
         self._setup_logging(log_level)
+
+        assert(isinstance(fields_are_cols, bool))
+        self._fields_are_cols = fields_are_cols
 
         if uom_adapter is not None:
             assert(isinstance(uom_adapter, UoMSysAdapter))
@@ -1157,13 +1175,120 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     def onInsertRowContextMenuOptionSelected(self, where, element):
         """
         Handler called when Insert | Row above or Insert | Row below is selected from the contextual menu.
-        :parameter where: Should the row be inserted above or below
+        :parameter where: Should the row be inserted 'above' or 'below', as string
         :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
         :return: None
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Context menu option to insert row {where} grid element with canvas ID {element.canvasID} was selected.")
-        # TODO: Implement row insertion
+        (field_name, record_index) = self._get_element_coords(element)
+
+        assert(self._fields_are_cols)
+        if self._fields_are_cols:
+            # Rows are records, so insert a record
+            if where=='below':
+                if record_index is None:
+                    # Assume that element is a field header element
+                    record_index = -1
+                self._insertRecordAfter(record_index)
+            elif where=='above':
+                if record_index is not None:
+                    # Only allow insert 'above' if element is NOT a header element
+                    self._insertRecordAfter(record_index-1)
+        else:
+            # Rows are fields, so insert a field
+            # Not currently implemented
+            pass
+        return None
+
+    def _insertRecordAfter(self, index):
+        """
+        Utility function that inserts a new record after the index-th record. If index = -1, then the newly iserted
+        record will become the first record.
+        :parameter index: The record index after which the insertion should be done, as int
+        :return: None
+        """
+        # First, delete all of the element/cell separators/borders on the canvas
+        self._dg_canvas.delete('tag_element_separator_line')
+        # Second, move all record elements after index down a row, or over a column.
+        assert(self._fields_are_cols)
+        if self._fields_are_cols:
+            # Move all record elements after index down a row
+            # Calculate how far down, in +y-direction we need to move each element.
+            # Note: This logic works IFF each row is the same height, which is expected to remain the case.
+            y_add = self._row_h + self._sep_w
+            # Iterate through fields and records and make the moves.
+            for (field_name, record_list) in self._grid_elements.items():
+                for reci in range(index+1, len(record_list)):
+                    self._dg_canvas.move(record_list[reci].canvasID, 0, f'{y_add}i')
+        else:
+            # Move all record elements after index over a column
+            # Not currently implemented
+            pass
+        # Third, create elements for the new record and insert them into the field record lists.
+        self._create_new_record(index+1)
+        # Fourth, regenerate the element separator lines.
+        self._draw_element_separator_lines()
+        # Fifth, notify observers that a row has been added.
+        self.notify([DataGridAddRecordUpdateHint(new_record_index=index+1)])
+        return None
+
+    def _create_new_record(self, index):
+        """
+        Utility function that creates the elements for a new record at the index-th record. If index = -1, then the new
+        elements will be become the first record.
+        :parameter index: The record index at which the insertion should be done, as int
+        :return: None
+        """
+        assert(self._fields_are_cols)
+        # Widget height and width, in inches
+        wid_h = self._row_h 
+        wid_w = self._col_w
+        # Add record widgets...
+        new_focus_element = None
+        field_index = 0
+        for field in self._fields_config:
+            if self._fields_are_cols:
+                next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
+                next_y = ((index + 1) * wid_h) + ((index + 2) * self._sep_w)
+            else:
+                # Not currently implemented
+                pass
+            field_name = field.fieldName
+            field_type = field.fieldType
+            field_format = field.fieldFormat
+            # TODO: Well, this is ugly, non-OO code...
+            element = None
+            match field_type:
+                case FieldType.BOOL:
+                    element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                case FieldType.LIST:
+                    element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                case FieldType.TEXT:
+                    element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                case FieldType.NUMBER:
+                    element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+            # Tag the element's canvas ID with the field name, so we can "address" all of a field's elements as a group.
+            # TODO: This may turn out to not actually be useful/needed.
+            self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)
+            if new_focus_element is None:
+                new_focus_element = element
+            self.register_subject(element, partial(self.handle_element_update, element))
+            self._wids.append(element.canvasID)
+            # Store the list of tkDGElement objects for this field in the _grid_elements dictionary.
+            self._grid_elements[field_name].insert(index, element)
+            # Configure the element's widget with the appropriate format.
+            self._apply_element_format_to_one_element(field_format, element)
+            # Advance field_index for next iteration of field loop.
+            field_index += 1
+        # Set focus to the 0-th field_index element for the new record
+        if new_focus_element is not None:
+            new_focus_element._element_widget.focus_set()
+            self._focused_element = new_focus_element
+        # Increment the number of records for the grid
+        # TODO: Consider refactoring such that the number of records is determined from the length of the lists
+        # in the grid element dictionary, so that there can't be an inconsistency.
+        self._num_records += 1
         return None
 
     def onInsertColumnContextMenuOptionSelected(self, where, element):
