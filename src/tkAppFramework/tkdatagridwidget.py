@@ -24,12 +24,36 @@ from tkinter.messagebox import showerror
 from functools import partial
 from enum import IntEnum
 from os import getcwd
+from multiprocessing import Process
+import sysconfig
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.uomsysadapter import UoMSysAdapter
 from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
+from tkAppFramework.tkApp import tkHelpApp
+
+
+# This function cannot be a method of tkDataGridWidget, do to Process using pickle.
+def _launch_help_app(help_file = '', help_format = 'txt'):
+    """
+    Launch tkinter app for displaying online help.
+    :parameter help_file: Path to the help file to be opened and displayed initially, string
+    :parameter help_format: Format of content in help file (must be 'txt', 'xhtml', or 'md'), string
+    :return: The launched tkHelpApp object, as tkHelpApp object
+    """
+    assert(type(help_file)==str)
+    assert(type(help_format)==str)
+    assert(help_format in ['txt', 'xhtml', 'md'])
+
+    # Create and configure the app
+    root = tk.Tk()
+    myapp = tkHelpApp(root, help_file, help_format)
+
+    # Start the app's event loop running
+    myapp.mainloop()
+    return myapp
 
 
 class FieldType(IntEnum):
@@ -1088,6 +1112,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._draw_element_separator_lines()
         self._setup_data_grid()
 
+        # Process running the HelpApp
+        self._help_process = None
+
     @property
     def num_records(self):
         return self._num_records
@@ -1153,6 +1180,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         xport_menu_obj.add_command(label='CSV', command=self.onExportCSVContextMenuOptionSelected)
         xport_menu_obj.add_command(label='JSON', command=self.onExportJSONContextMenuOptionSelected)
 
+        # Create "Help on Data Grid" command on context menu
+        context_menu.add_command(label='Help on Data Grid', command=partial(self.onHelpOnDataGridContextMenuOptionSelected, element))
+
         # Create "Insert" cascade menu
         insert_menu_obj=tk.Menu(context_menu)
         context_menu.add_cascade(menu=insert_menu_obj, label='Insert')
@@ -1177,6 +1207,30 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         return context_menu
 
+    def onHelpOnDataGridContextMenuOptionSelected(self, element):
+        """
+        Handler called when Help on Data Grid is selected from the contextual menu.
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to get help on data grid for element with canvas ID {element.canvasID} was selected.")
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\DataGrid_HelpFile.md'
+        if not self._help_process or not self._help_process.is_alive():
+            # Help app is not running, so launch it
+            
+            # Get the help format by looking at the help file extension
+            if help_file_path.endswith('md'):
+                help_format='md'
+            elif help_file_path.endswith('xhtml'):
+                help_format='xhtml'
+            else:
+                help_format='txt'
+
+            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':help_file_path, 'help_format':help_format})
+            self._help_process.start()
+        return None
+
     def onUnitChangeContextMenuOptionSelected(self, element):
         """
         Handler called when Insert | Row above or Insert | Row below is selected from the contextual menu.
@@ -1185,7 +1239,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Context menu option to change units for grid element with canvas ID {element.canvasID} was selected.")
-        # TODO: Call the unit change function on the field header element for the element's field
         (elem_field, elem_rec) = self._get_element_coords(element)
         field_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
         header_elem = [he for he in self._header_elements if he._raw_state==field_config.fieldName][0]

@@ -1,0 +1,45 @@
+# Data Grid Help
+
+This content is generally applicable to the Data Grid Widget, regardless of exactly what application is using it.
+
+## Understanding the colors of grid cells:
+
+- White: The cell value can be changed by the user. Typically this is a cell where you should enter an input value.
+- Blue: The cell value cannot be changed by the user. Typically this cell displays the results of a computation.
+- Cyan: The current cell value is a default value. If it is changed the the user, the cell color will change to white. The user can select the cell and click the delete key to restore the default value.
+- Grey: The field header cells with the names of grid fields are colored grey.
+
+## Moving around in the grid:
+
+- The currently selected cell in the grid is shown with a red border.
+- Grid cells can be selected by clicking on them with the left mouse button.
+- The selected cell can be changed by moving around the grid with the arrow keys.
+- The tab key will move the selected cell in a pre-defined order. Typically this order is to move down the current column and then over to the next column to the right.
+- The enter key will enter a new value into the currently selected grid cell without moving from that cell.
+
+## Changing the units of a field in the grid:
+
+If a field in the grid shows a unit of measurement in the fields header, like 'Length (m)', the user can change the unit of measurement
+by selecting that field's header cell and double-clicking the left mouse button. This will launch a dialog where the user can
+choose a diffent unit of measurement for the field. When the dialog is okayed, the record values for that field will be updated
+to the new unit of measurement.
+
+## Using the grid's context menu:
+
+Clicking the right mouse button when any grid cell is selected will display a "contextual" menu. The available choices on the menu depend on the selected cell.
+
+- Delete | Column: Not currently implemented
+- Delete | Row: Delete the selected element's row, if it is a data grid record
+- Edit | Copy: Copy cell content to the clipboard
+- Edit | Paste: Paste content from the clipboard into the cell
+- Export | CSV: Save the values in the grid's cells to a Comma Separated Value file
+- Export | JSON: Save the values in the grid's cells to a Java Scipt Object Notation file 
+- Export | PostScript: Create a printable Encapsulated PostScript file of the grid
+- Help on Data Grid: Display this help content
+- Insert | Column Left: Not currently implemented
+- Insert | Column Right: Not currently implemented
+- Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
+- Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
+- Unit Change: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
+
+
