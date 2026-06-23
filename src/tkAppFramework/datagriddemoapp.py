@@ -12,6 +12,7 @@ from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, FieldConfiguration, UpdateHint, DataGridAddRecordUpdateHint 
+from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint 
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
@@ -209,6 +210,10 @@ class DataGridDemotkViewManager(tkViewManager):
                         else:
                             # This is a previously existing record, that need's its 'Record Index' field updated
                             self._dg.set_grid_element_value('Record Index', i, str(i))
+                if isinstance(hint, DataGridDeleteRecordUpdateHint):
+                    # An existing record has been deleted from the data grid.
+                    # Nothing needs to be done in this case, because the model does not have a list of records.
+                    pass
         else:
             # Handle updates that do not come with a list of hints
             # Determine the field name and record index of the modified element.

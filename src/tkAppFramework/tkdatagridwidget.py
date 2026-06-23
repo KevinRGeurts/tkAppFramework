@@ -142,7 +142,7 @@ class FieldHeaderElementUnitsUpdateHint(UpdateHint):
 
 class DataGridAddRecordUpdateHint(UpdateHint):
     """
-    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has add a record.
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has added a record.
     """
     def __init__(self, *args, **kwargs):
         """
@@ -151,6 +151,19 @@ class DataGridAddRecordUpdateHint(UpdateHint):
         """
         super().__init__(*args)
         self.new_record_index = kwargs.get('new_record_index')
+
+
+class DataGridDeleteRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has deleted a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'deleted_record_index' specifies the index of the deleted record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.deleted_record_index = kwargs.get('deleted_record_index')
 
 
 class tkDGElement(Subject):
@@ -1118,6 +1131,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         context_menu = tk.Menu(self)
 
+        # Create "Delete" cascade menu
+        delete_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=delete_menu_obj, label='Delete')
+        # Create commands under "Delete"
+        delete_menu_obj.add_command(label='Row', command=partial(self.onDeleteRowContextMenuOptionSelected, element))
+        delete_menu_obj.add_command(label='Column', command=partial(self.onDeleteColumnContextMenuOptionSelected, element))
+
         # Create "Edit" cascade menu
         edit_menu_obj=tk.Menu(context_menu)
         context_menu.add_cascade(menu=edit_menu_obj, label='Edit')
@@ -1136,7 +1156,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Create "Insert" cascade menu
         insert_menu_obj=tk.Menu(context_menu)
         context_menu.add_cascade(menu=insert_menu_obj, label='Insert')
-        # Create commands under "Export"
+        # Create commands under "Insert"
         insert_menu_obj.add_command(label='Row above', command=partial(self.onInsertRowContextMenuOptionSelected, 'above', element))
         insert_menu_obj.add_command(label='Row below', command=partial(self.onInsertRowContextMenuOptionSelected, 'below', element))
         insert_menu_obj.add_command(label='Column left', command=partial(self.onInsertColumnContextMenuOptionSelected, 'left', element))
@@ -1170,6 +1190,106 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         field_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
         header_elem = [he for he in self._header_elements if he._raw_state==field_config.fieldName][0]
         header_elem.onDoubleClickBtn1(None)
+        return None
+
+    def onDeleteColumnContextMenuOptionSelected(self, element):
+        """
+        Handler called when Delete | Column is selected from the contextual menu.
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to delete column of grid element with canvas ID {element.canvasID} was selected.")
+        # TODO: Implement column deletion, but ONLY when columns are records.
+        return None
+
+    def onDeleteRowContextMenuOptionSelected(self, element):
+        """
+        Handler called when Delete | Row is selected from the contextual menu. Only does a deletion if the
+        row is a data grid record, and not if the row is a data grid field.
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to delete row of grid element with canvas ID {element.canvasID} was selected.")
+        (field_name, record_index) = self._get_element_coords(element)
+        assert(self._fields_are_cols)
+        if self._fields_are_cols:
+            # Rows are records, so delete a record
+            if record_index is not None:
+                # Element is NOT a field header element, so okay to delete its row
+                self._deleteRecord(record_index)
+                # Set focus to the element for the same field in the record...
+                new_focus_element = None
+                if self._num_records == 0:
+                    # We've just deleted the last record, so then put the focus on the field header
+                    new_focus_element = [he for he in self._header_elements if he._field_config.fieldName==field_name][0]
+                elif record_index == 0:
+                    # We've deleted what was the first record, so then put the  focus on what has become the new first record
+                    new_focus_element = self._grid_elements[field_name][record_index]
+                else:
+                    # We've deleted a record that has a remaining record above it, so then put the focus on that record
+                    new_focus_element = self._grid_elements[field_name][record_index-1]
+                new_focus_element._element_widget.focus_set()
+                self._focused_element = new_focus_element
+        return None
+
+    def _deleteRecord(self, index):
+        """
+        Utility function that deletes the index-th record.
+        :parameter index: The record index of the recrod which will be deleted, as int
+        :return: None
+        """
+        assert(self._fields_are_cols)
+        # First, delete all of the element/cell separators/borders on the canvas
+        self._dg_canvas.delete('tag_element_separator_line')
+        if self._fields_are_cols:
+            # Second, delete from the grid's canvas the elements that make up the index-th record.
+            # Iterate through fields and remove from the canvas the element widgets for the index-th record.
+            for (field_name, record_list) in self._grid_elements.items():
+                element = record_list[index]
+                self._dg_canvas.delete(element.canvasID)
+            # Third, Move all record elements after index up a row
+            # Calculate how far up, in -y-direction we need to move each element.
+            # Note: This logic works IFF each row is the same height, which is expected to remain the case.
+            y_add = -(self._row_h + self._sep_w)
+            # Iterate through fields and records and make the moves.
+            for (field_name, record_list) in self._grid_elements.items():
+                for reci in range(index+1, len(record_list)):
+                    self._dg_canvas.move(record_list[reci].canvasID, 0, f'{y_add}i')
+            else:
+                # Move all record elements after index over a column
+                # Not currently implemented
+                pass
+            # Forth, remove elements for the deleted record from the field record lists.
+            self._delete_record_elements(index)
+            # Fifth, regenerate the element separator lines.
+            self._draw_element_separator_lines()
+            # Sixth, notify observers that a row has been deleted.
+            self.notify([DataGridDeleteRecordUpdateHint(deleted_record_index=index)])
+        return None
+
+    def _delete_record_elements(self, index):
+        """
+        Utility function that deletes the elements for the index-th record from the data grid's list of records for each field.
+        :parameter index: The record index at which the insertion should be done, as int
+        :return: None
+        """
+        assert(self._fields_are_cols)
+        for (field_name, record_list) in self._grid_elements.items():
+            # Remove the record element from the list of record elements for the field
+            removed_element = record_list.pop(index)
+            # Remove the record element's widget's ID on the data grid's canvas from the list of canvas ID's maintained
+            # by the data grid.
+            self._wids.remove(removed_element.canvasID)
+            # Detach the data grid as an observer of the record element
+            removed_element.detach(self)
+            # Destroy the element's widget.
+            # If the element's widget is not destroyed, then it will continue to receive tkinter events, which
+            # is problematic, in particular the entry change event.
+            removed_element.elementWidget.destroy()
+        # Decrement the number of records in the data grid
+        self._num_records -= 1
         return None
 
     def onInsertRowContextMenuOptionSelected(self, where, element):
@@ -1208,10 +1328,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter index: The record index after which the insertion should be done, as int
         :return: None
         """
+        assert(self._fields_are_cols)
         # First, delete all of the element/cell separators/borders on the canvas
         self._dg_canvas.delete('tag_element_separator_line')
         # Second, move all record elements after index down a row, or over a column.
-        assert(self._fields_are_cols)
         if self._fields_are_cols:
             # Move all record elements after index down a row
             # Calculate how far down, in +y-direction we need to move each element.
