@@ -1629,7 +1629,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     self._focused_element = next_element
         return None
 
-    # TODO: This code throws exception if focus is moved from a field header element, (which can be focused with the mouse).
     def onKeyPressDown(self, event):
         """
         Handler for the down-arrow key press event. Moves focus to the element widget below the currently focused element widget, if it exists.
@@ -1905,7 +1904,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             else:
                 return (field_name, record_index)
         
-    def create_element_format(self, format_name = "an_element_format", text_color = 'black', cell_color = 'white',
+    def create_element_format(self, format_name = 'an_element_format', text_color = 'black', cell_color = 'white',
                               read_only = True, default_cell_color='#74BA00'):
         """
         Create a named configuration for formatting element widgets in the data grid.

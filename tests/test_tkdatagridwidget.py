@@ -18,7 +18,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
                                 FieldConfiguration('Editable Bool Field',FieldType.BOOL,'editable'),
                                 FieldConfiguration('Default List Field',FieldType.LIST,'editable'),
                                 FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only'),
-                                FieldConfiguration('Read Only Number Field',FieldType.TEXT,'read_only')]
+                                FieldConfiguration('Read Only Number Field',FieldType.NUMBER,'read_only')]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
 
@@ -119,6 +119,26 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._dgw.create_element_format()
         ef = self._dgw._element_formats['an_element_format']
         self.assertTupleEqual(ef, ('black', 'white', True, '#74BA00'))
+
+    def test_is_element_readonly(self):
+        ge = self._dgw._get_grid_element('Read Only Text Field', 1)
+        self.assertEqual(self._dgw._is_element_readonly(ge), True)
+        ge = self._dgw._get_grid_element('Editable Text Field', 1)
+        self.assertEqual(self._dgw._is_element_readonly(ge), False)
+
+    def test_element_has_units(self):
+        ge = self._dgw._get_grid_element('Read Only Text Field', 1)
+        self.assertEqual(self._dgw._element_has_units(ge), False)
+
+    def test_deleteRecord(self):
+        self.assertEqual(self._dgw.num_records, 2)
+        self._dgw._deleteRecord(0)
+        self.assertEqual(self._dgw.num_records, 1)
+
+    def test_insertRecordAfter(self):
+        self.assertEqual(self._dgw.num_records, 2)
+        self._dgw._insertRecordAfter(0)
+        self.assertEqual(self._dgw.num_records, 3)
 
     def test_onDestroy(self):
         ge = self._dgw._get_grid_element('Editable Text Field', 0)
