@@ -133,6 +133,25 @@ class FieldConfiguration:
         self._field_unit_name = value
 
 
+class DataGridUserAbilities:
+    """
+    This class defines a set of "abilities" a user has within a tkDataGridWidget. Currently it is used to
+    disable options on the contextual menu which should not be available to the user. For example, for most
+    applications with a tkDataGridWidget, the ability to delete a field should NOT be available.
+    """
+    def __init__(self, can_insert_field=False, can_delete_field=False, can_insert_record=False, can_delete_record=False):
+        """
+        """
+        assert(isinstance(can_insert_field, bool))
+        assert(isinstance(can_delete_field, bool))
+        assert(isinstance(can_insert_record, bool))
+        assert(isinstance(can_delete_record, bool))
+        self._can_insert_field = can_insert_field
+        self._can_delete_field = can_delete_field
+        self._can_insert_record = can_insert_record
+        self._can_delete_record = can_delete_record
+
+
 class FieldHeaderElementTextUpdateHint(UpdateHint):
     """
     A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
@@ -1019,7 +1038,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     Class is an Observer in Observer design pattern so that it can observe tkDGElement objects.
     """
     # TODO: Pass in row heights and collumn widths?
-    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO, uom_adapter = None, fields_are_cols = True) -> None:
+    def __init__(self, parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO,
+                 uom_adapter = None, fields_are_cols = True, user_abilities = DataGridUserAbilities()) -> None:
         """
         :parameter parent: tkinter widget that is the parent of this widget
         :parameter title: The text label of the Labelframe, as string
@@ -1030,6 +1050,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
         :parameter fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows
                                     in the grid. Only True is currently supported. As boolean.
+        :parameter user_abilities: Controls abilities a user has using contextual menu, as DataGridUserAbilities object
         """
         Subject.__init__(self)
         Observer.__init__(self)
@@ -1044,6 +1065,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         if uom_adapter is not None:
             assert(isinstance(uom_adapter, UoMSysAdapter))
         self._uom = uom_adapter
+
+        assert(isinstance(user_abilities, DataGridUserAbilities))
+        self._user_abilities = user_abilities
 
         # Dictionary of element format configurations, where Key=format name as string, Value=configuration tuple (text color, cell color, read only, default cell color), as (string, (string, string, boolean, string))
         # Hex RGB color source: https://color-register.org
@@ -1195,15 +1219,52 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Create "Unit change" command on context menu
         context_menu.add_command(label='Unit change', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
 
-        # TODO: Disable commands as required.
-        # (1) Disable Unit change if element's field does not have units configured
-        # (2) Disable Edit|Paste if element is read-only format
+        # Disable menu commands as required by specified user abilities or based on which element is selected in the grid
+        elemement_is_header = isinstance(element, tkDGElementFieldHeader)
+        # Handle disabling deletions of rows/columns as needed.
+        if (self._fields_are_cols):
+            if not self._user_abilities._can_delete_field:
+                delete_menu_obj.entryconfigure('Column', state=tk.DISABLED)
+            if not self._user_abilities._can_delete_record or elemement_is_header:
+                delete_menu_obj.entryconfigure('Row', state=tk.DISABLED)
+        else:
+            if not self._user_abilities._can_delete_field:
+                delete_menu_obj.entryconfigure('Row', state=tk.DISABLED)
+            if not self._user_abilities._can_delete_record or elemement_is_header:
+                delete_menu_obj.entryconfigure('Column', state=tk.DISABLED)
+        # Disable Edit|Paste if element is read-only format
+        if self._is_element_readonly(element):
+            edit_menu_obj.entryconfigure('Paste', state=tk.DISABLED)
+        # Handle disabling insertions of rows/columns as needed.
+        if (self._fields_are_cols):
+            if elemement_is_header:
+                # Can't insert a new record above the field header
+                insert_menu_obj.entryconfigure('Row above', state=tk.DISABLED)
+            if not self._user_abilities._can_insert_field:
+                insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
+                insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
+            if not self._user_abilities._can_insert_record:
+                insert_menu_obj.entryconfigure('Row above', state=tk.DISABLED)
+                insert_menu_obj.entryconfigure('Row below', state=tk.DISABLED)
+        else:
+            if elemement_is_header:
+                # Can't insert a new record to the left of the field header
+                insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
+            if not self._user_abilities._can_insert_field:
+                insert_menu_obj.entryconfigure('Row above', state=tk.DISABLED)
+                insert_menu_obj.entryconfigure('Row below', state=tk.DISABLED)
+            if not self._user_abilities._can_insert_record:
+                insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
+                insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
+        # Disable Unit change if element's field does not have units configured
+        if not self._element_has_units(element):
+            context_menu.entryconfigure('Unit change', state=tk.DISABLED)
 
         # For adding options that do not have a built-in event, use a partial to call a handler method in this tkDataGridWidget class, and pass in the option as an argument to the handler method.
         # TODO: Generalize by passing in a dictionary to the tkDataGridWidget constructor that defines labels and handlers.
         # This would be so that a client can add it's own specific contextual menu options.
-        for i in ('Client Placeholder 1', 'Client Placeholder 2'):
-             context_menu.add_command(label=i, command=partial(self.onClientContextMenuOptionSelected, i))
+        # for i in ('Client Placeholder 1', 'Client Placeholder 2'):
+        #      context_menu.add_command(label=i, command=partial(self.onClientContextMenuOptionSelected, i))
 
         return context_menu
 
@@ -1622,6 +1683,37 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     self._focused_element = next_element
         return None
 
+    def _is_element_readonly(self, element):
+        """
+        Utility function for determinig if a data grid element is readonly.
+        :parameter element: The tkDGElement object for which to determine readonly status, as tkDGElement object
+        :return: True if data grid element is readonly, otherwise False, as boolean
+        """
+        assert(isinstance(element, tkDGElement))
+        # Get the field of the parameter element
+        (field_name, rec_index) = self._get_element_coords(element)
+        # Get the field configuration for the element's field, using list comprehension
+        field_config = [fc for fc in self._fields_config if fc.fieldName==field_name][0]
+        field_format = field_config.fieldFormat
+        isReadonly = self._element_formats[field_format][2]
+        return isReadonly
+
+    def _element_has_units(self, element):
+        """
+        Utility function for determine if a data grid element's field has units of measure.
+        :parameter element: The tkDGElement object for which to determine units of measure status, as tkDGElement object
+        :return: True if data grid element's field has units of measure, otherwise False, as boolean
+        """
+        assert(isinstance(element, tkDGElement))
+        # Get the field of the parameter element
+        (field_name, rec_index) = self._get_element_coords(element)
+        # Get the field configuration for the element's field, using list comprehension
+        field_config = [fc for fc in self._fields_config if fc.fieldName==field_name][0]
+        if field_config.fieldUnitGroup is not None:
+            return True
+        else:
+            return False
+    
     def clear_grid_element_value(self, field_name='a_field_name', record_index=0):
         """
         Clear the value of the grid element for a given field name and record index. This method is intended

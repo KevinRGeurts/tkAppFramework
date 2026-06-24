@@ -12,7 +12,7 @@ from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, FieldConfiguration, UpdateHint, DataGridAddRecordUpdateHint 
-from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint 
+from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, DataGridUserAbilities 
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
@@ -139,9 +139,11 @@ class DataGridDemotkViewManager(tkViewManager):
                                 FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
                                 FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm')]
+        _user_abilities = DataGridUserAbilities(can_insert_field=False, can_delete_field=False, can_insert_record=True,
+                                               can_delete_record=True)
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
-                                    log_level = logging.DEBUG,
-                                    uom_adapter=DemoUoMSysAdapter())
+                                    log_level = logging.DEBUG, uom_adapter=DemoUoMSysAdapter(),
+                                    user_abilities=_user_abilities)
         # Attach self as an observer of the subject demo widget
         self._dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget

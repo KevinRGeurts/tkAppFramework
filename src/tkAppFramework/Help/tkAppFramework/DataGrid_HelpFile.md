@@ -27,6 +27,9 @@ to the new unit of measurement.
 ## Using the grid's context menu:
 
 Clicking the right mouse button when any grid cell is selected will display a "contextual" menu. The available choices on the menu depend on the selected cell.
+The available choices also depend on abilities that are granted to the user by the application. For example, in a typical
+application, it would not make sense for the user to be able to delete a field from the data grid, but it would make
+sense for them to be able to delete a record.
 
 - Delete | Column: Not currently implemented
 - Delete | Row: Delete the selected element's row, if it is a data grid record
@@ -41,4 +44,3 @@ Clicking the right mouse button when any grid cell is selected will display a "c
 - Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
 - Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
 - Unit Change: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
-- 
