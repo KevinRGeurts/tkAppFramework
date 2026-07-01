@@ -33,6 +33,7 @@ from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.uomsysadapter import UoMSysAdapter
 from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
 from tkAppFramework.tkApp import tkHelpApp
+from tkAppFramework.datagridfigurewidget import tkDataGridFigureWidget, DataGridFigureTemplate
 
 
 # This function cannot be a method of tkDataGridWidget, do to Process using pickle.
@@ -1054,7 +1055,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         Subject.__init__(self)
         Observer.__init__(self)
-        ttk.Labelframe.__init__(self, parent, text=title)
+        ttk.Labelframe.__init__(self, parent, text=title, takefocus=tk.TRUE)
 
         # Set up logging for this class.
         self._setup_logging(log_level)
@@ -1136,6 +1137,19 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._draw_element_separator_lines()
         self._setup_data_grid()
 
+        # Create a dictionary to store figure templates for the data grid
+        # key = name of figure (e.g., 'temperature vs depth'), as str
+        # value = DataGridFigureTemplate child object
+        self._fig_temps = {}
+
+        # Create a tkDataGridFigureWidget
+        self._figure = tkDataGridFigureWidget(self)
+        self._figure.grid(column=0, row=0, columnspan=2, rowspan=2, sticky='NWSE') # Grid-2
+        # Remove the figure widget from the grid, so that it is invisible, but so that it remembers its grid location.
+        self._figure.grid_remove()
+        # TODO: Restore the visibility fo the data grid canvas (if needed?)
+        self._dg_canvas.grid()
+
         # Process running the HelpApp
         self._help_process = None
 
@@ -1151,9 +1165,21 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     def uomAdapter(self):
         return self._uom
 
+    def register_figure_template(self, name, template):
+        """
+        Call this method to register a figure template for the data grid.
+        :parameter name: The name of the figure, as string
+        :parameter template: The DataGridFigureTemplate object for the figure, as DataGridFigureTemplate child object
+        :return: None
+        """
+        assert(isinstance(name, str) and len(name)>0)
+        assert(isinstance(template, DataGridFigureTemplate))
+        self._fig_temps[name]=template
+        return None
+
     def onContextMenu(self, event, element):
         """
-        Handler for the <<ContextMenu>> virtual event. Display handle the contextual menu.
+        Handler for the <<ContextMenu>> virtual event. Display the contextual menu.
         :parameter event: The tkinter event object for the <<ContextMenu>> virtual event
         :parameter element: The tkDGElement object that Has the element widget that received the context menu event, as tkDGElement object
         :return: None
@@ -1216,6 +1242,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         insert_menu_obj.add_command(label='Column left', command=partial(self.onInsertColumnContextMenuOptionSelected, 'left', element))
         insert_menu_obj.add_command(label='Column right', command=partial(self.onInsertColumnContextMenuOptionSelected, 'right', element))
 
+        # Create "Show graph" command on the context menu
+        graph_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=graph_menu_obj, label='Show graph')
+        # Create commands under "Show graph"
+        for (fn, ft) in self._fig_temps.items():
+            graph_menu_obj.add_command(label=fn, command=partial(self.onShowGraphContextMenuOptionSelected, fn, element))
+
         # Create "Unit change" command on context menu
         context_menu.add_command(label='Unit change', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
 
@@ -1267,6 +1300,39 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         #      context_menu.add_command(label=i, command=partial(self.onClientContextMenuOptionSelected, i))
 
         return context_menu
+
+    def _figure_asks_show_grid(self):
+        """
+        Handler for when figure requests that grid be shown.
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Data grid figure has requested that data grid be shown.")
+        self._figure.grid_remove()
+        self._dg_canvas.grid()
+        # TODO: Need to set focus back to the element from which the display of graph was requested, but
+        # not entirely sure how to do this, since that element gets a focus out event after the graph is shown.
+        #self._focused_element.focus_set()
+        return None
+
+    def onShowGraphContextMenuOptionSelected(self, which, element):
+        """
+        Handler called when Show graph is selected from the contextual menu.
+        :parameter which: The graph to show, as string
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to show graph {which} for element with canvas ID {element.canvasID} was selected.")
+        # Preserve the elment to which we want focus to return to when we exit the figure
+        self._focused_element = element
+        self._dg_canvas.grid_remove()
+        self._figure.grid()
+        # Get the figure template for the selected figure
+        ft = self._fig_temps[which]
+        self._figure.draw_figure(ft)
+        self._figure.focus_figure_canvas()
+        return None
 
     def onHelpOnDataGridContextMenuOptionSelected(self, element):
         """
