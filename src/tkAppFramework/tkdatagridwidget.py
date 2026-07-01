@@ -1144,11 +1144,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Create a tkDataGridFigureWidget
         self._figure = tkDataGridFigureWidget(self)
-        self._figure.grid(column=0, row=0, columnspan=2, rowspan=2, sticky='NWSE') # Grid-2
+        self._figure.grid(column=0, row=0, columnspan=2, rowspan=2, sticky='NWSE', padx='0.1i', pady='0.1i') # Grid-2
         # Remove the figure widget from the grid, so that it is invisible, but so that it remembers its grid location.
         self._figure.grid_remove()
-        # TODO: Restore the visibility fo the data grid canvas (if needed?)
+        # TODO: Restore the visibility fo the data grid canvas and it's scroll bars (if needed?)
         self._dg_canvas.grid()
+        self._scrollbar_hor.grid()
+        self._scrollbar_vert.grid()
 
         # Process running the HelpApp
         self._help_process = None
@@ -1310,6 +1312,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         logger.debug(f"Data grid figure has requested that data grid be shown.")
         self._figure.grid_remove()
         self._dg_canvas.grid()
+        self._scrollbar_hor.grid()
+        self._scrollbar_vert.grid()
         # TODO: Need to set focus back to the element from which the display of graph was requested, but
         # not entirely sure how to do this, since that element gets a focus out event after the graph is shown.
         #self._focused_element.focus_set()
@@ -1327,6 +1331,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Preserve the elment to which we want focus to return to when we exit the figure
         self._focused_element = element
         self._dg_canvas.grid_remove()
+        self._scrollbar_hor.grid_remove()
+        self._scrollbar_vert.grid_remove()
         self._figure.grid()
         # Get the figure template for the selected figure
         ft = self._fig_temps[which]

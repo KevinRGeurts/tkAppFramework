@@ -16,7 +16,7 @@ from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, Data
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
-from tkAppFramework.datagridfigurewidget import DataGridFigureTemplate
+from tkAppFramework.datagridfigurewidget import ScatterPlotFieldsFigureTemplate
 
 
 class DemoUoMSystem:
@@ -166,20 +166,9 @@ class DataGridDemotkViewManager(tkViewManager):
         for i in range(self._dg.num_records):
             self._initialize_one_record(i)
         # Create a figure template
-        class DemoFigureTemplate(DataGridFigureTemplate):
-            def make_figure(self, figure_widget):
-                super().make_figure(figure_widget)
-                xvals=[]
-                yvals=[]
-                _dg=figure_widget.master
-                for reci in range(_dg.num_records):
-                    xvals.append(_dg.get_grid_element_value('Base', reci))
-                    yvals.append(_dg.get_grid_element_value('Result', reci))
-                graph = figure_widget.axes.plot(xvals, yvals, 'bo-')
-                figure_widget._mpl_figure_canvas.draw()
-                return None
-        ft = DemoFigureTemplate(x_label='Base', y_label='Result')
-        self._dg.register_figure_template('Base vs Result', ft)
+        ft = ScatterPlotFieldsFigureTemplate(x_label='Base', y_label='Result', x_field='Base',
+                                             y_fields=['Result'], symbols=['bo-'])
+        self._dg.register_figure_template('Result vs Base', ft)
         return None
 
     def _initialize_one_record(self, index):

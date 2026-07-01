@@ -1,9 +1,10 @@
 """
-This module defines the tkDataGridFigureWidget class. It is a tkinter widget that uses a the matplotlib module to
+This module defines the tkDataGridFigureWidget and DataGridFigureTemplate classes. Together they use the matplotlib module to
 display graphical figures (line plots and bar plots, for example) of a data grid's records and fields.
 
 Exported Classes:
-    tkDataGridFigureWidget -- Blah, blah, blah.
+    DataGridFigureTemplate -- Base class for children which are responsible for actually making a specific matplotlib figure.
+    tkDataGridFigureWidget -- Displays a matplotlib figure in a tkinter Frame widget, with a DataGridFigureTemplate object to define the figure contents.
 
 Exported Exceptions:
     None    
@@ -50,24 +51,54 @@ class DataGridFigureTemplate(object):
         :return: None
         """
         assert(isinstance(figure_widget, tkDataGridFigureWidget))
-        
-        figure_widget._ax.cla() # Clear the axes for the next time through...
-        
         # Provide axis labels
         figure_widget.axes.set_aspect("equal")
         figure_widget.axes.set_xlabel(self._x_label)
         figure_widget.axes.set_ylabel(self._y_label)
         figure_widget.axes.use_sticky_edges = True
+        return None
+
+
+class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
+    """
+    Child of DataGridFigureTemplate that makes a scatter plot of two or more fields in the data grid.
+    """
+    def __init__(self, x_label='', y_label='', x_field='', y_fields=[], symbols=[]):
+        """
+        :parameter figure_widget: The tkDataGridFigureWidget object which HAS this DataGridFigureTemplate object.
+        :parameter x_label: Text label to place on the figure's x-axis, as string
+        :parameter y_label: Text label to place on the figure's y-axis, as string
+        :parammeter x_field: Name of the field in the data grid to use for the x-axis values, as string
+        :parameter y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
+        :parameter symbols: List of matplotlib symbols (e.g. 'bo-' for blue circles connected with a solid line) to use for each y_field, as list of strings
+        """
+        assert(isinstance(x_label, str))
+        self._x_label = x_label
+        assert(isinstance(y_label, str))
+        self._y_label = y_label
+        assert(isinstance(x_field, str))
+        self._x_field = x_field
+        assert(isinstance(y_fields, list))
+        for yf in y_fields:
+            assert(isinstance(yf, str))
+        self._y_fields = y_fields
+        assert(isinstance(symbols, list))
+        for sym in symbols:
+            assert(isinstance(sym, str))
+        self._symbols = symbols
         
-        # TODO: Move to child
-        # Create the data set to plot
-        # x = [1, 2, 3, 4, 5]
-        # y= [1, 4, 9, 16, 25]
-        # graph = self._figure_widget._ax.plot(x, y, 'bo')
-
-        # Actually draw the figure
-        # figure_widget._mpl_figure_canvas.draw()
-
+    def make_figure(self, figure_widget):
+        super().make_figure(figure_widget)
+        for yf, sym in zip(self._y_fields, self._symbols):
+            xvals=[]
+            yvals=[]
+            _dg=figure_widget.master
+            for reci in range(_dg.num_records):
+                xvals.append(_dg.get_grid_element_value(self._x_field, reci))
+                yvals.append(_dg.get_grid_element_value(yf, reci))
+            graph = figure_widget.axes.plot(xvals, yvals, sym, label=yf)
+            figure_widget.axes.legend()
+            figure_widget.axes.grid(visible=True, which='major')
         return None
 
 
@@ -133,8 +164,11 @@ class tkDataGridFigureWidget(Subject, ttk.Frame):
         :return: None
         """
         assert(isinstance(template, DataGridFigureTemplate))
+         # Clear the axes in case we've been here before.
+        self._ax.cla()
         template.make_figure(self)
         # Put some text on the figure to tell the user how to return to the data grid.
-        self._ax.text(0.05, 0.95, 'Press escape key to return to data grid.', transform=self._ax.transAxes,
-                      fontsize=8, verticalalignment='top')
+        self._figure.text(0.05, 0.95, 'Press escape key to return to data grid.', fontsize=8)
+        # Actually draw the figure
+        self._mpl_figure_canvas.draw()
         return None
