@@ -166,7 +166,7 @@ class DataGridDemotkViewManager(tkViewManager):
         for i in range(self._dg.num_records):
             self._initialize_one_record(i)
         # Create a figure template
-        ft = ScatterPlotFieldsFigureTemplate(x_label='Base', y_label='Result', x_field='Base',
+        ft = ScatterPlotFieldsFigureTemplate(x_label='Base', y_label='Y-Value', x_field='Base',
                                              y_fields=['Result'], symbols=['bo-'])
         self._dg.register_figure_template('Result vs Base', ft)
         return None

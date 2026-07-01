@@ -51,9 +51,16 @@ class DataGridFigureTemplate(object):
         :return: None
         """
         assert(isinstance(figure_widget, tkDataGridFigureWidget))
-        # Provide axis labels
         figure_widget.axes.set_aspect("equal")
-        figure_widget.axes.set_xlabel(self._x_label)
+
+        # x-axis label
+        _dg=figure_widget.master
+        if _dg.get_field_unitID(self._x_label) is not None:
+            _x_label = f"{self._x_label} ({_dg.get_field_unit_name(self._x_label)})"
+        else:
+            _x_label = f"{self._x_label})"
+        figure_widget.axes.set_xlabel(_x_label)
+
         figure_widget.axes.set_ylabel(self._y_label)
         figure_widget.axes.use_sticky_edges = True
         return None
@@ -96,7 +103,11 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
             for reci in range(_dg.num_records):
                 xvals.append(_dg.get_grid_element_value(self._x_field, reci))
                 yvals.append(_dg.get_grid_element_value(yf, reci))
-            graph = figure_widget.axes.plot(xvals, yvals, sym, label=yf)
+            if _dg.get_field_unitID(yf) is not None:
+                _leg = f"{yf} ({_dg.get_field_unit_name(yf)})"
+            else:
+                _leg = f"{yf})"
+            graph = figure_widget.axes.plot(xvals, yvals, sym, label=_leg)
             figure_widget.axes.legend()
             figure_widget.axes.grid(visible=True, which='major')
         return None

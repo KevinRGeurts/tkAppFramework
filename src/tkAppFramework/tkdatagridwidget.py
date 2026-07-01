@@ -854,6 +854,8 @@ class tkDGElementFieldHeader(tkDGElement):
         :parameter unit_name: The name of the unit of the element, as string (could be '')
         :return: None
         """
+        #TODO: This code will result in an exception down the call stack if the unitID is the same as the previous unitID, but the unitName is different.
+        # This should not happen.
         assert(isinstance(unit_name, str))
         _hint = None
         if self._field_config.fieldUnitID is not None:
@@ -1291,6 +1293,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if not self._user_abilities._can_insert_record:
                 insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
                 insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
+        # Disable Show graph if no figure templates have been registered
+        if len(self._fig_temps) == 0:
+            context_menu.entryconfigure('Show graph', state=tk.DISABLED)
         # Disable Unit change if element's field does not have units configured
         if not self._element_has_units(element):
             context_menu.entryconfigure('Unit change', state=tk.DISABLED)
@@ -1820,6 +1825,25 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             field_header_element = None
         if field_header_element is not None:
             return field_header_element._field_config.fieldUnitID
+        else:
+            return None
+
+    def get_field_unit_name(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement name for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement name for the given field name, or None if no such field name exists or '' if the field has no associated unit name,
+                 as string or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._field_config.fieldUnitName
         else:
             return None
 

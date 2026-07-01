@@ -58,6 +58,10 @@ class Test_tkDataGridWidget(unittest.TestCase):
     def test_get_field_unitID(self):
         unit_id = self._dgw.get_field_unitID('Editable Text Field')
         self.assertEqual(unit_id, None)
+
+    def test_get_field_unit_name(self):
+        unit_name = self._dgw.get_field_unit_name('Editable Text Field')
+        self.assertEqual(unit_name, '')
         
     def test_get_grid_element(self):
         ge = self._dgw._get_grid_element('Default List Field', 1)

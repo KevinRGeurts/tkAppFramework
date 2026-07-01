@@ -43,4 +43,5 @@ sense for them to be able to delete a record.
 - Insert | Column Right: Not currently implemented
 - Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
 - Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
+- Show Graph | {graph name}: Show the graph with the given name, based on data in the data grid. Return to the data grid by pressing the escape key.
 - Unit Change: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
