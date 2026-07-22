@@ -26,6 +26,7 @@ from enum import IntEnum
 from os import getcwd
 from multiprocessing import Process
 import sysconfig
+from math import isclose
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
@@ -882,6 +883,9 @@ class tkDGElementNumber(tkDGElement):
         :paramter h: The height of the element in the data grid in inches, as float
         """
         super().__init__(parent, x, y, w, h)
+        # IFF tkDataGridWidget HAS a uom adapter, then self._numeric_value will be in base units,
+        # and the element's text entry will be in the units specified by the field configuration for this element.
+        # The default value for the element will also be in base units.
         self._numeric_value = None
         # Register the OnEntryChanged and OnInvalidEntryChange methods with tkinter.
         OnEntryChangedCommand = self._element_widget.register(partial(self.OnEntryChanged, self._canvas_id))
@@ -942,6 +946,22 @@ class tkDGElementNumber(tkDGElement):
         self.OnEntryChanged(self._canvas_id)
         return None
 
+    def onKeyPressDelete(self, event):
+        """
+        Handler for the delete key press event. Delete key will restore the element's value to it's default, if
+        one exists.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # If the element is for a field that is read-only format, do nothing.
+        if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
+            if self._default_value is not None:
+                default_value = self._default_value
+                self.set_state(default_value)
+            else:
+                self.clear_element_value()
+            self.notify()
+        return None
 
     def OnEntryChanged(self, canvas_id):
         """
@@ -949,6 +969,8 @@ class tkDGElementNumber(tkDGElement):
         :parameter canvas_id: The canvas ID of the element widget into which text was entered, as int
         :return True: if text entry change is valid, False if invalid, boolean
         """
+        # On entering this method, self._element_value.get() will return a string of text that, if a number,
+        # is in the current units for the field associated with this element, if that field has a unit group.
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Entry with canvas ID {canvas_id} was changed.")
         # First test entry validity based on any validator associates with this element's field configuration.
@@ -962,6 +984,7 @@ class tkDGElementNumber(tkDGElement):
             validator = field_config.fieldValidator
             if validator is not None:
                 try:
+                    # TODO: The validator needs to handle unit conversions, otherwise min/max aren't meaningful.
                     validator(proposed_entry = _proposed_entry)
                 except tkDGElementTextInvalidEntryError as e:
                     showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
@@ -969,9 +992,20 @@ class tkDGElementNumber(tkDGElement):
         # Inform all observers of the change in the text entry
         try:
             # Validity here is still only an assumption. Observer(s) could raise exception if they have
-            # a problem with the new entry value when notify() is called, and OnInvalidEntryChange() will correct to False.
+            # a problem with the new entry value when notify() is called.
             if (_proposed_entry is not None) and (len(_proposed_entry)>0):
-                self.set_state(float(_proposed_entry))
+                value = float(_proposed_entry) # Current units, as float
+                # Note: First master is the canvas, second master is the tkDataGridWidget
+                owning_dgw = self._element_widget.master.master
+                # Convert value to base units, if the field associated with this element has a unit group.
+                if owning_dgw._element_has_units(self):
+                    # Convert to base units
+                    (field_name, record_index) = owning_dgw._get_element_coords(self)
+                    current_uid = owning_dgw.get_field_unitID(field_name)
+                    ugrpid = owning_dgw.get_field_unit_group(field_name)
+                    base_uid = owning_dgw.uomAdapter.get_base_unit_id_for_unit_group(ugrpid)
+                    value = owning_dgw.uomAdapter.convert(from_unit_id=current_uid, to_unit_id=base_uid, value=value)
+                self.set_state(value)
             else:
                 self.set_state(None)
             return True
@@ -986,6 +1020,7 @@ class tkDGElementNumber(tkDGElement):
         """
         # Keep focus on the Entry widget, so that user can correct the invalid entry.
         self._element_widget.focus_set()
+        # TODO: Reserach if this notify is needed.
         self.notify()
         return None
 
@@ -993,19 +1028,74 @@ class tkDGElementNumber(tkDGElement):
         """
         Set the state of the number element.
         :paramter value: The numeric value to set in the element, as float|int|None
+            Note: If the number element is associated with a field that has a unit group, then value parameter is assumed to be in the base units for the field.
         :return: None
         """
+        # As we enter this method, the following should be true if the number element is associated with a field that
+        # has a unit group.
+        # (1) self._numeric_value is in base units, and
+        # (2) value parameter is in base units, and
+        # (3) self._default_value is in base units
+        # (4) The control variable self._element_value is a string that is in the current units for the field associated with this element.
         assert((value is None) or (type(value)==float) or (type(value)==int))
-        old_value = self._numeric_value
-        # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
-        if value != old_value:
-            self._numeric_value = value
+
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        owning_dgw = self._element_widget.master.master
+        
+        value_current_units = value
+        # Convert value parameter to current units, if the field associated with this element has a unit group.
+        if owning_dgw._element_has_units(self) and value_current_units is not None:
+            # Convert value_current_units to current units
+            (field_name, record_index) = owning_dgw._get_element_coords(self)
+            current_uid = owning_dgw.get_field_unitID(field_name)
+            ugrpid = owning_dgw.get_field_unit_group(field_name)
+            base_uid = owning_dgw.uomAdapter.get_base_unit_id_for_unit_group(ugrpid)
+            value_current_units = owning_dgw.uomAdapter.convert(from_unit_id=base_uid, to_unit_id=current_uid, value=value_current_units)
+        
+        # First, handle the text displayed in the Entry widget, by changing the control variable.
+        
+        old_txt_val = self._element_value.get() # In current units, as string
+        if len(old_txt_val) > 0: # In case the Entry widget is empty, don't try to convert to float.
+            old_value = float(self._element_value.get()) # In current units, as float
+        else: # Instead "convert" it to None, so that the comparison below will be correct.
+            old_value = None
+        if not self._fuzzy_compare(value_current_units, old_value, rel_tol=1e-8): # TODO: Should this comparison be "fuzzy"?
             if value is None:
                 self._element_value.set('')
             else:
-                self._element_value.set(self._format_value(value))
+                self._element_value.set(self._format_value(value_current_units))
+
+        # Second, handle the numeric value stored in self._numeric_value.
+
+        old_value = self._numeric_value
+        # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
+        if not self._fuzzy_compare(value, old_value, rel_tol=1e-8): # TODO: Should this comparison be "fuzzy"?
+            self._numeric_value = value
             self.notify()
         return None
+
+    def _fuzzy_compare(self, value1, value2, rel_tol=1e-8):
+        """
+        Compare two float or int values for equality, with a relative tolerance. This extends math isclose() to handle
+        None values in a way that is useful for this class.
+        :parameter value1: The first value to compare, as float or int
+        :parameter value2: The second value to compare, as float or int
+        :parameter rel_tol: The relative tolerance for the comparison, as float
+        :return: True if the values are equal within the specified relative tolerance, False otherwise, boolean
+        """
+        if value1 is not None:
+            assert(isinstance(value1, int) or isinstance(value1, float))
+        if value2 is not None:
+            assert(isinstance(value2, int) or isinstance(value2, float))
+        if value1 is None and value2 is None:
+            # Both are None
+            return True
+        elif value1 is None or value2 is None:
+            # One is None and the other is not
+            return False
+        else:
+            # Both are not None
+            return isclose(value1, value2, rel_tol=rel_tol)
 
     def _format_value(self, value):
         """
@@ -1029,6 +1119,7 @@ class tkDGElementNumber(tkDGElement):
         """
         Get the state of the number element.
         :return: Tuple (element type, element value), as (type, int|float|None)
+            Note: The returned value will be in base units if the number element is associated with a field that has a unit group.
         """
         value = self._numeric_value
         return (type(self), value)
@@ -1809,6 +1900,25 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             element.clear_element_value()
         return None
 
+    def get_field_unit_group(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement group for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement group for the given field name, or None if no such field name exists or the field has no associated unit group,
+                 as any or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._field_config.fieldUnitGroup
+        else:
+            return None
+
     def get_field_unitID(self, field_name='a_field_name'):
         """
         Return the value of the unit of measurement ID for a given field name. This method is intended
@@ -1854,6 +1964,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
         :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
+                  and it will be in base units if the field has an associated unit group.
         """
         assert(type(field_name)==str)
         assert(type(record_index)==int)
@@ -1897,6 +2009,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
         :return: The default value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not a text value,
+                  and it will be in base units if the field has an associated unit group.
         """
         assert(type(field_name)==str)
         assert(type(record_index)==int)
@@ -1913,6 +2027,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
         :parameter value: The value to set in the grid element, as any
+            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
+                  and it should be in base units if the field has an associated unit group.
         :return: None
         """
         assert(type(field_name)==str)
@@ -1929,6 +2045,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
         :parameter value: The default value to set in the grid element, as any
+            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
+                  and it should be in base units if the field has an associated unit group.
         :return: None
         """
         assert(type(field_name)==str)
@@ -2083,8 +2201,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         
         logger = logging.getLogger('tkDataGridWidget_logger')
         (elem_field, elem_rec) = self._get_element_coords(element)
-        value = element.get_state()[1]
-        default_value = element.get_default_value()
+        value = element.get_state()[1] # This will be in base units if element is a number element associated with a field with a unitID
+        default_value = element.get_default_value() # Also in base units if element is a number element associated with a field with a unitID
         logger.debug(f"tkDataGridWidget received update from tkDGElement with canvas ID {element.canvasID}. Elements state is {value}. Elemeht has default value {default_value}")
 
         if hints is not None and isinstance(hints, list):
@@ -2103,33 +2221,30 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 # Handle units of measure changes
                 if isinstance(hint, FieldHeaderElementUnitsUpdateHint):
                     # The hint tells us what unit change has occurred
-                    # Iterate through the field's records and perform the unit conversion
+                    # Iterate through the field's records and and call set_state() on each record element,
+                    # passing in the value in base units. set_state() will convert the value to the new units and update the element widget.
                     elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
                     # TODO: and clause of if below is NOT OO. Try to improve.
                     if element._raw_state in self._grid_elements and (elem_config.fieldType != FieldType.BOOL):
                         for rec_element in self._grid_elements[element._raw_state]:
-                            old_val = rec_element.get_state()[1]
-                            new_val = self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_val)
-                            rec_element.set_state(new_val)
-                            # If element has a default value, it must be converted as well.
-                            # TODO: Consider if this requirement is sufficient justification for refactoring so that data grid elements
-                            # understand "base units" and store values in those units.
-                            old_default_val = rec_element.get_default_value()
-                            if old_default_val is not None:
-                                new_default_val = self._uom.convert(hint.prev_unit_id, hint.new_unit_id, old_default_val)
-                                rec_element.set_default_value(new_default_val)
+                            val = rec_element.get_state()[1] # This is in base units
+                            rec_element.set_state(val)
         
         # Handle formating the element widget appropriately based on if it has the default value or not.
         elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
         if default_value is not None:
             if value is not None:
-                
                 elem_format = self._element_formats[elem_config.fieldFormat]
-                if value == default_value:
-                    element._element_widget.configure(background=elem_format[3])
+                if isinstance(value, float) or isinstance(value, int):
+                    if isclose(value, default_value, rel_tol=1e-8):
+                        element._element_widget.configure(background=elem_format[3])
+                    else:
+                        element._element_widget.configure(background=elem_format[1])
                 else:
-                    element._element_widget.configure(background=elem_format[1])
-        
+                    if value == default_value:
+                        element._element_widget.configure(background=elem_format[3])
+                    else:
+                        element._element_widget.configure(background=elem_format[1])
         self._modified_element = element
         self.notify()
         self._modified_element = None

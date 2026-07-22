@@ -32,6 +32,13 @@ class DemoUoMSystem:
                 unit_list = ['uid_meter', 'uid_foot', 'uid_inch']
         return unit_list
 
+    def get_base_unit(self, group_id):
+        base_unit_id = None
+        match group_id:
+            case 'gid_length':
+                base_unit_id = 'uid_meter'
+        return base_unit_id
+
     def get_unit_names(self, unit_id):
         name_list = []
         match unit_id:
@@ -101,6 +108,20 @@ class DemoUoMSysAdapter(UoMSysAdapter):
         :return: The converted value, as float. 
         """
         ret_val = self._unit_sys.unit_conversion(value, from_unit_id, to_unit_id)
+        return ret_val
+
+    def get_base_unit_id_for_unit_group(self, unit_group_id):
+        """
+        Get the unit ID of the "base" unit in the unit group specified by unit_group_id.
+        Note: The "base" unit is uniquely defined by paticular Units of Measurement System (UoMSys)
+              for each unit group. Collectively for all unit groups, base units are the set of units
+              used "internally" by the application/model so that calculations are done consistently and
+              correctly. For a relatively simple application/model, it may not be necessary to implement this
+              method, because 
+        :param unit_group_id: The ID of the unit group to get the base unit ID of, as Any
+        :return: The base unit ID of the specified unit group, as [Any]
+        """
+        ret_val = self._unit_sys.get_base_unit(unit_group_id)
         return ret_val
 
 
@@ -250,20 +271,14 @@ class DataGridDemotkViewManager(tkViewManager):
                 try:
                     # Get the values required by the model for a computation out of the record's fields
                     base_val = self._dg.get_grid_element_value('Base', record_index)
-                    base_val_uid = self._dg.get_field_unitID('Base')
-                    # Make sure base value is in meters
-                    base_val = self._dg.uomAdapter.convert(base_val_uid, 'uid_meter', base_val)
                     add_to_val = 2.0 if self._dg.get_grid_element_value('Add 2 to', record_index) == 1.0 else 0.0
                     add_to_uid = self._dg.get_field_unitID('Add 2 to')
-                    # Convert add_to_val to meters
+                    # Convert add_to_val to meters (TODO: Assumption being made here that meters are base units for length.)
                     add_to_val = self._dg.uomAdapter.convert(add_to_uid, 'uid_meter', add_to_val)
                     multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
                     # Ask the model to compute a result based on the values from the record's fields.
-                    # This result is in meters.
+                    # This result is in base units (meters).
                     result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
-                    result_uid = self._dg.get_field_unitID('Result')
-                    # Convert result to correct units for grid
-                    result = self._dg.uomAdapter.convert('uid_meter', result_uid, result)
                     # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
                     # This prevents an infinite loop of updates.
                     if result != current_result:

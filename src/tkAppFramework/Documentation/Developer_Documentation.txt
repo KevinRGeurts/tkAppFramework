@@ -101,4 +101,20 @@ be determined by, at each element, by adding '+{len(Element.itertext())}c' to th
 
 
 First: from the root Element, use itertext() to get all the text and insert it into the Text widget.
-Second: Use 
+Second: Use
+
+*** 8-July-2026: Notes on tkDataGridWidget - Getting number grid elements to properly display default values ***
+
+Issue: tkDGElementNumber has gotten quite complicated. It has a string control variable from tkinter, to track the value
+in the Entry widget. It also as a member variable for a default value, and one for a numeric value. The way I'm trying to
+get it to work is that the default value and the numeric value should always be in base units, and the string control
+variable should always be in display units. Since the numeric value needs to get reset from the control variable value when
+the user changes the value in the Entry widget, there may be an issue with the precision of the conversion from text to
+float, as well as precision of repeated unit conversions. There also seems to be a "cascade" of events that occur as the value
+in the Entry widget is changed, which may lead to a doulbe setting (at least) of the numeric value. Below I will attempt
+to list that cascade of events.
+
+Scenario 1: User types a new value into the Entry widget, while display units are identical to base units.
+
+(1)
+
