@@ -87,6 +87,7 @@ class Test_tkDGElementNumber(unittest.TestCase):
         e = self._dgw._get_grid_element('A Number Field', 0)
         e.set_state(1.6)
         self.assertTupleEqual(e.get_state(), (tkDGElementNumber, 1.6))
+        self.assertEqual(e._element_value.get(), '1.6')
 
     def test_disable_element_elementWidget_prop(self):
         e = self._dgw._get_grid_element('A Number Field', 0)
@@ -106,6 +107,21 @@ class Test_tkDGElementNumber(unittest.TestCase):
         e.set_state(9.23)
         e.clear_element_value()
         self.assertTupleEqual(e.get_state(), (tkDGElementNumber, None))
+        self.assertEqual(e._element_value.get(), '')
+
+    def test_fuzzy_compare(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        self.assertEqual(e._fuzzy_compare(None, None), True)
+        self.assertEqual(e._fuzzy_compare(None, 1.0), False)
+        self.assertEqual(e._fuzzy_compare(1.0, None), False)
+        self.assertEqual(e._fuzzy_compare(1.0, 2.0), False)
+        self.assertEqual(e._fuzzy_compare(1.0, 1.0 + 2e-8), False)
+        self.assertEqual(e._fuzzy_compare(1.0, 1.0 + 1e-8), True)
+
+    def test_format_value(self):
+        e = self._dgw._get_grid_element('A Number Field', 0)
+        self.assertEqual(e._format_value(1.0), '1')
+        self.assertEqual(e._format_value(1.23456789123), '1.2345679')
 
 
 class Test_tkDGElementFieldHeader(unittest.TestCase):

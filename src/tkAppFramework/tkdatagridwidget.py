@@ -351,17 +351,19 @@ class tkDGElement(Subject):
             self._element_widget.bind('<KeyPress-Down>', self.onKeyPressDown, add='+')
             self._element_widget.bind('<KeyPress-Right>', self.onKeyPressRight, add='+')
             self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
-            self._element_widget.bind('<KeyPress-Delete>', self.onKeyPressDelete, add='+')
+            self._element_widget.bind('<Control-KeyPress-Delete>', self.onKeyPressControlDelete, add='+')
             self._element_widget.bind('<<ContextMenu>>', self.onContextMenu, add='+')
         return None
 
-    def onKeyPressDelete(self, event):
+    def onKeyPressControlDelete(self, event):
         """
-        Handler for the delete key press event. Delete key will restore the element's value to it's default, if
+        Handler for the control-delete key press event. Control-Delete key will restore the element's value to it's default, if
         one exists, set a BOOL element to False, or set a TEXT element to an emtpy string.
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        # Note that the Delete key alone should not be used for this purpose, since the Entry widget uses
+        # the Delete key to edit the text in the entry widget.
         # If the element is for a field that is read-only format, do nothing.
         if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
             if self._default_value is not None:
@@ -946,9 +948,9 @@ class tkDGElementNumber(tkDGElement):
         self.OnEntryChanged(self._canvas_id)
         return None
 
-    def onKeyPressDelete(self, event):
+    def onKeyPressControlDelete(self, event):
         """
-        Handler for the delete key press event. Delete key will restore the element's value to it's default, if
+        Handler for the control-delete key press event. Control-Delete key will restore the element's value to it's default, if
         one exists.
         :parameter event: The tkinter event object for the key press event
         :return: None
@@ -992,7 +994,7 @@ class tkDGElementNumber(tkDGElement):
         # Inform all observers of the change in the text entry
         try:
             # Validity here is still only an assumption. Observer(s) could raise exception if they have
-            # a problem with the new entry value when notify() is called.
+            # a problem with the new entry value when notify() is called from set_state().
             if (_proposed_entry is not None) and (len(_proposed_entry)>0):
                 value = float(_proposed_entry) # Current units, as float
                 # Note: First master is the canvas, second master is the tkDataGridWidget
@@ -1101,6 +1103,8 @@ class tkDGElementNumber(tkDGElement):
         """
         This utility function applies logic to format a float or int value as a string, so that scientific notation is
         used if the number is particularly small or large.
+        :parameter value: The value to format, as float or int
+        :return: The formatted value as a string
         """
         assert(isinstance(value, int) or isinstance(value, float))
         formatted_value = '{:.8G}'.format(value)
@@ -2194,7 +2198,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         parameter element: The tkDGElement object that is notifying the tkDataGridWidget of a change in state, as tkDGElement object
         :parameter hints: An optional lisg of hints provided by element to specify what types of 
                           updates has occurred and details about them, as [ObserverPatterBase.UpdateHint object]
-        
         :return None:
         """
         assert(isinstance(element, tkDGElement))
@@ -2233,18 +2236,24 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Handle formating the element widget appropriately based on if it has the default value or not.
         elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
         if default_value is not None:
+            elem_format = self._element_formats[elem_config.fieldFormat]
             if value is not None:
-                elem_format = self._element_formats[elem_config.fieldFormat]
                 if isinstance(value, float) or isinstance(value, int):
+                    # TODO: Not very OO to indirectly infer element type.
+                    # Handling tkDGElementNumber elements
                     if isclose(value, default_value, rel_tol=1e-8):
                         element._element_widget.configure(background=elem_format[3])
                     else:
                         element._element_widget.configure(background=elem_format[1])
                 else:
+                    # Handling other element types
                     if value == default_value:
                         element._element_widget.configure(background=elem_format[3])
                     else:
                         element._element_widget.configure(background=elem_format[1])
+            else:
+                # value is None and default_value is not None, so background should NOT be the default color
+                element._element_widget.configure(background=elem_format[1])   
         self._modified_element = element
         self.notify()
         self._modified_element = None
