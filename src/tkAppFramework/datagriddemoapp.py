@@ -257,8 +257,8 @@ class DataGridDemotkViewManager(tkViewManager):
                 print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
                 # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.
                 # This is just to test the handling of invalid entries.
-                if modified_value == '-99.99e-99':
-                    msg = f"Invalid entry of '-99.99e-99' in data grid element at (field name = {field_name}, record index = {record_index})."
+                if modified_value == 9.999e99:
+                    msg = f"Invalid entry of '9.999e99' in data grid element at (field name = {field_name}, record index = {record_index})."
                     raise tkDGElementTextInvalidEntryError(msg)
                 try:
                     # Get the current Result value for the record.

@@ -351,13 +351,13 @@ class tkDGElement(Subject):
             self._element_widget.bind('<KeyPress-Down>', self.onKeyPressDown, add='+')
             self._element_widget.bind('<KeyPress-Right>', self.onKeyPressRight, add='+')
             self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
-            self._element_widget.bind('<Control-KeyPress-Delete>', self.onKeyPressControlDelete, add='+')
+            self._element_widget.bind('<KeyPress-F3>', self.onKeyPressF3, add='+')
             self._element_widget.bind('<<ContextMenu>>', self.onContextMenu, add='+')
         return None
 
-    def onKeyPressControlDelete(self, event):
+    def onKeyPressF3(self, event):
         """
-        Handler for the control-delete key press event. Control-Delete key will restore the element's value to it's default, if
+        Handler for F3 key press event. F3 key will restore the element's value to it's default, if
         one exists, set a BOOL element to False, or set a TEXT element to an emtpy string.
         :parameter event: The tkinter event object for the key press event
         :return: None
@@ -493,20 +493,30 @@ class tkDGElementBool(tkDGElement):
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Checkbutton with canvas ID {canvas_id} was clicked.")
         self._element_widget.focus_set()
-        self.notify()
+        # Call set_state() so that notify gets called
+        new_value = self.get_state()[1]
+        self.set_state(new_value)
         return None
+
+    def get_state(self):
+        """
+        Get the state of the element.
+        :return: Tuple (element type, element value), as (type, boolean)
+        """
+        value = None
+        if self._element_value is not None:
+            value = self._element_value.get()
+        return (type(self), bool(value))
 
     def set_state(self, value=None):
         """
         Set the state of the element.
-        :paramter value: The value to set in the element.
-        Note: Must be extended by child classes, because this base class implementation does nothing with value parameter.
-              It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
+        :paramter value: The value to set in the element, as boolean
         :return: None
         """
         assert(type(value)==bool)
         self._element_value.set(int(value))
-        super().set_state()
+        super().set_state() # So notify() gets called.
         return None
 
     def clear_element_value(self):
@@ -561,9 +571,8 @@ class tkDGElementList(tkDGElement):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"OptionMenu with canvas ID {canvas_id} had option {option} selected.")
-        self._element_value.set(option)
+        self.set_state(option)
         self._element_widget.focus_set()
-        self.notify()
         return None
 
     def set_state(self, value=None):
@@ -948,13 +957,15 @@ class tkDGElementNumber(tkDGElement):
         self.OnEntryChanged(self._canvas_id)
         return None
 
-    def onKeyPressControlDelete(self, event):
+    def onKeyPressF3(self, event):
         """
-        Handler for the control-delete key press event. Control-Delete key will restore the element's value to it's default, if
+        Handler for the F3 key press event. F3 key will restore the element's value to it's default, if
         one exists.
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Request to restore default of Entry with canvas ID {self._canvas_id}.")
         # If the element is for a field that is read-only format, do nothing.
         if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
             if self._default_value is not None:
@@ -962,7 +973,6 @@ class tkDGElementNumber(tkDGElement):
                 self.set_state(default_value)
             else:
                 self.clear_element_value()
-            self.notify()
         return None
 
     def OnEntryChanged(self, canvas_id):
@@ -2241,7 +2251,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 if isinstance(value, float) or isinstance(value, int):
                     # TODO: Not very OO to indirectly infer element type.
                     # Handling tkDGElementNumber elements
-                    if isclose(value, default_value, rel_tol=1e-8):
+                    if isclose(value, default_value, rel_tol=1e-7):
                         element._element_widget.configure(background=elem_format[3])
                     else:
                         element._element_widget.configure(background=elem_format[1])

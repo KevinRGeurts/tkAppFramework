@@ -50,7 +50,7 @@ class Test_tkDGElementText(unittest.TestCase):
 
     def test_bindings(self):
         e = self._dgw._get_grid_element('A Text Field', 0)
-        exp_val = ('<Key-KP_Enter>', '<Key-Return>', '<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<Key-KP_Enter>', '<Key-Return>', '<<ContextMenu>>', '<Key-F3>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
@@ -99,7 +99,7 @@ class Test_tkDGElementNumber(unittest.TestCase):
 
     def test_bindings(self):
         e = self._dgw._get_grid_element('A Number Field', 0)
-        exp_val = ('<Key-KP_Enter>', '<Key-Return>', '<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<Key-KP_Enter>', '<Key-Return>', '<<ContextMenu>>', '<Key-F3>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
@@ -158,7 +158,7 @@ class Test_tkDGElementFieldHeader(unittest.TestCase):
 
     def test_bindings(self):
         e = self._header_element
-        exp_val = ('<Double-Button-1>', '<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<Double-Button-1>', '<<ContextMenu>>', '<Key-F3>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
@@ -201,7 +201,7 @@ class Test_tkDGElementBool(unittest.TestCase):
 
     def test_bindings(self):
         e = self._dgw._get_grid_element('A Boolean Field', 0)
-        exp_val = ('<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<<ContextMenu>>', '<Key-F3>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
@@ -245,7 +245,7 @@ class Test_tkDGElementList(unittest.TestCase):
 
     def test_bindings(self):
         e = self._dgw._get_grid_element('A List Field', 0)
-        exp_val = ('<<ContextMenu>>', '<Key-Delete>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
+        exp_val = ('<<ContextMenu>>', '<Key-F3>', '<Key-Left>', '<Key-Right>', '<Key-Down>', '<Key-Up>', '<FocusOut>', '<FocusIn>')
         self.assertTupleEqual(e.elementWidget.bind(), exp_val)
 
     def test_clear_element_value(self):
