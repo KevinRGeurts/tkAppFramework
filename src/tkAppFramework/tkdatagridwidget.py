@@ -364,6 +364,15 @@ class tkDGElement(Subject):
         """
         # Note that the Delete key alone should not be used for this purpose, since the Entry widget uses
         # the Delete key to edit the text in the entry widget.
+        self._restoreDefaultValue()
+        return None
+
+    def _restoreDefaultValue(self):
+        """
+        Restore the element's value to it's default, if one exists.
+        Note: If element is for a field that is read-only format, nothing is done.
+        :return: None
+        """
         # If the element is for a field that is read-only format, do nothing.
         if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
             if self._default_value is not None:
@@ -425,6 +434,8 @@ class tkDGElement(Subject):
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"KeyPress-Up event received from tkDGElement with canvas ID {self.canvasID}.")
         # Note: First master is the canvas, second master is the tkDataGridWidget
         self._element_widget.master.master.onKeyPressUp(event)
         return None
@@ -1351,6 +1362,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         insert_menu_obj.add_command(label='Column left', command=partial(self.onInsertColumnContextMenuOptionSelected, 'left', element))
         insert_menu_obj.add_command(label='Column right', command=partial(self.onInsertColumnContextMenuOptionSelected, 'right', element))
 
+        # Create "Restore default value" command on context menu
+        context_menu.add_command(label='Restore Default Value', command=element._restoreDefaultValue)
+
         # Create "Show graph" command on the context menu
         graph_menu_obj=tk.Menu(context_menu)
         context_menu.add_cascade(menu=graph_menu_obj, label='Show graph')
@@ -1398,6 +1412,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if not self._user_abilities._can_insert_record:
                 insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
                 insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
+        # Disable Restore default value if element has no default value or is for a read-only field.
+        if element._element_widget['state']==tk.DISABLED or element._element_widget['state']=='readonly' or element._default_value is None:
+            context_menu.entryconfigure('Restore Default Value', state=tk.DISABLED)
         # Disable Show graph if no figure templates have been registered
         if len(self._fig_temps) == 0:
             context_menu.entryconfigure('Show graph', state=tk.DISABLED)
@@ -1781,6 +1798,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"tkDataGridWidget received FocusIn event from tkDGElement with canvas ID {element.canvasID}.")
+        
         self._focused_element = element
         self._draw_focus_rectangle(element)
         return None
@@ -1802,13 +1820,58 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget received KeyPress-Up event.")
         if self._focused_element is not None:
+            logger.debug(f"     focused element has canvas ID {self._focused_element.canvasID}.")
             (field_name, record_index) = self._get_element_coords(self._focused_element)
             if record_index > 0:
                 next_element = self._get_grid_element(field_name, record_index - 1)
                 if next_element is not None:
+                    self._ensure_element_widget_visible(next_element)
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
+        return None
+
+    def _ensure_element_widget_visible(self, element):
+        """
+        Scroll the canvas as needed to ensure that element parameter's widget is in the canvas's currently visible area.
+        :parameter element: The tkDGElement object that Has the element widget that needs to be made visible, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        
+        # Make sure that the paramter element is visible on the canvas.
+        
+        # Get the bounding box of the element's widget on the canvas, in canvas coordinates
+        (etlx, etly, ebrx, ebry) = self._dg_canvas.bbox(element.canvasID)
+        logger.debug(f"     Element bounds: ({etlx},{etly}), ({ebrx},{ebry}).")
+        # Get the bounding box of the entire canvas, in canvas coordinates
+        (ctlx, ctly, cbrx, cbry) = self._dg_canvas.bbox('all')
+        logger.debug(f"     Canvas bounds: ({ctlx},{ctly}), ({cbrx},{cbry}).")
+        # Get the bounding box of the currently visible area of the canvas, in canvas coordinates
+        vtlx = self._dg_canvas.canvasx(0)
+        vtly = self._dg_canvas.canvasy(0)
+        vbrx = self._dg_canvas.canvasx(self._dg_canvas.winfo_width())
+        vbry = self._dg_canvas.canvasy(self._dg_canvas.winfo_height())
+        logger.debug(f"     Canvas visible area bounds: ({vtlx},{vtly}), ({vbrx},{vbry}).")
+        
+        # TODO: Scrolling is a little odd when going down or right, because it scrolls so the element is at the top
+        # or left of the visible area (or not exactly if the scroll bar runs out of room). Probably a user expects
+        # just enough scroll to bring the element into view, not necessarily to the top or left of the visible area.
+        # Improved logic for scrolling may depend on if we are moving up/down or left/right?
+        
+        # Check if the element's widget is horizontally out of the visible area of the canvas
+        if (etlx < vtlx) or (ebrx > vbrx):
+            # Scroll the canvas horizontally to bring the element's widget into view
+            logger.debug(f"     Horizontal scroll fraction: {(etlx-ctlx) / (cbrx-ctlx)}.")
+            self._dg_canvas.xview_moveto((etlx-ctlx) / (cbrx-ctlx))
+        # Check if the element's widget is vertically out of the visible area of the canvas
+        if (etly < vtly) or (ebry > vbry):
+            # Scroll the canvas vertically to bring the element's widget into view
+            logger.debug(f"     Vertical scroll fraction: {(etly-ctly) / (cbry-ctly)}.")
+            self._dg_canvas.yview_moveto((etly-ctly) / (cbry-ctly))
+
         return None
 
     def onKeyPressDown(self, event):
@@ -1826,6 +1889,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if record_index < self._num_records - 1:
                 next_element = self._get_grid_element(field_name, record_index + 1)
                 if next_element is not None:
+                    self._ensure_element_widget_visible(next_element)
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
         return None
@@ -1843,6 +1907,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if field_index < len(self._fields_config) - 1:
                 next_element = self._get_grid_element(self._fields_config[field_index+1].fieldName, record_index)
                 if next_element is not None:
+                    self._ensure_element_widget_visible(next_element)
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
         return None
@@ -1860,6 +1925,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if field_index > 0:
                 next_element = self._get_grid_element(self._fields_config[field_index-1].fieldName, record_index)
                 if next_element is not None:
+                    self._ensure_element_widget_visible(next_element)
                     next_element._element_widget.focus_set()
                     self._focused_element = next_element
         return None

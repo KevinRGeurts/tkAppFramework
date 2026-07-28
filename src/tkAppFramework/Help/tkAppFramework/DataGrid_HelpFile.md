@@ -6,7 +6,7 @@ This content is generally applicable to the Data Grid Widget, regardless of exac
 
 - White: The cell value can be changed by the user. Typically this is a cell where you should enter an input value.
 - Blue: The cell value cannot be changed by the user. Typically this cell displays the results of a computation.
-- Cyan: The current cell value is a default value. If it is changed by the user, the cell color will change to white. The user can select the cell and click the Control-Delete key combination to restore the default value.
+- Cyan: The current cell value is a default value. If it is changed by the user, the cell color will change to white. The user can select the cell and click F3 key to restore the default value.
 - Grey: The field header cells with the names of grid fields are colored grey.
 
 ## Moving around in the grid:
@@ -43,5 +43,6 @@ sense for them to be able to delete a record.
 - Insert | Column Right: Not currently implemented
 - Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
 - Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
+- Restore Default Value: Restore the default value for the selected cell, if it has a default value, and is not read-only
 - Show Graph | {graph name}: Show the graph with the given name, based on data in the data grid. Return to the data grid by pressing the escape key.
 - Unit Change: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
