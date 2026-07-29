@@ -46,6 +46,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(self._dgw._focused_element, new_element)
 
     def test_onArrowKeys(self):
+        # Test moving around in record elements with the arrow keys
         self._dgw.onKeyPressDown(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][1])
         self._dgw.onKeyPressRight(None)
@@ -54,7 +55,16 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Bool Field'][0])
         self._dgw.onKeyPressLeft(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
-
+        # Test moving in, around, and our of header elements with the arrow keys
+        self._dgw.onKeyPressUp(None)
+        self.assertEqual(self._dgw._focused_element, self._dgw._header_elements[0])
+        self._dgw.onKeyPressRight(None)
+        self.assertEqual(self._dgw._focused_element, self._dgw._header_elements[1])
+        self._dgw.onKeyPressLeft(None)
+        self.assertEqual(self._dgw._focused_element, self._dgw._header_elements[0])
+        self._dgw.onKeyPressDown(None)
+        self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
+        
     def test_get_field_unitID(self):
         unit_id = self._dgw.get_field_unitID('Editable Text Field')
         self.assertEqual(unit_id, None)
@@ -68,6 +78,9 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(ge, self._dgw._grid_elements['Default List Field'][1])
         self.assertIsNone(self._dgw._get_grid_element('Nonexistent Field', 0))
         self.assertIsNone(self._dgw._get_grid_element('Default List Field', 100))
+        # Test getting a header element
+        he = self._dgw._get_grid_element('Default List Field', -1)
+        self.assertEqual(he, self._dgw._header_elements[2])
 
     def test_get_grid_element_FieldType(self):
         geft = self._dgw.get_grid_element_FieldType('Editable Text Field', 1)
@@ -109,9 +122,14 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(gev, 'Test Option 1')
 
     def test_get_element_coords(self):
+        # Test getting the coordinates of a grid element that is part of a record
         ge = self._dgw._get_grid_element('Read Only Text Field', 1)
         coords = self._dgw._get_element_coords(ge)
         self.assertTupleEqual(coords, ('Read Only Text Field', 1))
+        # Test getting the cooridnates of a grid element that is a header element
+        ge = self._dgw._get_grid_element('Read Only Text Field', -1)
+        coords = self._dgw._get_element_coords(ge)
+        self.assertTupleEqual(coords, ('Read Only Text Field', -1))
 
     def test_modified_grid_element_coords(self):
         ge = self._dgw._get_grid_element('Read Only Text Field', 1)

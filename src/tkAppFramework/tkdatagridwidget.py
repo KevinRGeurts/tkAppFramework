@@ -1825,12 +1825,16 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         if self._focused_element is not None:
             logger.debug(f"     focused element has canvas ID {self._focused_element.canvasID}.")
             (field_name, record_index) = self._get_element_coords(self._focused_element)
+            next_element = None
             if record_index > 0:
                 next_element = self._get_grid_element(field_name, record_index - 1)
-                if next_element is not None:
-                    self._ensure_element_widget_visible(next_element)
-                    next_element._element_widget.focus_set()
-                    self._focused_element = next_element
+            elif record_index == 0:
+                # If the focused element is in the first record, then move focus to the field header element for the same field.
+                next_element = [elem for elem in self._header_elements if elem._raw_state == field_name][0]
+            if next_element is not None:
+                self._ensure_element_widget_visible(next_element)
+                next_element._element_widget.focus_set()
+                self._focused_element = next_element
         return None
 
     def _ensure_element_widget_visible(self, element):
@@ -1882,10 +1886,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         if self._focused_element is not None:
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            # TODO: This is a bit of a hack, so that if a field header element has focus, the down arrow brings us down
-            # to the first record.
-            if record_index == None:
-                record_index = -1
             if record_index < self._num_records - 1:
                 next_element = self._get_grid_element(field_name, record_index + 1)
                 if next_element is not None:
@@ -2158,12 +2158,17 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         Return the tkDGElement object for a given field name and record index.
         :parameter field_name: The name of the field, as string
         :parameter record_index: The (0=based) index of the record, as int
+            Note: If the record_index is -1, then the field header element for the given field name will be returned.
         :return: The tkDGElement object for the given field name and record index, or None if no such element exists, as tkDGElement object or None
         """
         assert(type(field_name)==str)
         assert(type(record_index)==int)
         element = None
-        if field_name in self._grid_elements:
+        if record_index == -1:
+            elem_list = [elem for elem in self._header_elements if elem._raw_state==field_name]
+            if len(elem_list)>0:
+                element = elem_list[0]
+        elif field_name in self._grid_elements:
             if record_index < len(self._grid_elements[field_name]):
                 element = self._grid_elements[field_name][record_index]
         return element
@@ -2181,22 +2186,18 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         Return the field name and record index for a given tkDGElement object.
         :parameter element: The tkDGElement object for which to find the field name and record index, as tkDGElement object
-        :return: Tuple (field name, 0-based record index), as (string, int) or None if no such element exists
+        :return: Tuple (field name, 0-based record index), as (string, int)
+            Note: If the element is a field header element, then the record index will be -1.
         """
         assert(isinstance(element, tkDGElement))
         if isinstance(element, tkDGElementFieldHeader):
-            return (element._raw_state, None)
+            return (element._raw_state, -1)
         else: # NOT a field header element, but a record element
-            field_name = ''
-            record_index = -1
             for field_name in self._grid_elements:
                 if element in self._grid_elements[field_name]:
                     record_index = self._grid_elements[field_name].index(element)
                     break
-            if record_index == -1 or field_name == '':
-                return None
-            else:
-                return (field_name, record_index)
+        return (field_name, record_index)
         
     def create_element_format(self, format_name = 'an_element_format', text_color = 'black', cell_color = 'white',
                               read_only = True, default_cell_color='#74BA00'):
