@@ -1007,7 +1007,7 @@ class tkDGElementNumber(tkDGElement):
             validator = field_config.fieldValidator
             if validator is not None:
                 try:
-                    # TODO: The validator needs to handle unit conversions, otherwise min/max aren't meaningful.
+                    # TODO: The validator needs to handle unit conversions, otherwise error messages for min/max violations aren't meaningful.
                     validator(proposed_entry = _proposed_entry)
                 except tkDGElementTextInvalidEntryError as e:
                     showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
@@ -1082,7 +1082,7 @@ class tkDGElementNumber(tkDGElement):
             old_value = float(self._element_value.get()) # In current units, as float
         else: # Instead "convert" it to None, so that the comparison below will be correct.
             old_value = None
-        if not self._fuzzy_compare(value_current_units, old_value, rel_tol=1e-8): # TODO: Should this comparison be "fuzzy"?
+        if not self._fuzzy_compare(value_current_units, old_value, rel_tol=1e-8):
             if value is None:
                 self._element_value.set('')
             else:
@@ -1092,7 +1092,7 @@ class tkDGElementNumber(tkDGElement):
 
         old_value = self._numeric_value
         # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
-        if not self._fuzzy_compare(value, old_value, rel_tol=1e-8): # TODO: Should this comparison be "fuzzy"?
+        if not self._fuzzy_compare(value, old_value, rel_tol=1e-8):
             self._numeric_value = value
             self.notify()
         return None
@@ -1265,7 +1265,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._figure.grid(column=0, row=0, columnspan=2, rowspan=2, sticky='NWSE', padx='0.1i', pady='0.1i') # Grid-2
         # Remove the figure widget from the grid, so that it is invisible, but so that it remembers its grid location.
         self._figure.grid_remove()
-        # TODO: Restore the visibility fo the data grid canvas and it's scroll bars (if needed?)
+        # Restore the visibility of the data grid canvas and it's scroll bars (if needed?)
         self._dg_canvas.grid()
         self._scrollbar_hor.grid()
         self._scrollbar_vert.grid()

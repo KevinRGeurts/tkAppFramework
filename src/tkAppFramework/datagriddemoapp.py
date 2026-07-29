@@ -160,7 +160,10 @@ class DataGridDemotkViewManager(tkViewManager):
                                                    'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
-                                FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm')]
+                                FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm'),
+                                FieldConfiguration('Comment', FieldType.TEXT, 'editable',
+                                                   partial(tkDGTextElemValidator.validate_entry_is_string, min_length=0, max_length=15),
+                                                   None, None, '')]
         _user_abilities = DataGridUserAbilities(can_insert_field=False, can_delete_field=False, can_insert_record=True,
                                                can_delete_record=True)
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=25,
@@ -207,6 +210,9 @@ class DataGridDemotkViewManager(tkViewManager):
         # Initialize the 'Base' field
         self._dg.set_grid_element_value('Base', index, index)
         self._dg.set_grid_element_default_value('Base', index, index)
+        # Initialize the 'Comment' field
+        self._dg.set_grid_element_value('Comment', index, 'No comment')
+        self._dg.set_grid_element_default_value('Comment', index, 'No comment')
         return None
     
     def handle_model_update(self):

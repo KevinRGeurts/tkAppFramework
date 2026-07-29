@@ -58,6 +58,24 @@ class Test_tkDGTextElemValidator(unittest.TestCase):
         the_exception = cm.exception
         self.assertEqual(str(the_exception), "Entry '10.5' must be a floating point value equal to or less than 9.")
 
+    def test_validate_entry_is_string(self):
+        # Empty proposed_entry is valid and returns None.
+        self.assertEqual(tkDGTextElemValidator.validate_entry_is_string(), None)
+        # proposed_entry is valid, no min or max value specified.
+        self.assertEqual(tkDGTextElemValidator.validate_entry_is_string(proposed_entry='Blah, blah, blah'), 'Blah, blah, blah')
+        # proposed_entry is valid, with min and max lengths specified.
+        self.assertEqual(tkDGTextElemValidator.validate_entry_is_string(min_length=15, max_length=16, proposed_entry='Blah, blah, blah'), 'Blah, blah, blah')
+        # proposed_entry length is less than min_length.
+        with self.assertRaises(tkDGElementTextInvalidEntryError) as cm:
+            tkDGTextElemValidator.validate_entry_is_string(min_length=5, proposed_entry='Blah')
+        the_exception = cm.exception
+        self.assertEqual(str(the_exception), "Entry 'Blah' must be a text string of length equal to or greater than 5.")
+        # proposed_entry length is greater than max_length.
+        with self.assertRaises(tkDGElementTextInvalidEntryError) as cm:
+            tkDGTextElemValidator.validate_entry_is_string(max_length=9, proposed_entry='Blah, blah')
+        the_exception = cm.exception
+        self.assertEqual(str(the_exception), "Entry 'Blah, blah' must be a text string of length equal to or less than 9.")
+
 
 if __name__ == '__main__':
     unittest.main()
