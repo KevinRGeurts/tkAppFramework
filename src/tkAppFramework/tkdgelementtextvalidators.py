@@ -12,6 +12,7 @@ Exported Exceptions:
 Exported Functions:
     tkDGTextElemValidator.validate_entry_is_integer(min_value = None, max_value = None, proposed_entry = '')
     tkDGTextElemValidator.validate_entry_is_float(min_value = None, max_value = None, proposed_entry = '')
+    tkDGTextElemValidator.validate_entry_is_string(min_length = None, max_length = None, proposed_entry = '')
 
 Exceptions raised:
     tkDGElementTextInvalidEntryError - Raised when a proposed entry is not valid for a tkDGElementText instance.

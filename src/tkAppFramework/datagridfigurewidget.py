@@ -101,8 +101,8 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
             yvals=[]
             _dg=figure_widget.master
             for reci in range(_dg.num_records):
-                xvals.append(_dg.get_grid_element_value(self._x_field, reci))
-                yvals.append(_dg.get_grid_element_value(yf, reci))
+                xvals.append(_dg.get_grid_element_value_display_units(self._x_field, reci))
+                yvals.append(_dg.get_grid_element_value_display_units(yf, reci))
             if _dg.get_field_unitID(yf) is not None:
                 _leg = f"{yf} ({_dg.get_field_unit_name(yf)})"
             else:

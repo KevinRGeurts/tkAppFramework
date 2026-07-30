@@ -252,13 +252,8 @@ class DataGridDemotkViewManager(tkViewManager):
             # Handle updates that do not come with a list of hints
             # Determine the field name and record index of the modified element.
             (field_name, record_index) = self._dg.get_modified_grid_element_location()
-            if record_index == None:
-                # Assume the update is for a field header element, and is thus a units of measurement change.
-                # Hopefully all that needs to be done has been done by the tkDataGridWidget.
-                # But do not take this branch out, because the else branch assumes record_index != None.
-                pass
-            else:
-                # The update is for a record element, and is thus a value change.
+            if record_index > -1:
+                # The update is for a record element and not for a field header element, and is thus a value change.
                 modified_value = self._dg.get_grid_element_value(field_name, record_index)
                 print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
                 # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.

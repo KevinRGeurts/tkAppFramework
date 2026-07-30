@@ -6,7 +6,7 @@ Exported Classes:
     tkDataGridWidget -- It is a tkinter widget that uses a tkinter Canvas widget to display
                         data records and fields. It is a Subject in an Observer design pattern,
                         in anticipation of being observed by a tkViewManager.
-
+                        
 Exported Exceptions:
     None    
  
@@ -1493,7 +1493,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
     def onUnitChangeContextMenuOptionSelected(self, element):
         """
-        Handler called when Insert | Row above or Insert | Row below is selected from the contextual menu.
+        Handler called when Unit Change is selected from the contextual menu.
         :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
         :return: None
         """
@@ -2052,6 +2052,33 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         element = self._get_grid_element(field_name, record_index)
         if element is not None:
             return element.get_state()[1]
+        else:
+            return None
+
+    def get_grid_element_value_display_units(self, field_name='a_field_name', record_index=0):
+        """
+        Return the value of the grid element for a given field name and record index. If the element is a record for a
+        field that has a unit group, then the value will be returned in the current display units. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
+                  and it will be in the current display units if the field has an associated unit group.
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            val_base_units = element.get_state()[1]
+            if self._element_has_units(element):
+                unit_grp = self.get_field_unit_group(field_name)
+                base_unit_id = self.uomAdapter.get_base_unit_id_for_unit_group(unit_grp)
+                disp_unit_id = self.get_field_unitID(field_name)
+                val_disp_units = self.uomAdapter.convert(base_unit_id, disp_unit_id, val_base_units)
+                return val_disp_units
+            else:
+                return val_base_units
         else:
             return None
 
