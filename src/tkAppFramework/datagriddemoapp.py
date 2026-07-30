@@ -16,7 +16,7 @@ from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, Data
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
-from tkAppFramework.datagridfigurewidget import ScatterPlotFieldsFigureTemplate
+from tkAppFramework.datagridfigurewidget import ScatterPlotFieldsFigureTemplate, BarPlotFieldsFigureTemplate
 
 
 class DemoUoMSystem:
@@ -166,7 +166,7 @@ class DataGridDemotkViewManager(tkViewManager):
                                                    None, None, '')]
         _user_abilities = DataGridUserAbilities(can_insert_field=False, can_delete_field=False, can_insert_record=True,
                                                can_delete_record=True)
-        self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=25,
+        self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.DEBUG, uom_adapter=DemoUoMSysAdapter(),
                                     user_abilities=_user_abilities)
         # Attach self as an observer of the subject demo widget
@@ -189,10 +189,14 @@ class DataGridDemotkViewManager(tkViewManager):
         """
         for i in range(self._dg.num_records):
             self._initialize_one_record(i)
-        # Create a figure template
+        # Create scatter plot figure template
         ft = ScatterPlotFieldsFigureTemplate(x_label='Base', y_label='Y-Value', x_field='Base',
-                                             y_fields=['Result'], symbols=['bo-'])
-        self._dg.register_figure_template('Result vs Base', ft)
+                                         y_fields=['Result'], symbols=['bo-'])
+        self._dg.register_figure_template('Scatter: Result vs Base', ft)
+        # Create bar plot figure template
+        ft = BarPlotFieldsFigureTemplate(x_label='Record Index', y_label='Y-Value', x_field='Record Index',
+                                             y_fields=['Base', 'Result'], colors=['b', 'r'])
+        self._dg.register_figure_template('Bar: Base and Result vs Record Index', ft)
         return None
 
     def _initialize_one_record(self, index):

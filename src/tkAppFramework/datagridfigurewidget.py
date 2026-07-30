@@ -51,14 +51,14 @@ class DataGridFigureTemplate(object):
         :return: None
         """
         assert(isinstance(figure_widget, tkDataGridFigureWidget))
-        figure_widget.axes.set_aspect("equal")
+        figure_widget.axes.set_aspect("auto")
 
         # x-axis label
         _dg=figure_widget.master
         if _dg.get_field_unitID(self._x_label) is not None:
             _x_label = f"{self._x_label} ({_dg.get_field_unit_name(self._x_label)})"
         else:
-            _x_label = f"{self._x_label})"
+            _x_label = f"{self._x_label}"
         figure_widget.axes.set_xlabel(_x_label)
 
         figure_widget.axes.set_ylabel(self._y_label)
@@ -108,8 +108,63 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
             else:
                 _leg = f"{yf})"
             graph = figure_widget.axes.plot(xvals, yvals, sym, label=_leg)
-            figure_widget.axes.legend()
-            figure_widget.axes.grid(visible=True, which='major')
+        figure_widget.axes.legend()
+        figure_widget.axes.grid(visible=True, which='major')
+        return None
+
+
+class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
+    """
+    Child of DataGridFigureTemplate that makes a bar plot of two or more fields in the data grid.
+    """
+    def __init__(self, x_label='', y_label='', x_field='', y_fields=[], colors=[]):
+        """
+        :parameter figure_widget: The tkDataGridFigureWidget object which HAS this DataGridFigureTemplate object.
+        :parameter x_label: Text label to place on the figure's x-axis, as string
+        :parameter y_label: Text label to place on the figure's y-axis, as string
+        :parammeter x_field: Name of the field in the data grid to use for the x-axis values, as string
+        :parameter y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
+        :parameter colors: List of matplotlib colors (e.g. 'b' for blue bars) to use for each y_field, as list of any valid matplotlib color format
+        """
+        assert(isinstance(x_label, str))
+        self._x_label = x_label
+        assert(isinstance(y_label, str))
+        self._y_label = y_label
+        assert(isinstance(x_field, str))
+        self._x_field = x_field
+        assert(isinstance(y_fields, list))
+        for yf in y_fields:
+            assert(isinstance(yf, str))
+        self._y_fields = y_fields
+        assert(isinstance(colors, list))
+        self._colors = colors
+        
+    def make_figure(self, figure_widget):
+        super().make_figure(figure_widget)
+        # Get the data grid widget associated with the figure
+        _dg=figure_widget.master
+        # Get the tick labels for the groups of bars
+        xvals=[]
+        for reci in range(_dg.num_records):
+            # Note the conversion to string, as bars are for "category data"
+            xvals.append(str(_dg.get_grid_element_value_display_units(self._x_field, reci)))
+        # Get the heights of the bars, packaged as a dictionary, where keys are the legend and values
+        # are the bar heights
+        _heights={}
+        _colors=[]
+        for yf, color in zip(self._y_fields, self._colors):
+            yvals=[]
+            if _dg.get_field_unitID(yf) is not None:
+                _leg = f"{yf} ({_dg.get_field_unit_name(yf)})"
+            else:
+                _leg = f"{yf})"
+            for reci in range(_dg.num_records):
+                yvals.append(_dg.get_grid_element_value_display_units(yf, reci))
+            _heights[_leg]=yvals
+            _colors.append(color)
+        graph = figure_widget.axes.grouped_bar(heights=_heights, tick_labels=xvals, colors=_colors)
+        figure_widget.axes.legend()
+        figure_widget.axes.grid(visible=True, which='major')
         return None
 
 
