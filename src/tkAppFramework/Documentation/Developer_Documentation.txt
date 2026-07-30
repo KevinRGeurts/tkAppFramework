@@ -116,5 +116,18 @@ to list that cascade of events.
 
 Scenario 1: User types a new value into the Entry widget, while display units are identical to base units.
 
-(1)
+Note: As of 23-July-2026, I believe this issue (issues?) is resolved.
+
+*** 30-July-2026: Punchlist
+(1) Consider if adding any additional update hints to grid elements or the grid would be helpful in clarifying/simplifying update
+logic. Most likely need is for a hint that a record has changed, that would include which field had changed. This would help the
+client application respond to updates by gathering new input values and computing new output values.
+
+(2) Consider adding tooltips to grid elements that would display text customized for each type of element. This would be most useful
+currently for text that exceeded the width of the element and for displaying the "hidden" default value of an element.
+
+(3) Consider adding additional figure templates (histogram, box plot, pie chart, ...).
+
+(4) Clean up the demo app for the data grid. The way the boolean element is used is obscure, particularly that it has associated units.
+Maybe just have the boolean element control whether or not the app computes a result for the record on updates.
 

@@ -169,6 +169,38 @@ class FieldHeaderElementTextUpdateHint(UpdateHint):
         self.prev_raw_state = kwargs.get('prev_raw_state')
 
 
+class RecordElementValueUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDGElement that is not a tkDGElementFieldHeader instance
+    has had its value changed.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'prev_value' specifies the original (previous) value of the tkDGElement, as Any
+            'new_value' specifies the newly set value of the tkDGElement, as Any
+        """
+        super().__init__(*args)
+        self.prev_value = kwargs.get('prev_value')
+        self.new_value = kwargs.get('new_value')
+
+
+class RecordElementDefaultValueUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDGElement that is not a tkDGElementFieldHeader instance
+    has had its default value changed.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'prev_default_value' specifies the original (previous) default value of the tkDGElement, as Any
+            'new_default_value' specifies the newly set default value of the tkDGElement, as Any
+        """
+        super().__init__(*args)
+        self.prev_default_value = kwargs.get('prev_default_value')
+        self.new_default_value = kwargs.get('new_default_value')
+
+
 class FieldHeaderElementUnitsUpdateHint(UpdateHint):
     """
     A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
@@ -305,14 +337,19 @@ class tkDGElement(Subject):
             self.notify()
         return None
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value. Must be implemented by child classes, since the way to clear the value will depend on the type of element.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         Note: Must be extended by child classes, because this base class implementation does nothing with the element's value.
               It does, however, call self.notify(), so when extending, call the base class implementation at the end of the extended method.
         :return: None
         """
-        self.notify()
+        if hints is not None:
+            self.notify(hints)
+        else:
+            self.notify()
         return None
 
     def set_default_value(self, def_value):
@@ -321,8 +358,9 @@ class tkDGElement(Subject):
         :parameter def_value: The default value for the element, as any (or None, if the element has no default value).)
         :return: None
         """
+        _hint = RecordElementDefaultValueUpdateHint(prev_default_value=self._default_value, new_default_value=def_value)
         self._default_value = def_value
-        self.notify()
+        self.notify([_hint])
         return None
 
     def disable_element(self, disabled=True):
@@ -375,11 +413,16 @@ class tkDGElement(Subject):
         """
         # If the element is for a field that is read-only format, do nothing.
         if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
+            _hints=[]
             if self._default_value is not None:
+                _hints.append(RecordElementValueUpdateHint(prev_value=self._element_value.get(), new_value=self._default_value))
                 self._element_value.set(self._default_value)
+                self.notify(_hints)
             else:
+                _prev_value = self._element_value.get()
                 self.clear_element_value()
-            self.notify()
+                # TODO: Confirm that should not notify on this branch because clear_element_value will handle it.
+                # self.notify(_hints)
         return None
 
     def onContextMenu(self, event):
@@ -519,23 +562,31 @@ class tkDGElementBool(tkDGElement):
             value = self._element_value.get()
         return (type(self), bool(value))
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the element.
         :paramter value: The value to set in the element, as boolean
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
         assert(type(value)==bool)
+        _hints=hints
+        if _hints is None:
+            _hints=[]
+        _hints.append(RecordElementValueUpdateHint(prev_value=self.get_state()[1], new_value=value))
         self._element_value.set(int(value))
-        super().set_state() # So notify() gets called.
+        super().set_state(hints=_hints) # So notify() gets called.
         return None
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value, by setting it to False.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
-        self.set_state(False)
+        self.set_state(False, hints)
         # DON'T call super().clear_element_value(), because set_state() already calls notify().
         return None
 
@@ -586,21 +637,29 @@ class tkDGElementList(tkDGElement):
         self._element_widget.focus_set()
         return None
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the element.
         :paramter value: The value to set in the element.
-=        :return: None
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
+        :return: None
         """
         assert(type(value)==str)
         # TODO: Check that value is in the list of options for the OptionMenu.
+        _hints=hints
+        if _hints is None:
+            _hints=[]
+        _hints.append(RecordElementValueUpdateHint(prev_value=self.get_state()[1], new_value=value))
         self._element_value.set(value)
-        super().set_state()
+        super().set_state(hints=_hints)
         return None
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value. Actually this does nothing, since there is no clear value for an OptionMenu, but method must be implemented since it is abstract in the base class.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
         # Note. super().clear_element_value() is not called, since no change to the value is made.
@@ -695,6 +754,8 @@ class tkDGElementText(tkDGElement):
         self.OnEntryChanged(self._canvas_id)
         return None
 
+    # TODO: Modify logic to make this more parallel to numeric element, where set_state is called. In particular, 
+    # want notify() to be called differently so it has a record element value change hint.
     def OnEntryChanged(self, canvas_id):
         """
         Event handler for changes to text entry.
@@ -708,12 +769,13 @@ class tkDGElementText(tkDGElement):
         owning_dgw = self._element_widget.master.master
         (field_name, record_index) = owning_dgw._get_element_coords(self)
         field_config = [fc for fc in owning_dgw._fields_config if fc.fieldName==field_name]
+        _proposed_entry = self._element_value.get()
         if len(field_config) > 0:
             field_config = field_config[0]
             validator = field_config.fieldValidator
             if validator is not None:
                 try:
-                    validator(proposed_entry = self._element_value.get())
+                    validator(proposed_entry = _proposed_entry)
                 except tkDGElementTextInvalidEntryError as e:
                     showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
                     return False
@@ -721,7 +783,8 @@ class tkDGElementText(tkDGElement):
         try:
             # Validity here is still only an assumption. Observer(s) could raise exception if they have
             # a problem with the new entry value when notify() is called, and OnInvalidEntryChange() will correct to False.
-            self.notify()
+            if (_proposed_entry is not None):
+                self.set_state(_proposed_entry)
             return True
         except tkDGElementTextInvalidEntryError as e:
             showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
@@ -737,26 +800,31 @@ class tkDGElementText(tkDGElement):
         self.notify()
         return None
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the text element.
         :paramter value: The value to set in the element.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
         assert(type(value)==str)
-        old_value = self._element_value.get()
-        # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
-        if value != old_value:
-            self._element_value.set(value)
-            super().set_state()
+        _hints=hints
+        if _hints is None:
+            _hints=[]
+        _hints.append(RecordElementValueUpdateHint(prev_value=self.get_state()[1], new_value=value))
+        self._element_value.set(value)
+        super().set_state(hints=_hints)
         return None
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value, by setting it to ''.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
-        self.set_state('')
+        self.set_state('', hints)
         # DON"T call super().clear_element_value(), as set_state() already calls notify().
         return None
 
@@ -860,12 +928,14 @@ class tkDGElementFieldHeader(tkDGElement):
         super().set_state(hints=hints)
         return None
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value, by setting it to ''.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
-        self.set_state('')
+        self.set_state('', hints)
         # DON'T call super().clear_element_value(), because set_state() already calls notify().
         return None
 
@@ -1010,9 +1080,9 @@ class tkDGElementNumber(tkDGElement):
                     # TODO: The validator needs to handle unit conversions, otherwise error messages for min/max violations aren't meaningful.
                     validator(proposed_entry = _proposed_entry)
                 except tkDGElementTextInvalidEntryError as e:
-                    showerror(title='Data Grid Text Entry Error', message=e.args[0], parent=self._element_widget.master)
+                    showerror(title='Data Grid Number Entry Error', message=e.args[0], parent=self._element_widget.master)
                     return False
-        # Inform all observers of the change in the text entry
+        # Inform all observers of the change in the number entry
         try:
             # Validity here is still only an assumption. Observer(s) could raise exception if they have
             # a problem with the new entry value when notify() is called from set_state().
@@ -1043,15 +1113,17 @@ class tkDGElementNumber(tkDGElement):
         """
         # Keep focus on the Entry widget, so that user can correct the invalid entry.
         self._element_widget.focus_set()
-        # TODO: Reserach if this notify is needed.
+        # TODO: Reseacch if this notify is needed.
         self.notify()
         return None
 
-    def set_state(self, value=None):
+    def set_state(self, value=None, hints=None):
         """
         Set the state of the number element.
         :paramter value: The numeric value to set in the element, as float|int|None
             Note: If the number element is associated with a field that has a unit group, then value parameter is assumed to be in the base units for the field.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]        
         :return: None
         """
         # As we enter this method, the following should be true if the number element is associated with a field that
@@ -1062,6 +1134,10 @@ class tkDGElementNumber(tkDGElement):
         # (4) The control variable self._element_value is a string that is in the current units for the field associated with this element.
         assert((value is None) or (type(value)==float) or (type(value)==int))
 
+        _hints=hints
+        if _hints is None:
+            _hints=[]
+        
         # Note: First master is the canvas, second master is the tkDataGridWidget
         owning_dgw = self._element_widget.master.master
         
@@ -1093,8 +1169,9 @@ class tkDGElementNumber(tkDGElement):
         old_value = self._numeric_value
         # Only set the value and notify observers if the value has actually changed, to avoid unnecessary updates.
         if not self._fuzzy_compare(value, old_value, rel_tol=1e-8):
+            _hints.append(RecordElementValueUpdateHint(prev_value=old_value, new_value=value))
             self._numeric_value = value
-            self.notify()
+            self.notify(_hints)
         return None
 
     def _fuzzy_compare(self, value1, value2, rel_tol=1e-8):
@@ -1131,12 +1208,14 @@ class tkDGElementNumber(tkDGElement):
         formatted_value = '{:.8G}'.format(value)
         return formatted_value
 
-    def clear_element_value(self):
+    def clear_element_value(self, hints=None):
         """
         Clear the element value, by setting it to None.
+        :parameter hints: An optional list of hints passed to observers to specify what types of 
+                          updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
-        self.set_state(None)
+        self.set_state(None, hints)
         # DON"T call super().clear_element_value(), as set_state() already calls notify().
         return None
 
@@ -1363,7 +1442,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         insert_menu_obj.add_command(label='Column right', command=partial(self.onInsertColumnContextMenuOptionSelected, 'right', element))
 
         # Create "Restore default value" command on context menu
-        context_menu.add_command(label='Restore Default Value', command=element._restoreDefaultValue)
+        context_menu.add_command(label='Restore Default Value', command=partial(element.onKeyPressF3, event))
 
         # Create "Show graph" command on the context menu
         graph_menu_obj=tk.Menu(context_menu)
@@ -2336,29 +2415,33 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                         for rec_element in self._grid_elements[element._raw_state]:
                             val = rec_element.get_state()[1] # This is in base units
                             rec_element.set_state(val)
-        
-        # Handle formating the element widget appropriately based on if it has the default value or not.
-        elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
-        if default_value is not None:
-            elem_format = self._element_formats[elem_config.fieldFormat]
-            if value is not None:
-                if isinstance(value, float) or isinstance(value, int):
-                    # TODO: Not very OO to indirectly infer element type.
-                    # Handling tkDGElementNumber elements
-                    if isclose(value, default_value, rel_tol=1e-7):
-                        element._element_widget.configure(background=elem_format[3])
-                    else:
-                        element._element_widget.configure(background=elem_format[1])
-                else:
-                    # Handling other element types
-                    if value == default_value:
-                        element._element_widget.configure(background=elem_format[3])
-                    else:
-                        element._element_widget.configure(background=elem_format[1])
-            else:
-                # value is None and default_value is not None, so background should NOT be the default color
-                element._element_widget.configure(background=elem_format[1])   
+
+                # Handle formating the element widget appropriately based on if it has the default value or not.
+                if isinstance(hint, RecordElementValueUpdateHint) or isinstance(hint, RecordElementDefaultValueUpdateHint):
+                    elem_config = [fc for fc in self._fields_config if fc.fieldName==elem_field][0]
+                    if default_value is not None:
+                        elem_format = self._element_formats[elem_config.fieldFormat]
+                        if value is not None:
+                            if isinstance(value, float) or isinstance(value, int):
+                                # TODO: Not very OO to indirectly infer element type.
+                                # Handling tkDGElementNumber elements
+                                if isclose(value, default_value, rel_tol=1e-7):
+                                    element._element_widget.configure(background=elem_format[3])
+                                else:
+                                    element._element_widget.configure(background=elem_format[1])
+                            else:
+                                # Handling other element types
+                                if value == default_value:
+                                    element._element_widget.configure(background=elem_format[3])
+                                else:
+                                    element._element_widget.configure(background=elem_format[1])
+                        else:
+                            # value is None and default_value is not None, so background should NOT be the default color
+                            element._element_widget.configure(background=elem_format[1])   
+
         self._modified_element = element
+        # TODO: Consider issuing a hint to the client of the data grid widget that a particular field of a particular record
+        # has change value. If done consistently, this might eliminate the need for self._modified_element.
         self.notify()
         self._modified_element = None
         return None
