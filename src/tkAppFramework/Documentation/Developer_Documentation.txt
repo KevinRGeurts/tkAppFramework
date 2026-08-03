@@ -143,3 +143,5 @@ Maybe just have the boolean element control whether or not the app computes a re
 then available to all users of the framework.
 
 (8) tkDataGridWidget needs much more extensive unit testing.
+
+(9) Address TODO comments in code.

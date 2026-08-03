@@ -12,13 +12,16 @@ tkAppFramework is a Python library that facilitates the creation of a GUI applic
 6. a dialog class (tkAppAboutDialog) launched to display application "about" information when a tkApp's Help | About... menu item is selected
 7. a simulator application class (tkSimulatorApp) that can be used by any "simulator" (see requirements below) by implementing a SimulatorAdapter child class
 8. a reusable tkXHTMLViewerWidget when can be embedded as a child widget of any tkViewManager child class, and used to display HTML formatted text
+9. a reusable tkDataGridWidget that can be used to display data in a grid format, with the ability to edit the data in the grid, and to display graphs of the data in the grid 
  
 ## Requirements
 
-1. justhtml>=1.9.0: [GitHub](https://github.com/emilstenstrom/justhtml), [PyPi](https://pypi.org/project/justhtml/)
-2. markdown>=3.10.2: [GitHub](https://github.com/Python-Markdown/markdown), [PyPi](https://pypi.org/project/Markdown/)
-3. UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
+1. matplotlib>=3.11.0: [GitHub](https://github.com/matplotlib/matplotlib), [PyPi](https://pypi.org/project/matplotlib/) 
+2. justhtml>=1.9.0: [GitHub](https://github.com/emilstenstrom/justhtml), [PyPi](https://pypi.org/project/justhtml/)
+3. markdown>=3.10.2: [GitHub](https://github.com/Python-Markdown/markdown), [PyPi](https://pypi.org/project/Markdown/)
+4. UserResponseCollector>=1.1.0: [GitHub](https://github.com/KevinRGeurts/UserResponseCollector), [PyPi](https://pypi.org/project/UserResponseCollector/)
 
+The `matplotlib` package is used by the `tkDataGridWidget` module, where it is used to display graphs of data in a data grid.
 The `markdown` and `justhtml` packages are used by the `HelpModel` class, which is the business logic for `tkHelpApp`.
 The `UserResponseCollector` package is used by `tkSimulatorApp` to receive input requests from the simulator.
 

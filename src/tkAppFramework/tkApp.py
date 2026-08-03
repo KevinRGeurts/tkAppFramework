@@ -422,7 +422,7 @@ class tkHelpApp(tkApp):
         assert(type(help_file)==str)
         assert(type(help_format)==str)
         assert(help_format in ['txt', 'xhtml', 'md'])
-        info = AppAboutInfo(name='Help Application', version='0.9.1', copyright='2025', author='Kevin R. Geurts',
+        info = AppAboutInfo(name='Help Application', version='0.9.5', copyright='2025', author='Kevin R. Geurts',
                                   license='MIT License', source='https://github.com/KevinRGeurts/tkAppFramework',
                                   help_file=help_file)
         menu_dictionary = {'File':{'Exit':self.onFileExit},

@@ -17,8 +17,9 @@ data = [{path = "src/tkAppFramework/Help/**/*", relative-to = "src/tkAppFramewor
 
 [project]
 name = "tkAppFramework"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
+	"matplotlib>=3.11.0",
 	"justhtml>=1.9.0",
 	"markdown>=3.10.2",
 	"UserResponseCollector>=1.1.0"
