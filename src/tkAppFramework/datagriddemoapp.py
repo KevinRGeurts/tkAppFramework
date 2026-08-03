@@ -267,14 +267,8 @@ class DataGridDemotkViewManager(tkViewManager):
                         if modified_value == 9.999e99:
                             msg = f"Invalid entry of 9.999e99 in data grid element at (field name = {field_name}, record index = {record_index})."
                             raise tkDGElementTextInvalidEntryError(msg)
-                        try:
-                            # Get the current Result value for the record.
-                            current_result = self._dg.get_grid_element_value('Result', record_index)
-                        except:
-                            # Arbitrary value to use for current_result if there is an error getting the current result, such as if the current result is not a valid float.
-                            # This will (likely) ensure that the first new result from the model will be different from the current result,
-                            # so that the 'Result' field of the record will be updated with the new result from the model.
-                            current_result = -99.99
+                        # Get the current Result value for the record.
+                        current_result = self._dg.get_grid_element_value('Result', record_index)
                         try:
                             should_compute = self._dg.get_grid_element_value('Compute Result', record_index)
                             if should_compute:
