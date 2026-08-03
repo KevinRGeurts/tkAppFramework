@@ -1341,8 +1341,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Store currently focused element widget, as tkDGElement object.
         self._focused_element = None
-        # Store most recently modified element widget, as tkDGElement object.
-        self._modified_element = None
 
         # Set up the data grid with the appropriate number of records and fields.
         self._draw_element_separator_lines()
@@ -1369,10 +1367,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     @property
     def num_records(self):
         return self._num_records
-
-    @property
-    def modifiedElement(self):
-        return self._modified_element
 
     @property
     def uomAdapter(self):
@@ -2292,15 +2286,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             if record_index < len(self._grid_elements[field_name]):
                 element = self._grid_elements[field_name][record_index]
         return element
-
-    def get_modified_grid_element_location(self):
-        """
-        Return the field name and record index for the most recently modified grid element.
-        This method is intended to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :return: Tuple (field name, 0-based record index), as (string, int) or None if no such element exists
-        """
-        (field_name, record_index) = self._get_element_coords(self._modified_element)
-        return (field_name, record_index)
     
     def _get_element_coords(self, element=None):
         """
@@ -2456,10 +2441,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 # Create a hint for notifying the client of the data grid widget that a particular field of a particular record has changed value. 
                 if isinstance(hint, RecordElementValueUpdateHint):
                     client_hint = DataGridChangedRecordUpdateHint(changed_record_field=elem_field, changed_record_index=elem_rec)
-                    # TODO: Investigate if setting self._modified_element is needed, or if the client_hint is sufficient for the client to know which element was modified.
-                    self._modified_element = element
                     self.notify([client_hint])
-                    self._modified_element = None
         return None
         
     # TODO: Due to rounding, leaves behind a narrow red "shadow". Think about how to address this.

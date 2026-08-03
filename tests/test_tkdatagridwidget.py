@@ -131,12 +131,6 @@ class Test_tkDataGridWidget(unittest.TestCase):
         coords = self._dgw._get_element_coords(ge)
         self.assertTupleEqual(coords, ('Read Only Text Field', -1))
 
-    def test_modified_grid_element_coords(self):
-        ge = self._dgw._get_grid_element('Read Only Text Field', 1)
-        self._dgw._modified_element = ge
-        coords = self._dgw.get_modified_grid_element_location()
-        self.assertTupleEqual(coords, ('Read Only Text Field', 1))
-
     def test_create_element_format(self):
         self._dgw.create_element_format()
         ef = self._dgw._element_formats['an_element_format']
