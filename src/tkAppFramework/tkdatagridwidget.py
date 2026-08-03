@@ -243,6 +243,20 @@ class DataGridDeleteRecordUpdateHint(UpdateHint):
         self.deleted_record_index = kwargs.get('deleted_record_index')
 
 
+class DataGridChangedRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has changed a field of a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            '_record_index' specifies the index of the deleted record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.changed_record_index = kwargs.get('changed_record_index') # integer
+        self.changed_record_field = kwargs.get('changed_record_field') # string
+
+
 class tkDGElement(Subject):
     """
     Class is the base class for classes that represent an element of a tkDataGridWidget. Class is a subject in Observer
@@ -2437,13 +2451,15 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                                     element._element_widget.configure(background=elem_format[1])
                         else:
                             # value is None and default_value is not None, so background should NOT be the default color
-                            element._element_widget.configure(background=elem_format[1])   
-
-        self._modified_element = element
-        # TODO: Consider issuing a hint to the client of the data grid widget that a particular field of a particular record
-        # has change value. If done consistently, this might eliminate the need for self._modified_element.
-        self.notify()
-        self._modified_element = None
+                            element._element_widget.configure(background=elem_format[1])
+                            
+                # Create a hint for notifying the client of the data grid widget that a particular field of a particular record has changed value. 
+                if isinstance(hint, RecordElementValueUpdateHint):
+                    client_hint = DataGridChangedRecordUpdateHint(changed_record_field=elem_field, changed_record_index=elem_rec)
+                    # TODO: Investigate if setting self._modified_element is needed, or if the client_hint is sufficient for the client to know which element was modified.
+                    self._modified_element = element
+                    self.notify([client_hint])
+                    self._modified_element = None
         return None
         
     # TODO: Due to rounding, leaves behind a narrow red "shadow". Think about how to address this.

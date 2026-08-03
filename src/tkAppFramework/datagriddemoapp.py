@@ -12,7 +12,7 @@ from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType, FieldConfiguration, UpdateHint, DataGridAddRecordUpdateHint 
-from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, DataGridUserAbilities 
+from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, DataGridUserAbilities, DataGridChangedRecordUpdateHint 
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
@@ -248,48 +248,48 @@ class DataGridDemotkViewManager(tkViewManager):
                         else:
                             # This is a previously existing record, that need's its 'Record Index' field updated
                             self._dg.set_grid_element_value('Record Index', i, str(i))
-                if isinstance(hint, DataGridDeleteRecordUpdateHint):
+                elif isinstance(hint, DataGridDeleteRecordUpdateHint):
                     # An existing record has been deleted from the data grid.
                     # Nothing needs to be done in this case, because the model does not have a list of records.
                     pass
-        else:
-            # Handle updates that do not come with a list of hints
-            # Determine the field name and record index of the modified element.
-            (field_name, record_index) = self._dg.get_modified_grid_element_location()
-            if record_index > -1:
-                # The update is for a record element and not for a field header element, and is thus a value change.
-                modified_value = self._dg.get_grid_element_value(field_name, record_index)
-                print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
-                # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.
-                # This is just to test the handling of invalid entries.
-                if modified_value == 9.999e99:
-                    msg = f"Invalid entry of '9.999e99' in data grid element at (field name = {field_name}, record index = {record_index})."
-                    raise tkDGElementTextInvalidEntryError(msg)
-                try:
-                    # Get the current Result value for the record.
-                    current_result = self._dg.get_grid_element_value('Result', record_index)
-                except:
-                    # Arbitrary value to use for current_result if there is an error getting the current result, such as if the current result is not a valid float.
-                    # This will (likely) ensure that the first new result from the model will be different from the current result,
-                    # so that the 'Result' field of the record will be updated with the new result from the model.
-                    current_result = -99.99
-                try:
-                    # Get the values required by the model for a computation out of the record's fields
-                    base_val = self._dg.get_grid_element_value('Base', record_index)
-                    add_to_val = 2.0 if self._dg.get_grid_element_value('Add 2 to', record_index) == 1.0 else 0.0
-                    add_to_uid = self._dg.get_field_unitID('Add 2 to')
-                    # Convert add_to_val to meters (TODO: Assumption being made here that meters are base units for length.)
-                    add_to_val = self._dg.uomAdapter.convert(add_to_uid, 'uid_meter', add_to_val)
-                    multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
-                    # Ask the model to compute a result based on the values from the record's fields.
-                    # This result is in base units (meters).
-                    result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
-                    # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
-                    # This prevents an infinite loop of updates.
-                    if result != current_result:
-                        self._dg.set_grid_element_value('Result', record_index, result)
-                except:
-                    self._dg.clear_grid_element_value('Result', record_index)
+                elif isinstance(hint, DataGridChangedRecordUpdateHint):
+                    # Determine the field name and record index of the modified element.
+                    field_name = hint.changed_record_field
+                    record_index = hint.changed_record_index
+                    if record_index > -1:
+                        # The update is for a record element and not for a field header element, and is thus a value change.
+                        modified_value = self._dg.get_grid_element_value(field_name, record_index)
+                        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
+                        # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.
+                        # This is just to test the handling of invalid entries.
+                        if modified_value == 9.999e99:
+                            msg = f"Invalid entry of '9.999e99' in data grid element at (field name = {field_name}, record index = {record_index})."
+                            raise tkDGElementTextInvalidEntryError(msg)
+                        try:
+                            # Get the current Result value for the record.
+                            current_result = self._dg.get_grid_element_value('Result', record_index)
+                        except:
+                            # Arbitrary value to use for current_result if there is an error getting the current result, such as if the current result is not a valid float.
+                            # This will (likely) ensure that the first new result from the model will be different from the current result,
+                            # so that the 'Result' field of the record will be updated with the new result from the model.
+                            current_result = -99.99
+                        try:
+                            # Get the values required by the model for a computation out of the record's fields
+                            base_val = self._dg.get_grid_element_value('Base', record_index)
+                            add_to_val = 2.0 if self._dg.get_grid_element_value('Add 2 to', record_index) == 1.0 else 0.0
+                            add_to_uid = self._dg.get_field_unitID('Add 2 to')
+                            # Convert add_to_val to meters (TODO: Assumption being made here that meters are base units for length.)
+                            add_to_val = self._dg.uomAdapter.convert(add_to_uid, 'uid_meter', add_to_val)
+                            multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
+                            # Ask the model to compute a result based on the values from the record's fields.
+                            # This result is in base units (meters).
+                            result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
+                            # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
+                            # This prevents an infinite loop of updates.
+                            if result != current_result:
+                                self._dg.set_grid_element_value('Result', record_index, result)
+                        except:
+                            self._dg.clear_grid_element_value('Result', record_index)
         return None
 
 
