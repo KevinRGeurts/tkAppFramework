@@ -16,6 +16,7 @@ This content is generally applicable to the Data Grid Widget, regardless of exac
 - The selected cell can be changed by moving around the grid with the arrow keys.
 - The tab key will move the selected cell in a pre-defined order. Typically this order is to move down the current column and then over to the next column to the right.
 - The enter key will enter a new value into the currently selected grid cell without moving from that cell.
+- Hovering over a grid cell with te mouse pointer will display a tooltip with the cell's value and default value.
 
 ## Changing the units of a field in the grid:
 

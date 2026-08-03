@@ -55,6 +55,9 @@
     <Compile Include="tkdgelementtextvalidators.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tkdgw_tooltip_tlw.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tkdgw_unitselect_dlg.py">
       <SubType>Code</SubType>
     </Compile>

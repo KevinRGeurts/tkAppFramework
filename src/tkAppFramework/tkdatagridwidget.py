@@ -35,6 +35,7 @@ from tkAppFramework.uomsysadapter import UoMSysAdapter
 from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
 from tkAppFramework.tkApp import tkHelpApp
 from tkAppFramework.datagridfigurewidget import tkDataGridFigureWidget, DataGridFigureTemplate
+from tkAppFramework.tkdgw_tooltip_tlw import tkTooltipWidget
 
 
 # This function cannot be a method of tkDataGridWidget, do to Process using pickle.
@@ -291,6 +292,9 @@ class tkDGElement(Subject):
            self._element_widget['variable'] = self._element_value
         self._canvas_id = observer.canvas.create_window(f"{x}i", f"{y}i", height=f"{h}i", width=f"{w}i",
                                                         anchor=tk.NW, window=self._element_widget)
+        # Identifier returned by call to self._element_widget.after() to schedule a call to self._displayTooltip() method, or None if no call is scheduled.
+        self._after_id = None
+        self._tooltip_widget = None
     
     def _create_element_value(self):
         """
@@ -405,7 +409,69 @@ class tkDGElement(Subject):
             self._element_widget.bind('<KeyPress-Left>', self.onKeyPressLeft, add='+')
             self._element_widget.bind('<KeyPress-F3>', self.onKeyPressF3, add='+')
             self._element_widget.bind('<<ContextMenu>>', self.onContextMenu, add='+')
+            self._element_widget.bind('<Enter>', self.onElementWidgetEnter, add='+')
+            self._element_widget.bind('<Leave>', self.onElementWidgetLeave, add='+')
         return None
+
+    def onElementWidgetEnter(self, event):
+        """
+        Handler for the Enter event. Initiate possible display of tooltip.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # Schedule a call to self._displayTooltip() method after 1 second (1000 miliseconds).
+        # A tooltip should not be displayed immediately, but only after "hovering" in the element widget a short time.
+        self._after_id = self._element_widget.after(1000, partial(self._displayTooltip, event))
+        return None
+
+    def onElementWidgetLeave(self, event):
+        """
+        Handler for the Leave event. Terminate display of or possible display of tooltip.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        # If there is a displayed tooltip widget, destroy it.
+        if self._tooltip_widget is not None:
+            self._tooltip_widget.destroy()
+        # If there is a scheduled call to self._displayTooltip() method, cancel it.
+        # The assumption is that the mouse pointer has left the element widget after too short a time after entry to indicate
+        # that a tooltip should be displayed.
+        if self._after_id is not None:
+            self._element_widget.after_cancel(self._after_id)
+            self._after_id = None
+        return None
+
+    def _displayTooltip(self, event):
+        """
+        Display a tooltip for the element widget.
+        :parameter event: The tkinter event object for the key press event
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Tooltip to be displayed for tkDGElement with canvas ID {self.canvasID}.")
+        # If there is a displayed tooltip widget, destroy it. This probably should not happen, but just in case.
+        if self._tooltip_widget is not None:
+            self._tooltip_widget.destroy()
+        # Create a new tooltip widget and display it.
+        tip_txt = self._getToolTipText()
+        self._tooltip_widget = tkTooltipWidget(self._element_widget, text=tip_txt)
+        self._tooltip_widget.show(event.x_root, event.y_root)
+        return None
+
+    def _getToolTipText(self):
+        """
+        Get the text to be displayed in the tooltip for the element widget.
+        This method is intended can be extended/overriddenby child classes to provide specific tooltip text for the element widget.
+        This version will return f"Value: {self.get_state()[1]}
+                                   Default Value: {self.get_default_value()}"
+            Note: If default value is None, it will not be included in the tooltip text.
+        :return: The text to be displayed in the tooltip for the element widget, as string or None
+            Note: Return None if no tooltip should be displayed.
+        """
+        tooltip_txt = f"Value: {self.get_state()[1]}"
+        if self.get_default_value()is not None:
+            tooltip_txt += f"\nDefault: {self.get_default_value()}"
+        return tooltip_txt
 
     def onKeyPressF3(self, event):
         """
@@ -1241,6 +1307,74 @@ class tkDGElementNumber(tkDGElement):
         """
         value = self._numeric_value
         return (type(self), value)
+
+    def _getToolTipText(self):
+        """
+        Get the text to be displayed in the tooltip for the element widget.
+        This version will return f"Value: {self.get_state()[1]} ({<display units>})\n
+                                   Default Value: {self.get_default_value()} ({<display units>})"
+            Notes: (1) If default value is None, it will not be included in the tooltip text.
+                   (2) Value and Default Value will be displayed in display units.
+        :return: The text to be displayed in the tooltip for the element widget, as string or None
+            Note: Return None if no tooltip should be displayed.
+        """
+        (disp_val, disp_units) = self.get_value_in_display_units()
+        (disp_def_val, disp_def_units) = self.get_default_value_in_display_units()
+
+        tooltip_txt = f"Value: {disp_val} ({disp_units})"
+        if self.get_default_value()is not None:
+            tooltip_txt += f"\nDefault: {disp_def_val} ({disp_def_units})"
+        return tooltip_txt
+
+    def get_value_in_display_units(self):
+        """
+        Get the value of the number element in current display units, and the unit name for the current display units.
+        :return: (Value of the number element in current display units, Display unit name,  as (float, string)
+            Note: If the number element is NOT associated with a field that has a unit group,
+                  then the value will returned in base units and the unit name will be ''.
+        """
+        ret_elem_val = None
+        ret_elem_units = ''
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        owning_dgw = self._element_widget.master.master
+        
+        ret_elem_val = self.get_state()[1]
+        # Convert elements value from base to current units, if the field associated with this element has a unit group.
+        if owning_dgw._element_has_units(self) and ret_elem_val is not None:
+            # Convert value_current_units to current units
+            (field_name, record_index) = owning_dgw._get_element_coords(self)
+            current_uid = owning_dgw.get_field_unitID(field_name)
+            ugrpid = owning_dgw.get_field_unit_group(field_name)
+            base_uid = owning_dgw.uomAdapter.get_base_unit_id_for_unit_group(ugrpid)
+            ret_elem_val = owning_dgw.uomAdapter.convert(from_unit_id=base_uid, to_unit_id=current_uid, value=ret_elem_val)
+            ret_elem_units = owning_dgw.get_field_unit_name(field_name)
+
+        return (ret_elem_val, ret_elem_units)
+
+    def get_default_value_in_display_units(self):
+        """
+        Get the default value of the number element in current display units, and the unit name for the current display units.
+        :return: (Default value of the number element in current display units, Display unit name,  as (float, string)
+            Note: If the number element is NOT associated with a field that has a unit group,
+                  then the default value will returned in base units and the unit name will be ''.
+        """
+        ret_elem_val = None
+        ret_elem_units = ''
+        # Note: First master is the canvas, second master is the tkDataGridWidget
+        owning_dgw = self._element_widget.master.master
+        
+        ret_elem_val = self.get_default_value()
+        # Convert elements value from base to current units, if the field associated with this element has a unit group.
+        if owning_dgw._element_has_units(self) and ret_elem_val is not None:
+            # Convert value_current_units to current units
+            (field_name, record_index) = owning_dgw._get_element_coords(self)
+            current_uid = owning_dgw.get_field_unitID(field_name)
+            ugrpid = owning_dgw.get_field_unit_group(field_name)
+            base_uid = owning_dgw.uomAdapter.get_base_unit_id_for_unit_group(ugrpid)
+            ret_elem_val = owning_dgw.uomAdapter.convert(from_unit_id=base_uid, to_unit_id=current_uid, value=ret_elem_val)
+            ret_elem_units = owning_dgw.get_field_unit_name(field_name)
+
+        return (ret_elem_val, ret_elem_units)
 
 
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
