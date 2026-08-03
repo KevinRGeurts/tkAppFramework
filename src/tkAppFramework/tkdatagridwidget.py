@@ -1,17 +1,35 @@
 """
-This module defines the tkDataGridWidget class. It is a tkinter widget that uses a tkinter Canvas widget to display
-data records and fields.
+This module defines a set of classes that together implement a "data grid widget".
+This widget behaves a lot like an Excel spreadsheet. It can be used to display data records in a tabular format.
+It can be used to collect input's from a user. It can be a hybrid where inputs and outputs are mixed in the same data grid.
 
 Exported Classes:
     tkDataGridWidget -- It is a tkinter widget that uses a tkinter Canvas widget to display
                         data records and fields. It is a Subject in an Observer design pattern,
                         in anticipation of being observed by a tkViewManager.
+    FieldType -- An IntEnum class that is used to specify the type of each field when configuring the tkDataGridWidget.
+    FieldConfiguration -- A class that represents a field in data grid.
+    DataGridUserAbilities -- A class that defines a set of "abilities" a user has within a tkDataGridWidget.
+    DataGridAddRecordUpdateHint -- A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has added a record.
+    DataGridDeleteRecordUpdateHint -- A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has deleted a record.
+    DataGridChangedRecordUpdateHint -- A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has changed the value/state of a field of a record.
+
+    tkDGElement -- Class is the base class for classes that represent an element (cell) of a tkDataGridWidget. Class is a subject in Observer
+                   design pattern, in anticipation of being observed by tkDataGridWidet class.
+    tkDGElementBool -- Class represents a boolean element of a tkDataGridWidget, appearing as a Checkbutton widget.
+    tkDGElementList -- Class represents a list (option menu) element of a tkDataGridWidget, appearing as an OptionMenu widget.
+    tkDGElementText -- Class represents a text element of a tkDataGridWidget, appearing as an Entry widget.
+    tkDGElementNumber -- Class represents a number element of a tkDataGridWidget, appearing as an Entry widget.
+    tkDGElementFieldHeader -- Class represents a field header element of a tkDataGridWidget, appearing as an Entry widget.
                         
 Exported Exceptions:
-    None    
+    tkDGElementTextInvalidEntryError - Raised when a tkDGElementText element's text is invalid for the field it represents.    
  
 Exported Functions:
-    None
+    _launch_help_app -- Launch tkinter app for displaying online help.
+
+Logging:
+    'tkDataGridWidget_logger' -- Logger for tkDataGridWidget module.
 """
 
 
@@ -38,7 +56,7 @@ from tkAppFramework.datagridfigurewidget import tkDataGridFigureWidget, DataGrid
 from tkAppFramework.tkdgw_tooltip_tlw import tkTooltipWidget
 
 
-# This function cannot be a method of tkDataGridWidget, do to Process using pickle.
+# This function cannot be a method of tkDataGridWidget, due to Process using pickle.
 def _launch_help_app(help_file = '', help_format = 'txt'):
     """
     Launch tkinter app for displaying online help.
@@ -59,101 +77,7 @@ def _launch_help_app(help_file = '', help_format = 'txt'):
     return myapp
 
 
-class FieldType(IntEnum):
-    """
-    This IntEnum class is used to specify the type of each field when configuring the tkDataGridWidget.
-    It actually makes sense to use an Enum here, so that clients do not need to know about the hierarchy of
-    tkDGElement classes to specify field types.
-    """
-    BOOL = 1
-    LIST = 2
-    TEXT = 3
-    NUMBER = 4
-    # Add more field types as needed
-
-
-class FieldConfiguration:
-    """
-    This class represents a field in data grid.
-    """
-    def __init__(self, name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None,
-                 unit_id=None, unit_name=''):
-        """
-        :parameter name: The name of the data field, as string
-        :parameter field_type: The type of the data field, as FieldType Enum value
-        :parameter field_format: A string that is the key to looking up a format in the element format dictionary
-                                 maintained by a tkDataGridWidget, as string
-            Note: The value in the element format dictionary is used to format the element widgets for the records of the field.
-        :parameter validator: Callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field,
-                              or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
-                              or if the field is not a TEXT field. As callable|None
-        :parameter unit_group: The unit group ID for the field, or None if not applicable, as Any|None
-        :parameter unit_group: The current unit ID for the field, or None if not applicable, as Any|None
-        :parameter unit_name: The current unitname for the field, as string ('' if not applicable)
-        """
-        self._field_name = name
-        self._field_type = field_type
-        self._field_format = field_format
-        self._field_validator = validator
-        self._field_unit_group = unit_group
-        self._field_unit_id = unit_id
-        self._field_unit_name = unit_name
-
-    @property
-    def fieldName(self):
-        return self._field_name
-
-    @property
-    def fieldType(self):
-        return self._field_type
-
-    @property
-    def fieldFormat(self):
-        return self._field_format
-
-    @property
-    def fieldValidator(self):
-        return self._field_validator
-
-    @property
-    def fieldUnitGroup(self):
-        return self._field_unit_group
-
-    @property
-    def fieldUnitID(self):
-        return self._field_unit_id
-
-    @fieldUnitID.setter
-    def fieldUnitID(self, value):
-        self._field_unit_id = value
-
-    @property
-    def fieldUnitName(self):
-        return self._field_unit_name
-
-    @fieldUnitName.setter
-    def fieldUnitName(self, value):
-        self._field_unit_name = value
-
-
-class DataGridUserAbilities:
-    """
-    This class defines a set of "abilities" a user has within a tkDataGridWidget. Currently it is used to
-    disable options on the contextual menu which should not be available to the user. For example, for most
-    applications with a tkDataGridWidget, the ability to delete a field should NOT be available.
-    """
-    def __init__(self, can_insert_field=False, can_delete_field=False, can_insert_record=False, can_delete_record=False):
-        """
-        """
-        assert(isinstance(can_insert_field, bool))
-        assert(isinstance(can_delete_field, bool))
-        assert(isinstance(can_insert_record, bool))
-        assert(isinstance(can_delete_record, bool))
-        self._can_insert_field = can_insert_field
-        self._can_delete_field = can_delete_field
-        self._can_insert_record = can_insert_record
-        self._can_delete_record = can_delete_record
-
+# UpdateHint classes for tkDGElement.notify() to pass to tkDataGridWidget.update() method, to indicate what type of update has occurred and details about it.
 
 class FieldHeaderElementTextUpdateHint(UpdateHint):
     """
@@ -168,6 +92,22 @@ class FieldHeaderElementTextUpdateHint(UpdateHint):
         """
         super().__init__(*args)
         self.prev_raw_state = kwargs.get('prev_raw_state')
+
+
+class FieldHeaderElementUnitsUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
+    units of measure changed.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'prev_unit_id' specifies the original (previous) unit ID of the tkDGElementFieldHeader, as Any
+            'new_unit_id' specifies the newly set unit ID of the tkDGElementFieldHeader, as Any
+        """
+        super().__init__(*args)
+        self.prev_unit_id = kwargs.get('prev_unit_id')
+        self.new_unit_id = kwargs.get('new_unit_id')
 
 
 class RecordElementValueUpdateHint(UpdateHint):
@@ -202,61 +142,7 @@ class RecordElementDefaultValueUpdateHint(UpdateHint):
         self.new_default_value = kwargs.get('new_default_value')
 
 
-class FieldHeaderElementUnitsUpdateHint(UpdateHint):
-    """
-    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDGElementFieldHeader has had its
-    units of measure changed.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Expected kwargs:
-            'prev_unit_id' specifies the original (previous) unit ID of the tkDGElementFieldHeader, as Any
-            'new_unit_id' specifies the newly set unit ID of the tkDGElementFieldHeader, as Any
-        """
-        super().__init__(*args)
-        self.prev_unit_id = kwargs.get('prev_unit_id')
-        self.new_unit_id = kwargs.get('new_unit_id')
-
-
-class DataGridAddRecordUpdateHint(UpdateHint):
-    """
-    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has added a record.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Expected kwargs:
-            'new_record_index' specifies the index of the new record in the data grid, as int
-        """
-        super().__init__(*args)
-        self.new_record_index = kwargs.get('new_record_index')
-
-
-class DataGridDeleteRecordUpdateHint(UpdateHint):
-    """
-    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has deleted a record.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Expected kwargs:
-            'deleted_record_index' specifies the index of the deleted record in the data grid, as int
-        """
-        super().__init__(*args)
-        self.deleted_record_index = kwargs.get('deleted_record_index')
-
-
-class DataGridChangedRecordUpdateHint(UpdateHint):
-    """
-    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has changed a field of a record.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Expected kwargs:
-            '_record_index' specifies the index of the deleted record in the data grid, as int
-        """
-        super().__init__(*args)
-        self.changed_record_index = kwargs.get('changed_record_index') # integer
-        self.changed_record_field = kwargs.get('changed_record_field') # string
-
+# the tkDGElement class and its child classes are the "elements" or cells of a tkDataGridWidget.
 
 class tkDGElement(Subject):
     """
@@ -1377,6 +1263,148 @@ class tkDGElementNumber(tkDGElement):
         return (ret_elem_val, ret_elem_units)
 
 
+# Classes for configuring the fields and allowed abilities of a tkDataGridWidget
+
+class FieldType(IntEnum):
+    """
+    This IntEnum class is used to specify the type of each field when configuring the tkDataGridWidget.
+    It actually makes sense to use an Enum here, so that clients do not need to know about the hierarchy of
+    tkDGElement classes to specify field types.
+    """
+    BOOL = 1
+    LIST = 2
+    TEXT = 3
+    NUMBER = 4
+    # Add more field types as needed
+
+
+class FieldConfiguration:
+    """
+    This class represents a field in data grid.
+    """
+    def __init__(self, name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None,
+                 unit_id=None, unit_name=''):
+        """
+        :parameter name: The name of the data field, as string
+        :parameter field_type: The type of the data field, as FieldType Enum value
+        :parameter field_format: A string that is the key to looking up a format in the element format dictionary
+                                 maintained by a tkDataGridWidget, as string
+            Note: The value in the element format dictionary is used to format the element widgets for the records of the field.
+        :parameter validator: Callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field,
+                              or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
+                              or if the field is not a TEXT field. As callable|None
+        :parameter unit_group: The unit group ID for the field, or None if not applicable, as Any|None
+        :parameter unit_group: The current unit ID for the field, or None if not applicable, as Any|None
+        :parameter unit_name: The current unitname for the field, as string ('' if not applicable)
+        """
+        self._field_name = name
+        self._field_type = field_type
+        self._field_format = field_format
+        self._field_validator = validator
+        self._field_unit_group = unit_group
+        self._field_unit_id = unit_id
+        self._field_unit_name = unit_name
+
+    @property
+    def fieldName(self):
+        return self._field_name
+
+    @property
+    def fieldType(self):
+        return self._field_type
+
+    @property
+    def fieldFormat(self):
+        return self._field_format
+
+    @property
+    def fieldValidator(self):
+        return self._field_validator
+
+    @property
+    def fieldUnitGroup(self):
+        return self._field_unit_group
+
+    @property
+    def fieldUnitID(self):
+        return self._field_unit_id
+
+    @fieldUnitID.setter
+    def fieldUnitID(self, value):
+        self._field_unit_id = value
+
+    @property
+    def fieldUnitName(self):
+        return self._field_unit_name
+
+    @fieldUnitName.setter
+    def fieldUnitName(self, value):
+        self._field_unit_name = value
+
+
+class DataGridUserAbilities:
+    """
+    This class defines a set of "abilities" a user has within a tkDataGridWidget. Currently it is used to
+    disable options on the contextual menu which should not be available to the user. For example, for most
+    applications with a tkDataGridWidget, the ability to delete a field should NOT be available.
+    """
+    def __init__(self, can_insert_field=False, can_delete_field=False, can_insert_record=False, can_delete_record=False):
+        """
+        """
+        assert(isinstance(can_insert_field, bool))
+        assert(isinstance(can_delete_field, bool))
+        assert(isinstance(can_insert_record, bool))
+        assert(isinstance(can_delete_record, bool))
+        self._can_insert_field = can_insert_field
+        self._can_delete_field = can_delete_field
+        self._can_insert_record = can_insert_record
+        self._can_delete_record = can_delete_record
+
+
+# UpdateHint classes for tkDataGridWidget.notify() to pass to <client>.update() method, to indicate what type of update has occurred and details about it.
+
+class DataGridAddRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating the a tkDataGridWidget has added a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'new_record_index' specifies the index of the new record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.new_record_index = kwargs.get('new_record_index')
+
+
+class DataGridDeleteRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has deleted a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            'deleted_record_index' specifies the index of the deleted record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.deleted_record_index = kwargs.get('deleted_record_index')
+
+
+class DataGridChangedRecordUpdateHint(UpdateHint):
+    """
+    A hint passed by Subject.notify() to Observer.update(), indicating that a tkDataGridWidget has changed a field of a record.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Expected kwargs:
+            '_record_index' specifies the index of the deleted record in the data grid, as int
+        """
+        super().__init__(*args)
+        self.changed_record_index = kwargs.get('changed_record_index') # integer
+        self.changed_record_field = kwargs.get('changed_record_field') # string
+
+
+# The main class for the data grid widget
+
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     """
     Class represents a tkinter label frame, the widget contents of which allow displayinbg and interacting with
@@ -1511,6 +1539,12 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     def uomAdapter(self):
         return self._uom
 
+    @property
+    def canvas(self):
+        return self._dg_canvas
+
+    # ** Methods intended for client use **
+
     def register_figure_template(self, name, template):
         """
         Call this method to register a figure template for the data grid.
@@ -1523,6 +1557,249 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._fig_temps[name]=template
         return None
 
+    def clear_grid_element_value(self, field_name='a_field_name', record_index=0):
+        """
+        Clear the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        Note: (1) A FieldType.TEXT element will have its value set to ''
+              (2) A FieldType.BOOL element will have its value set to False
+              (3) A FieldType.LIST element will have its value unchanged.
+              (4) A FieldType.Number element will have its text value set to '' and its numeric value set to None.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.clear_element_value()
+        return None
+
+    def get_field_unit_group(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement group for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement group for the given field name, or None if no such field name exists or the field has no associated unit group,
+                 as any or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._field_config.fieldUnitGroup
+        else:
+            return None
+
+    def get_field_unitID(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement ID for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement ID for the given field name, or None if no such field name exists or the field has no associated unit ID,
+                 as any or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._field_config.fieldUnitID
+        else:
+            return None
+
+    def get_field_unit_name(self, field_name='a_field_name'):
+        """
+        Return the value of the unit of measurement name for a given field name. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :return: The value of the unit of measurement name for the given field name, or None if no such field name exists or '' if the field has no associated unit name,
+                 as string or None
+        """
+        assert(type(field_name)==str)
+        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
+        if len(field_header_element)>0:
+            field_header_element = field_header_element[0]
+        else:
+            field_header_element = None
+        if field_header_element is not None:
+            return field_header_element._field_config.fieldUnitName
+        else:
+            return None
+
+    def get_grid_element_value(self, field_name='a_field_name', record_index=0):
+        """
+        Return the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
+                  and it will be in base units if the field has an associated unit group.
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            return element.get_state()[1]
+        else:
+            return None
+
+    def get_grid_element_value_display_units(self, field_name='a_field_name', record_index=0):
+        """
+        Return the value of the grid element for a given field name and record index. If the element is a record for a
+        field that has a unit group, then the value will be returned in the current display units. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
+                  and it will be in the current display units if the field has an associated unit group.
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            val_base_units = element.get_state()[1]
+            if self._element_has_units(element):
+                unit_grp = self.get_field_unit_group(field_name)
+                base_unit_id = self.uomAdapter.get_base_unit_id_for_unit_group(unit_grp)
+                disp_unit_id = self.get_field_unitID(field_name)
+                val_disp_units = self.uomAdapter.convert(base_unit_id, disp_unit_id, val_base_units)
+                return val_disp_units
+            else:
+                return val_base_units
+        else:
+            return None
+
+    def get_grid_element_FieldType(self, field_name='a_field_name', record_index=0):
+        """
+        Return the FieldType of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The FieldType of the grid element for the given field name and record index, or None if no such element exists, as FieldType or None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        # TODO: This is not OO. Improve. Maybe by having the tkDGElement classes return their FieldType when get_state() is called, or by having a method in tkDGElement that returns its FieldType.
+        if element is not None:
+            elem_type = element.get_state()[0]
+            if elem_type == tkDGElementText:
+                return FieldType.TEXT
+            elif elem_type == tkDGElementBool:
+                return FieldType.BOOL
+            elif elem_type == tkDGElementList:
+                return FieldType.LIST
+            elif elem_type == tkDGElementNumber:
+                return FieldType.NUMBER
+            else:
+                return None
+        else:
+            return None
+
+    def get_grid_element_default_value(self, field_name='a_field_name', record_index=0):
+        """
+        Return the default value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :return: The default value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not a text value,
+                  and it will be in base units if the field has an associated unit group.
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            return element.get_default_value()
+        else:
+            return None
+
+    def set_grid_element_value(self, field_name='a_field_name', record_index=0, value=None):
+        """
+        Set the value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter value: The value to set in the grid element, as any
+            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
+                  and it should be in base units if the field has an associated unit group.
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.set_state(value)
+        return None
+
+    def set_grid_element_default_value(self, field_name='a_field_name', record_index=0, value=None):
+        """
+        Set the default value of the grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter value: The default value to set in the grid element, as any
+            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
+                  and it should be in base units if the field has an associated unit group.
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            element.set_default_value(value)
+        return None
+
+    def set_grid_element_list_choices(self, field_name='a_field_name', record_index=0, choices=tuple()):
+        """
+        Set the choices for a LIST grid element for a given field name and record index. This method is intended
+        to be called by clients, as it does not require clients to interact with tkDGElement objects.
+        :parameter field_name: The name of the field, as string
+        :parameter record_index: The (0=based) index of the record, as int
+        :parameter choices: The choices to set for the LIST grid element, as tuple of strings
+        :return: None
+        """
+        assert(type(field_name)==str)
+        assert(type(record_index)==int)
+        element = self._get_grid_element(field_name, record_index)
+        if element is not None:
+            if element.get_state()[0] == tkDGElementList:
+                element.set_menu_choices(choices)
+        return None
+
+    def create_element_format(self, format_name = 'an_element_format', text_color = 'black', cell_color = 'white',
+                              read_only = True, default_cell_color='#74BA00'):
+        """
+        Create a named configuration for formatting element widgets in the data grid.
+        :parameter format_name: The name of the format, as string
+        :parameter text_color: The color of the text in the element widget, as string
+        :parameter cell_color: The background color of the element widget, as string
+        :parameter read_only: If True, the element widget will not accept input, as boolean
+        :parameter default_cell_color: The background color for the element widget if the value of the element
+                                       is the default value for that element, as string
+            Note: The default value for default_cell_color paramter is "Microsoft Green"
+        :return None:
+        """
+        assert(type(format_name)==str)
+        assert(type(text_color)==str)
+        assert(type(cell_color)==str)
+        assert(type(read_only)==bool)
+        self._element_formats[format_name] = (text_color, cell_color, read_only, default_cell_color)
+        return None
+
+    # ** Methods NOT intended for client use **
+
+    # * Mouse wheel scrolling methods for the data grid canvas *
+    
     def _bound_to_mousewheel(self, event):
         """
         Called when data grid canvase is entered with the mouse pointer. Binds the mouse wheel to the canvas scroll.
@@ -1555,6 +1832,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         logger.debug(f"tkDataGridWidget received mouse wheel event for event delta of {event.delta}.")
         self._dg_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
         return None
+
+    # * Contextual menu methods for the data grid *
 
     def onContextMenu(self, event, element):
         """
@@ -2048,6 +2327,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         logger.debug(f"Context menu option {option} was selected.")
         return None
 
+    # * Focus and keyboard event handlers for the data grid *
+    # Note: These are intended to be called from the tkDGElement objects that are the element widgets in the data grid.
+
     def onFocusIn(self, element):
         """
         Handler for the FocusIn events. Update it's tracking of currently focused element to the event's widget.
@@ -2189,6 +2471,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     self._focused_element = next_element
         return None
 
+    # * Utility functions for the data grid *
+
     def _is_element_readonly(self, element):
         """
         Utility function for determinig if a data grid element is readonly.
@@ -2219,225 +2503,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             return True
         else:
             return False
-    
-    def clear_grid_element_value(self, field_name='a_field_name', record_index=0):
-        """
-        Clear the value of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        Note: (1) A FieldType.TEXT element will have its value set to ''
-              (2) A FieldType.BOOL element will have its value set to False
-              (3) A FieldType.LIST element will have its value unchanged.
-              (4) A FieldType.Number element will have its text value set to '' and its numeric value set to None.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :return: None
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            element.clear_element_value()
-        return None
-
-    def get_field_unit_group(self, field_name='a_field_name'):
-        """
-        Return the value of the unit of measurement group for a given field name. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :return: The value of the unit of measurement group for the given field name, or None if no such field name exists or the field has no associated unit group,
-                 as any or None
-        """
-        assert(type(field_name)==str)
-        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
-        if len(field_header_element)>0:
-            field_header_element = field_header_element[0]
-        else:
-            field_header_element = None
-        if field_header_element is not None:
-            return field_header_element._field_config.fieldUnitGroup
-        else:
-            return None
-
-    def get_field_unitID(self, field_name='a_field_name'):
-        """
-        Return the value of the unit of measurement ID for a given field name. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :return: The value of the unit of measurement ID for the given field name, or None if no such field name exists or the field has no associated unit ID,
-                 as any or None
-        """
-        assert(type(field_name)==str)
-        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
-        if len(field_header_element)>0:
-            field_header_element = field_header_element[0]
-        else:
-            field_header_element = None
-        if field_header_element is not None:
-            return field_header_element._field_config.fieldUnitID
-        else:
-            return None
-
-    def get_field_unit_name(self, field_name='a_field_name'):
-        """
-        Return the value of the unit of measurement name for a given field name. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :return: The value of the unit of measurement name for the given field name, or None if no such field name exists or '' if the field has no associated unit name,
-                 as string or None
-        """
-        assert(type(field_name)==str)
-        field_header_element = [he for he in self._header_elements if he._raw_state==field_name]
-        if len(field_header_element)>0:
-            field_header_element = field_header_element[0]
-        else:
-            field_header_element = None
-        if field_header_element is not None:
-            return field_header_element._field_config.fieldUnitName
-        else:
-            return None
-
-    def get_grid_element_value(self, field_name='a_field_name', record_index=0):
-        """
-        Return the value of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
-            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
-                  and it will be in base units if the field has an associated unit group.
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            return element.get_state()[1]
-        else:
-            return None
-
-    def get_grid_element_value_display_units(self, field_name='a_field_name', record_index=0):
-        """
-        Return the value of the grid element for a given field name and record index. If the element is a record for a
-        field that has a unit group, then the value will be returned in the current display units. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
-            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not the text value,
-                  and it will be in the current display units if the field has an associated unit group.
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            val_base_units = element.get_state()[1]
-            if self._element_has_units(element):
-                unit_grp = self.get_field_unit_group(field_name)
-                base_unit_id = self.uomAdapter.get_base_unit_id_for_unit_group(unit_grp)
-                disp_unit_id = self.get_field_unitID(field_name)
-                val_disp_units = self.uomAdapter.convert(base_unit_id, disp_unit_id, val_base_units)
-                return val_disp_units
-            else:
-                return val_base_units
-        else:
-            return None
-
-    def get_grid_element_FieldType(self, field_name='a_field_name', record_index=0):
-        """
-        Return the FieldType of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :return: The FieldType of the grid element for the given field name and record index, or None if no such element exists, as FieldType or None
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        # TODO: This is not OO. Improve. Maybe by having the tkDGElement classes return their FieldType when get_state() is called, or by having a method in tkDGElement that returns its FieldType.
-        if element is not None:
-            elem_type = element.get_state()[0]
-            if elem_type == tkDGElementText:
-                return FieldType.TEXT
-            elif elem_type == tkDGElementBool:
-                return FieldType.BOOL
-            elif elem_type == tkDGElementList:
-                return FieldType.LIST
-            elif elem_type == tkDGElementNumber:
-                return FieldType.NUMBER
-            else:
-                return None
-        else:
-            return None
-
-    def get_grid_element_default_value(self, field_name='a_field_name', record_index=0):
-        """
-        Return the default value of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :return: The default value of the grid element for the given field name and record index, or None if no such element exists, as any or None
-            Note: If the grid element is a FieldType.NUMBER, then the value returned will be the numeric value, not a text value,
-                  and it will be in base units if the field has an associated unit group.
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            return element.get_default_value()
-        else:
-            return None
-
-    def set_grid_element_value(self, field_name='a_field_name', record_index=0, value=None):
-        """
-        Set the value of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :parameter value: The value to set in the grid element, as any
-            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
-                  and it should be in base units if the field has an associated unit group.
-        :return: None
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            element.set_state(value)
-        return None
-
-    def set_grid_element_default_value(self, field_name='a_field_name', record_index=0, value=None):
-        """
-        Set the default value of the grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :parameter value: The default value to set in the grid element, as any
-            Note: If the grid element is a FieldType.NUMBER, then the value set should be the numeric value, not a text value,
-                  and it should be in base units if the field has an associated unit group.
-        :return: None
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            element.set_default_value(value)
-        return None
-
-    def set_grid_element_list_choices(self, field_name='a_field_name', record_index=0, choices=tuple()):
-        """
-        Set the choices for a LIST grid element for a given field name and record index. This method is intended
-        to be called by clients, as it does not require clients to interact with tkDGElement objects.
-        :parameter field_name: The name of the field, as string
-        :parameter record_index: The (0=based) index of the record, as int
-        :parameter choices: The choices to set for the LIST grid element, as tuple of strings
-        :return: None
-        """
-        assert(type(field_name)==str)
-        assert(type(record_index)==int)
-        element = self._get_grid_element(field_name, record_index)
-        if element is not None:
-            if element.get_state()[0] == tkDGElementList:
-                element.set_menu_choices(choices)
-        return None
     
     def _get_grid_element(self, field_name='a_field_name', record_index=0):
         """
@@ -2475,26 +2540,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     record_index = self._grid_elements[field_name].index(element)
                     break
         return (field_name, record_index)
-        
-    def create_element_format(self, format_name = 'an_element_format', text_color = 'black', cell_color = 'white',
-                              read_only = True, default_cell_color='#74BA00'):
-        """
-        Create a named configuration for formatting element widgets in the data grid.
-        :parameter format_name: The name of the format, as string
-        :parameter text_color: The color of the text in the element widget, as string
-        :parameter cell_color: The background color of the element widget, as string
-        :parameter read_only: If True, the element widget will not accept input, as boolean
-        :parameter default_cell_color: The background color for the element widget if the value of the element
-                                       is the default value for that element, as string
-            Note: The default value for default_cell_color paramter is "Microsoft Green"
-        :return None:
-        """
-        assert(type(format_name)==str)
-        assert(type(text_color)==str)
-        assert(type(cell_color)==str)
-        assert(type(read_only)==bool)
-        self._element_formats[format_name] = (text_color, cell_color, read_only, default_cell_color)
-        return None
 
     def _apply_element_format_to_one_element(self, elem_format='a_field_header', element=None):
         """
@@ -2541,10 +2586,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Detach this observer from it's subjects, the child widgets (tkDGElement objects) of the data grid
         self._detach_from_subjects()
         return None
-
-    @property
-    def canvas(self):
-        return self._dg_canvas
 
     def handle_element_update(self, element=None, hints=None):
         """

@@ -1,11 +1,11 @@
 """
 This module provides the UoMSysAdapter class that follows the Adapter design patter to adapt a Units of Measurement System (UoMSys)
-to a common interface expected to tkDataGridWidget. It is an Object Adaptater that relys on composition to adapt a UoMSys to the
+to a common interface expected by tkDataGridWidget. It is an Object Adaptater that relies on composition to adapt a UoMSys to the
 expected interface.
 
 Exported Classes:
     UoMSysAdapter -- A class that follows the Adapter design patter to adapt a Units of Measurement System (UoMSys) to a common
-                     interface expected to tkDataGridWidget. It is an Object Adaptater that relys on composition to adapt
+                     interface expected by tkDataGridWidget. It is an Object Adaptater that relies on composition to adapt
                      a UoMSys to the expected interface.
 
 Exported Exceptions:

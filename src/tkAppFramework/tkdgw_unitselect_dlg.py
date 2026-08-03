@@ -66,12 +66,12 @@ class tkUnitSelectDlg(simpledialog.Dialog):
         simpledialog.Dialog.__init__(self, parent, dialog_title)
 
     def body(self, master):
-        '''create dialog body.
-
-        return widget that should have initial focus.
-        This method should be overridden, and is called
-        by the Dialog.__init__ method.
-        '''
+        """
+        Create dialog body.
+        :parameter master: The parent tkinter window for the dialog
+        :return: widget that should have initial focus
+        This is an override of the base class method, and is called by the Dialog.__init__ method.
+        """
         # Create a Listbox for selecting from a list of units
         self._units_item_data = []
         self._lb_units = tk.Listbox(master)
@@ -81,11 +81,11 @@ class tkUnitSelectDlg(simpledialog.Dialog):
         return self._lb_units
 
     def apply(self):
-        '''process the data
-
-        This method is called automatically to process the data, *after*
+        """
+        Process the input obtained from the dialog.
+        This method is an override of the base class method and is called automatically to process the input, *after*
         the dialog is destroyed. It makes the unit change in the field header element.
-        '''
+        """
         current_selection = self._lb_units.curselection()[0]
         self._selected_unit_id = self._units_item_data[current_selection]
         self._selected_unit_name = self._lb_units.get(current_selection)
@@ -114,9 +114,9 @@ class tkUnitSelectDlg(simpledialog.Dialog):
         return None
 
 
+# DON'T USE THIS CLASS. It is a failed attempt to create a dialog that processes events, but it doesn't work.
+# Leaving it in the code base for now in case I want to try again later.
 # Reference: https://github.com/python/cpython/blob/3.14/Lib/tkinter/filedialog.py
-# Here again, despite following the methodology of the reference, events don't seem to get processed within the
-# dialog.
 class tkUnitSelectDlg3:
     """
     This class represents a tkinter TopLevel window that enables the user to select a particular unit from a unit group in a
@@ -258,7 +258,9 @@ class tkUnitSelectDlg3:
         return None
 
 
-# Events don't seem to get processed within the dialog. Probably not surprising, as there is no event loop running for it.
+# DON'T USE THIS CLASS. It is a failed attempt to create a dialog that processes events, but it doesn't work.
+# Probably not surprising, as there is no event loop running for it.
+# Leaving it in the code base for now in case I want to try again later.
 class tkUnitSelectDlg2(tk.Toplevel):
     """
     This class represents a tkinter TopLevel window that enables the user to select a particular unit from a unit group in a

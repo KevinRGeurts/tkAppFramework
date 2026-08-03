@@ -16,7 +16,6 @@ Exported Functions:
 import tkinter as tk
 from tkinter import ttk
 
-
 # Local imports
 
 

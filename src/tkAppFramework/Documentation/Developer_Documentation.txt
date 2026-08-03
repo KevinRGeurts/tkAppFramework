@@ -133,9 +133,13 @@ then destroy the tooltip window.
 (3) Consider adding additional figure templates (histogram, box plot, pie chart, ...).
 
 (4) Clean up the demo app for the data grid. The way the boolean element is used is obscure, particularly that it has associated units.
-Maybe just have the boolean element control whether or not the app computes a result for the record on updates.
+Maybe just have the boolean element control whether or not the app computes a result for the record on updates. {Completed}
 
 (5) Make the canvas scroll with the mouse wheel. {Completed}
 
 (6) Enable selecting multiple grid cells and performing copy/paste operations on them.
 
+(7) Implement in the tkAppFramework a UOM adapter based on PyPi units-of-measure package. This would be a "default" UOM adapter
+then available to all users of the framework.
+
+(8) tkDataGridWidget needs much more extensive unit testing.

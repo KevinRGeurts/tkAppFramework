@@ -8,6 +8,8 @@ Exported Exceptions:
     tkAppFrameworkError - Base exception class for all custom exceptions specific to tkAppFramework package.
     NoWidgetTagConfigurationAvailableForXHTMLTag - Custom exception to be raised when there is no tkinter Text widget tag
                                                    configuration available for a given XHTML tag.
+    tkDGElementTextInvalidEntryError - Custom exception to be raised when a user enters invalid text into a
+                                        tkDGElementText Entry widget.
 
 Exported Functions:
     None
@@ -46,5 +48,3 @@ class tkDGElementTextInvalidEntryError(tkAppFrameworkError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
         # self.X_info = kwargs.get('X_info')
-
-

@@ -7,6 +7,8 @@ This module also illustrates how to create and launch a tkinter-based simulator 
 classes from tkAppFramework, using a simple DemoSimulator class that asks the user for floating point values,
 squares them, and logs the results.
 
+This modue also illustrates how to create and launch a tkinter-based DataGridDemotkApp application using the tkDataGridWidget.
+
 Exported Classes:
     DemoWidget -- A demo tkinter labelframe with a button that toggles between 'Start' and 'Stop' when clicked.
                   Also, a Subject for the DemotkViewManager to observe.
@@ -20,7 +22,7 @@ Exported Exceptions:
     None
  
 Exported Functions:
-    __main__ -- Create and launch tkinter-based Demo Application or Simulator Application, at user's choice.
+    __main__ -- Create and launch tkinter-based Demo Application or Simulator Application, or Data Grid Demo Application, at user's choice.
 """
 
 
@@ -42,6 +44,7 @@ from tkAppFramework.datagriddemoapp import DataGridDemotkApp
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
+
 
 class DemoModel(Model):
     """

@@ -1,5 +1,24 @@
 """
-Defines classes for a datagrid demo application, which is also used for unittesting of the datagrid widget and its elements.
+Defines classes for a data grid demo application.
+
+Exported Classes:
+    DemoUoMSystem -- A demo units of measurement system class, used in the data grid demo application to demonstrate how a
+                     UoMSysAdapter might be implemented for a specific unit system implementation.
+    DemoUoMSysAdapter -- A concrete implementation of UoMSysAdapter for the data grid demo application.
+    DataGridDemoModel -- A concrete implementation of Model for the demo data grid application.
+    DataGridDemotkViewManager -- A concrete implementation of tkViewManager for the demo data grid application.
+                                 Illustrates how to:
+                                 (1) Create a tkDataGridWidget with field configurations, user abilities, and a UoMSysAdapter.
+                                 (2) Initialize the tkDataGridWidget with values for the records.
+                                 (3) Handle update notifications from the tkDataGridWidget widget, by running the updated record through the model to get a new result,
+                                     and then displaying that result in the grid.
+    DataGridDemotkApp -- A concrete implementation of tkApp for the demo data grid application.
+
+Exported Exceptions:
+    None    
+ 
+Exported Functions:
+    None
 """
 
 # Standard
@@ -166,7 +185,7 @@ class DataGridDemotkViewManager(tkViewManager):
         _user_abilities = DataGridUserAbilities(can_insert_field=False, can_delete_field=False, can_insert_record=True,
                                                can_delete_record=True)
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
-                                    log_level = logging.DEBUG, uom_adapter=DemoUoMSysAdapter(),
+                                    log_level = logging.INFO, uom_adapter=DemoUoMSysAdapter(),
                                     user_abilities=_user_abilities)
         # Attach self as an observer of the subject demo widget
         self._dg.attach(self)
@@ -260,7 +279,7 @@ class DataGridDemotkViewManager(tkViewManager):
                     if record_index > -1:
                         # The update is for a record element and not for a field header element, and is thus a value change.
                         modified_value = self._dg.get_grid_element_value(field_name, record_index)
-                        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
+                        # print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
                         # Raise an error for invalid entry, if the modified element's value 9.9999e99 as float.
                         # This is just to test the handling of invalid entries that can only be recognized as invalid by the data grid
                         # widget's client.
@@ -312,5 +331,3 @@ class DataGridDemotkApp(tkAppFramework.tkApp.tkApp):
         :return: DemoModel instance that will be the app's model
         """
         return DataGridDemoModel()
-
-

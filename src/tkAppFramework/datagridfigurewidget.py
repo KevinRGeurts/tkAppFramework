@@ -3,8 +3,10 @@ This module defines the tkDataGridFigureWidget and DataGridFigureTemplate classe
 display graphical figures (line plots and bar plots, for example) of a data grid's records and fields.
 
 Exported Classes:
-    DataGridFigureTemplate -- Base class for children which are responsible for actually making a specific matplotlib figure.
     tkDataGridFigureWidget -- Displays a matplotlib figure in a tkinter Frame widget, with a DataGridFigureTemplate object to define the figure contents.
+    DataGridFigureTemplate -- Base class for children which are responsible for actually making a specific matplotlib figure.
+    ScatterPlotFieldsFigureTemplate -- Child of DataGridFigureTemplate that makes a scatter plot of two or more fields in the data grid.
+    BarPlotFieldsFigureTemplate -- Child of DataGridFigureTemplate that makes a bar plot of two or more fields in the data grid.
 
 Exported Exceptions:
     None    
@@ -47,6 +49,7 @@ class DataGridFigureTemplate(object):
     def make_figure(self, figure_widget):
         """
         Make the figure with calls to matplotlib, relying on calls to figure_widget to obtain required data values.
+        Must be extended by child classes to actually make the figure. This base class method sets the axes labels and aspect ratio.
         :parameter figure_widget: The figure widget to use to obtain data values and to make the plot. 
         :return: None
         """
@@ -95,6 +98,11 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
         self._symbols = symbols
         
     def make_figure(self, figure_widget):
+        """
+        Make the figure with calls to matplotlib, relying on calls to figure_widget to obtain required data values.
+        :parameter figure_widget: The figure widget to use to obtain data values and to make the plot. 
+        :return: None
+        """
         super().make_figure(figure_widget)
         for yf, sym in zip(self._y_fields, self._symbols):
             xvals=[]
@@ -140,6 +148,11 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
         self._colors = colors
         
     def make_figure(self, figure_widget):
+        """
+        Make the figure with calls to matplotlib, relying on calls to figure_widget to obtain required data values.
+        :parameter figure_widget: The figure widget to use to obtain data values and to make the plot. 
+        :return: None
+        """
         super().make_figure(figure_widget)
         # Get the data grid widget associated with the figure
         _dg=figure_widget.master
