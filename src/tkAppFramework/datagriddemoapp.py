@@ -132,16 +132,15 @@ class DataGridDemoModel(Model):
     def __init__(self) -> None:
         super().__init__()
         
-    def compute_result(self, base, add_to, multiply_by):
+    def compute_result(self, base, multiply_by):
         """
-        Compute a result based on the given base, add_to, and multiply_by values. This is just an example of a method
+        Compute a result based on the given base and multiply_by values. This is just an example of a method
         that the model might have to perform some business logic for the datagrid demo app.
         :param base: A number to be used as the base value in the computation.
-        :param add_to: A number to be added to the base value.
         :param multiply_by: A number to multiply the sum of the base and add_to values by.
-        :return: The result of (base + add_to) * multiply_by
+        :return: The result of base * multiply_by
         """
-        return (base + add_to) * multiply_by
+        return (base * multiply_by)
 
 
 class DataGridDemotkViewManager(tkViewManager):
@@ -155,10 +154,10 @@ class DataGridDemotkViewManager(tkViewManager):
         :return None:
         """
         field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
+                                FieldConfiguration('Compute Result', FieldType.BOOL, 'editable', None, None, None, None),
                                 FieldConfiguration('Base', FieldType.NUMBER, 'editable',
                                                    partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=None),
                                                    'gid_length', 'uid_meter', 'm'),
-                                FieldConfiguration('Add 2 to', FieldType.BOOL, 'editable', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
                                 FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Comment', FieldType.TEXT, 'editable',
@@ -207,6 +206,8 @@ class DataGridDemotkViewManager(tkViewManager):
         """
         # Initialize the "Record Index" field
         self._dg.set_grid_element_value('Record Index', index, str(index))
+        # Initialize the "Compute Result" field
+        self._dg.set_grid_element_value('Compute Result', index, True)
         # Initialze the 'Multiply by' field
         self._dg.set_grid_element_list_choices('Multiply by', index, ('1.0', '2.0', '3.0', '4.0'))
         self._dg.set_grid_element_default_value('Multiply by', index, '2.0')
@@ -259,11 +260,12 @@ class DataGridDemotkViewManager(tkViewManager):
                     if record_index > -1:
                         # The update is for a record element and not for a field header element, and is thus a value change.
                         modified_value = self._dg.get_grid_element_value(field_name, record_index)
-                        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element''s value is {modified_value}.")
-                        # Raise an error for invalid entry, if the modified element's value "-99.99e-99" as text string.
-                        # This is just to test the handling of invalid entries.
+                        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
+                        # Raise an error for invalid entry, if the modified element's value 9.9999e99 as float.
+                        # This is just to test the handling of invalid entries that can only be recognized as invalid by the data grid
+                        # widget's client.
                         if modified_value == 9.999e99:
-                            msg = f"Invalid entry of '9.999e99' in data grid element at (field name = {field_name}, record index = {record_index})."
+                            msg = f"Invalid entry of 9.999e99 in data grid element at (field name = {field_name}, record index = {record_index})."
                             raise tkDGElementTextInvalidEntryError(msg)
                         try:
                             # Get the current Result value for the record.
@@ -274,20 +276,20 @@ class DataGridDemotkViewManager(tkViewManager):
                             # so that the 'Result' field of the record will be updated with the new result from the model.
                             current_result = -99.99
                         try:
-                            # Get the values required by the model for a computation out of the record's fields
-                            base_val = self._dg.get_grid_element_value('Base', record_index)
-                            add_to_val = 2.0 if self._dg.get_grid_element_value('Add 2 to', record_index) == 1.0 else 0.0
-                            add_to_uid = self._dg.get_field_unitID('Add 2 to')
-                            # Convert add_to_val to meters (TODO: Assumption being made here that meters are base units for length.)
-                            add_to_val = self._dg.uomAdapter.convert(add_to_uid, 'uid_meter', add_to_val)
-                            multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
-                            # Ask the model to compute a result based on the values from the record's fields.
-                            # This result is in base units (meters).
-                            result = self.getModel().compute_result(base_val, add_to_val, multiply_by_val)
-                            # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
-                            # This prevents an infinite loop of updates.
-                            if result != current_result:
-                                self._dg.set_grid_element_value('Result', record_index, result)
+                            should_compute = self._dg.get_grid_element_value('Compute Result', record_index)
+                            if should_compute:
+                                # Get the values required by the model for a computation out of the record's fields
+                                base_val = self._dg.get_grid_element_value('Base', record_index)
+                                multiply_by_val = float(self._dg.get_grid_element_value('Multiply by', record_index))
+                                # Ask the model to compute a result based on the values from the record's fields.
+                                # This result is in base units (meters).
+                                result = self.getModel().compute_result(base_val, multiply_by_val)
+                                # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
+                                # This prevents an infinite loop of updates.
+                                if result != current_result:
+                                    self._dg.set_grid_element_value('Result', record_index, result)
+                            else:
+                                self._dg.clear_grid_element_value('Result', record_index)
                         except:
                             self._dg.clear_grid_element_value('Result', record_index)
         return None
