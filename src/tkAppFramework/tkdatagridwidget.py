@@ -1473,6 +1473,11 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._scrollbar_hor.grid(column=0, row=1, sticky='NWSE')
         self._dg_canvas['xscrollcommand'] = self._scrollbar_hor.set
 
+        # Bindings for mouse wheel scrolling on the canvas.
+        # Reference: https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
+        self._dg_canvas.bind('<Enter>', self._bound_to_mousewheel)
+        self._dg_canvas.bind('<Leave>', self._unbound_to_mousewheel)
+
         # Store currently focused element widget, as tkDGElement object.
         self._focused_element = None
 
@@ -1516,6 +1521,39 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(isinstance(name, str) and len(name)>0)
         assert(isinstance(template, DataGridFigureTemplate))
         self._fig_temps[name]=template
+        return None
+
+    def _bound_to_mousewheel(self, event):
+        """
+        Called when data grid canvase is entered with the mouse pointer. Binds the mouse wheel to the canvas scroll.
+        :parameter event: The tkinter event object for the event
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget is binding to mouse wheel events.")
+        self._dg_canvas.bind_all('<MouseWheel>', self._onMousewheel)
+        return None
+
+    def _unbound_to_mousewheel(self, event):
+        """
+        Called when data grid canvase is left by the mouse pointer. Unbinds the mouse wheel from the canvas scroll.
+        :parameter event: The tkinter event object for the event
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget is unbinding from mouse wheel events.")
+        self._dg_canvas.unbind_all('MouseWheel>')
+        return None
+
+    def _onMousewheel(self, event):
+        """
+        Called when data grid recieves mouse scroll event. Scrolls the data grid canvas.
+        :parameter event: The tkinter event object for the event
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"tkDataGridWidget received mouse wheel event for event delta of {event.delta}.")
+        self._dg_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
         return None
 
     def onContextMenu(self, event, element):

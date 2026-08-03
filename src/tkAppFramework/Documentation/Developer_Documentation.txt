@@ -135,3 +135,7 @@ then destroy the tooltip window.
 (4) Clean up the demo app for the data grid. The way the boolean element is used is obscure, particularly that it has associated units.
 Maybe just have the boolean element control whether or not the app computes a result for the record on updates.
 
+(5) Make the canvas scroll with the mouse wheel. {Completed}
+
+(6) Enable selecting multiple grid cells and performing copy/paste operations on them.
+
