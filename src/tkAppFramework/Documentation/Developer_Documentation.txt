@@ -145,3 +145,5 @@ then available to all users of the framework.
 (8) tkDataGridWidget needs much more extensive unit testing.
 
 (9) Address TODO comments in code.
+
+(10) Bar graphs do not like None values. Investigate.

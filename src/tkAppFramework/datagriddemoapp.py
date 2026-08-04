@@ -135,8 +135,7 @@ class DemoUoMSysAdapter(UoMSysAdapter):
         Note: The "base" unit is uniquely defined by paticular Units of Measurement System (UoMSys)
               for each unit group. Collectively for all unit groups, base units are the set of units
               used "internally" by the application/model so that calculations are done consistently and
-              correctly. For a relatively simple application/model, it may not be necessary to implement this
-              method, because 
+              correctly. 
         :param unit_group_id: The ID of the unit group to get the base unit ID of, as Any
         :return: The base unit ID of the specified unit group, as [Any]
         """
@@ -164,12 +163,13 @@ class DataGridDemoModel(Model):
 
 class DataGridDemotkViewManager(tkViewManager):
     """
-    Provide an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
+    Provides an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
     and the tkDataGrid widget.
     """
     def _CreateWidgets(self):
         """
-        Create the demo widget, register 
+        Create and set geometry for the datagrid widget, set up self as an observer of the datagrid,
+        and intialize the elements of the data grid. 
         :return None:
         """
         field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
@@ -241,7 +241,7 @@ class DataGridDemotkViewManager(tkViewManager):
     
     def handle_model_update(self):
         """
-        Handle updates from the model.
+        Handle updates from the model. None needed, since the model doesn't retain any data.
         :return None:
         """
         print(f"DataGridDemotkViewManager received a model update notification.")
@@ -266,11 +266,11 @@ class DataGridDemotkViewManager(tkViewManager):
                         if i == new_rec_idx:
                             self._initialize_one_record(i)
                         else:
-                            # This is a previously existing record, that need's its 'Record Index' field updated
+                            # This is a previously existing record, that needs its 'Record Index' field updated
                             self._dg.set_grid_element_value('Record Index', i, str(i))
                 elif isinstance(hint, DataGridDeleteRecordUpdateHint):
                     # An existing record has been deleted from the data grid.
-                    # Nothing needs to be done in this case, because the model does not have a list of records.
+                    # Nothing needs to be done in this case, because the model does not retain a list of records.
                     pass
                 elif isinstance(hint, DataGridChangedRecordUpdateHint):
                     # Determine the field name and record index of the modified element.
@@ -280,7 +280,7 @@ class DataGridDemotkViewManager(tkViewManager):
                         # The update is for a record element and not for a field header element, and is thus a value change.
                         modified_value = self._dg.get_grid_element_value(field_name, record_index)
                         # print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
-                        # Raise an error for invalid entry, if the modified element's value 9.9999e99 as float.
+                        # Raise an error for invalid entry, if the modified element's value is exactly 9.9999e99 as float.
                         # This is just to test the handling of invalid entries that can only be recognized as invalid by the data grid
                         # widget's client.
                         if modified_value == 9.999e99:
@@ -297,7 +297,7 @@ class DataGridDemotkViewManager(tkViewManager):
                                 # Ask the model to compute a result based on the values from the record's fields.
                                 # This result is in base units (meters).
                                 result = self.getModel().compute_result(base_val, multiply_by_val)
-                                # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
+                                # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result.
                                 # This prevents an infinite loop of updates.
                                 if result != current_result:
                                     self._dg.set_grid_element_value('Result', record_index, result)

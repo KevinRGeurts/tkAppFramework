@@ -14,13 +14,18 @@ Source code: [GitHub](https://github.com/KevinRGeurts/tkAppFramework)
   and John Vlissides, published by Addison-Wesley, 1995.
 
 tkDataGridWidget is a component of the tkAppFramework package. It is a tkinter widget that displays data in a grid format, similar to a spreadsheet.
+It also provides graphical visualizations of the data.
 It is designed to be used as a child widget of a tkViewManager child class. It can be used to display data values or computational
 results for viewing. It can also be used to collect input values from the user. And it can be used as a hybrid where some fields are inputs and some fields are
 the outputs from computations. It is richly featured and highly customizable.
 
+![Data grid widget example](./datagrid_demo_grid.png)
+![Data grid widget figure example](./datagrid_demo_figure.png)
+
+
 ## Functionality from a user's perspective
 
-From the viewpoint of an application user, the data grid provides the following features:
+From the viewpoint of an application's user, the data grid provides the following features:
 
 ### Understanding the colors of grid cells:
 
@@ -36,7 +41,7 @@ From the viewpoint of an application user, the data grid provides the following 
 - The selected cell can be changed by moving around the grid with the arrow keys.
 - The tab key will move the selected cell in a pre-defined order. Typically this order is to move down the current column and then over to the next column to the right.
 - The enter key will enter a new value into the currently selected grid cell without moving from that cell.
-- Hovering over a grid cell with te mouse pointer will display a tooltip with the cell's value and default value.
+- Hovering over a grid cell with the mouse pointer will display a tooltip with the cell's value and default value.
 
 ### Changing the units of a field in the grid:
 
@@ -72,21 +77,162 @@ sense for them to be able to delete a record.
 
 tkDataGridWidget is a tkinter widget that can be created as a child widget of a tkViewManager child class.
 
-To create a tkDataGridWidget, ...
+### Creating a tkDataGridWidget
 
-To populate a tkDataGridWidget with data, ...
+```
+dgw = tkDataGridWidget(parent, title='Data Grid', fields_config=[], num_records=0, log_level = logging.INFO,
+                       uom_adapter = None, fields_are_cols = True, user_abilities = DataGridUserAbilities())
+```
+        
+- parent: tkinter widget that is the parent of this widget, typically a tkViewManager child class instance
+- title: The text label of the Labelframe surrounding the data grid widget, as string
+- fields_config: List of FieldConfiguraton objects specifying the configuration of each field in the data grid, as [FieldConfiguration object]
+- num_records: The number of records to display in the data grid, as int
+- log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
+- uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
+- fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows in the grid. Only True is currently supported. As boolean.
+- user_abilities: Controls abilities a user has using contextual menu, as DataGridUserAbilities object
 
-To retrieve data from a tkDataGridWidget, ...
+A logger named 'tkDataGridWidget_logger' is created and configured.
+It logs to stderr through a stream handler. Default logging level is logging.INFO.
 
-To interact with a tkDataGridWidget, for example, when a user changes a value in a cell, ...
+#### Configuring the fields of a tkDataGridWidget
 
-A logger named 'tkDataGridWidget_logger' is created and configured in _setup_logging(...), which is called by ```__init__(...)```.
-It logs to stderr through a stream handler. Default logging level is logging.INFO, but can be set by passing
-log_level into ```__init__(...)```. The 'tkApp_logger' logger can be used by concrete implementation child classes of tkApp.
+```
+field1 = FieldConfiguration(name='', field_type=FieldType.TEXT, field_format='', validator=None, unit_group=None,
+                            unit_id=None, unit_name='')
+```
+
+- name: The name of the data field, as string
+- field_type: The type of the data field, as FieldType Enum value (FieldType.NUMBER, FieldType.TEXT, FieldType.BOOL, FieldType.LIST)
+- field_format: A string that is the key to looking up a format in the element format dictionary maintained by a tkDataGridWidget, as string.
+                The value in the element format dictionary is used to format the element widgets for the records of the field.
+                Predefined format keys are 'field_header', 'editable', and 'read_only'.
+- validator: Callable that takes in a value for the field and raises a tkDGElementTextInvalidEntryError if the value is invalid for the field,
+             or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
+             or if the field is not a TEXT or NUMBER field. As callable|None. Typically the callable would be one of the static methods of
+             the tkDGTextElemValidator class.
+- unit_group: The unit group ID for the field, or None if not applicable, as Any|None
+- unit_id: The current unit ID for the field, or None if not applicable, as Any|None
+- unit_name: The current unitname for the field, as string ('' if not applicable)
+
+##### Notes
+1. unit_group, unit_id, and unit_name are used to support the ability for a user to change the units of a field in the data grid. They are defined by the UoMSysAdapter instance that is passed into the tkDataGridWidget constructor.
+2. A client can define custom field formats using the tkDataGridWidget.create_element_format(...) method.
+
+### Populate a tkDataGridWidget's elements with data
+
+To set the value of the grid element for a given field name and record index, call the set_grid_element(...) method.
+
+```
+dgw.set_grid_element_value(field_name='a_field_name', record_index=0, value=None)
+```
+
+- field_name: The name of the field, as string
+- record_index: The (0=based) index of the record, as int
+- value: The value to set in the grid element, as any
+ 
+##### Notes
+1. The type of value depends on the FieldType. NUMBER = int or float, TEXT = string, BOOL = boolean, LIST = string
+2. If a NUMBER field has an associated unit group, then the value should be in base units for that unit group, as defined by the UoMSysAdapter instance passed into the tkDataGridWidget constructor.
+3. The value for a LIST field must be one of the choices for the list, set by the method set_grid_element_list_choices(...).
+
+To set the default value of the grid element for a given field name and record index, call the set_grid_element_default_value(...) method.
+
+```
+dgw.set_grid_element_default_value(field_name='a_field_name', record_index=0, value=None)
+```
+
+- field_name: The name of the field, as string
+- record_index: The (0=based) index of the record, as int
+- value: The default value to set in the grid element, as any
+
+The same Notes apply as to the set_grid_element_value(...) method.
+
+To clear the value of the grid element for a given field name and record index, call the clear_grid_element_value(...) method.
+
+```
+dgw.clear_grid_element_value(field_name='a_field_name', record_index=0)
+```
+
+- field_name: The name of the field, as string
+- record_index: The (0=based) index of the record, as int
+
+##### Notes
+1. A FieldType.TEXT element will have its value set to ''
+2. A FieldType.BOOL element will have its value set to False
+3. A FieldType.LIST element will have its value unchanged.
+4. A FieldType.Number element will have its text value set to '' and its numeric value set to None.
+
+### Retrieving data from a tkDataGridWidget
+
+To get as return the value of the grid element for a given field name and record index, call the get_grid_element_value(...) method.
+
+```
+dgw.get_grid_element_value(field_name='a_field_name', record_index=0)
+```
+
+- field_name: The name of the field, as string
+- parameter record_index: The (0=based) index of the record, as int
+- return: The value of the grid element for the given field name and record index, or None if no such element exists, as any or None
+
+##### Notes
+1. The type of return value depends on the FieldType. NUMBER = int or float, TEXT = string, BOOL = boolean, LIST = string
+2. If a NUMBER field has an associated unit group, then the returned value will be in base units for that unit group, as defined by the UoMSysAdapter instance passed into the tkDataGridWidget constructor.
+3. The return value for a LIST field will be the selected choice from the list.
+
+### Responding to changes in a tkDataGridWidget
+
+A tkDataGridWidget Is-A subject in the Observer design pattern. Typically it will be observed by a tkViewManager child class instance.
+When a user changes a value in a cell (element) of the data grid, the tkDataGridWidget instance will notify its observers of the change.
+The handler function registered by the observer for the data grid subject will be called with a list of UpdateHint objects that provide context for the update.
+The handler function should take appropriate action. Typically this would include retrieving the current value from the
+modified grid element and possibly values from other elements of the same record, passing those values to the Model instance, and setting
+any Model output values back into the appropriate grid elements of the record.
+This is illustrated in the Usage section of this document.
+
+### Creating figures for a tkDataGridWidget
+
+As mentioned in the above section that describes the data grid's contextual menu, a user can choose to show
+graphs that visualize data in the data grid. These graphs are based on figure templates that are registered with the data grid.
+Currently figure templates are provided for scatter plots and bar plots.
+
+#### Defining a scatter plot figure template
+
+```
+figure_template = ScatterPlotFieldsFigureTemplate(x_label='', y_label='', x_field='', y_fields=[], symbols=[])
+```
+
+- x_label: Text label to place on the figure's x-axis, as string
+- y_label: Text label to place on the figure's y-axis, as string
+- x_field: Name of the field in the data grid to use for the x-axis values, as string
+- y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
+- symbols: List of matplotlib symbols (e.g. 'bo-' for blue circles connected with a solid line) to use for each y_field, as list of strings
+
+#### Defining a bar plot figure template
+
+```
+figure_template = BarPlotFieldsFigureTemplate(x_label='', y_label='', x_field='', y_fields=[], colors=[])
+```
+
+- x_label: Text label to place on the figure's x-axis, as string
+- y_label: Text label to place on the figure's y-axis, as string
+- x_field: Name of the field in the data grid to use for the x-axis values, as string
+- y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
+- colors: List of matplotlib colors (e.g. 'b' for blue bars) to use for each y_field, as list of any valid matplotlib color format
+
+#### Registering a figure template with a tkDataGridWidget
+
+```
+dg.register_figure_template(name, template)
+```
+
+- name: The name of the figure, as string
+- template: The DataGridFigureTemplate object for the figure, as DataGridFigureTemplate child object
 
 ## Usage
 
-The code below shows a minimalist usage of tkDataGridWidget.
+The code below illustrates fairly comprehensive usage of tkDataGridWidget.
 
 ```python
 # Standard
@@ -162,7 +308,7 @@ class DemoUoMSysAdapter(UoMSysAdapter):
     """
     A concrete implementation of UoMSysAdapter for the datagrid demo application.
     This is just an example of how a UoMSysAdapter might be implemented for a specific unit system,
-    and how it might be used in the datagrid demo application.
+    and how it might be used in the datagrid containing application.
     """
     def __init__(self):
         uom_sys = DemoUoMSystem()
@@ -203,8 +349,7 @@ class DemoUoMSysAdapter(UoMSysAdapter):
         Note: The "base" unit is uniquely defined by paticular Units of Measurement System (UoMSys)
               for each unit group. Collectively for all unit groups, base units are the set of units
               used "internally" by the application/model so that calculations are done consistently and
-              correctly. For a relatively simple application/model, it may not be necessary to implement this
-              method, because 
+              correctly. 
         :param unit_group_id: The ID of the unit group to get the base unit ID of, as Any
         :return: The base unit ID of the specified unit group, as [Any]
         """
@@ -232,12 +377,13 @@ class DataGridDemoModel(Model):
 
 class DataGridDemotkViewManager(tkViewManager):
     """
-    Provide an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
+    Provides an implementation of _CreateWidgets(...). Implements handler functions for updates from the model
     and the tkDataGrid widget.
     """
     def _CreateWidgets(self):
         """
-        Create the demo widget, register 
+        Create and set geometry for the datagrid widget, set up self as an observer of the datagrid,
+        and intialize the elements of the data grid. 
         :return None:
         """
         field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
@@ -309,7 +455,7 @@ class DataGridDemotkViewManager(tkViewManager):
     
     def handle_model_update(self):
         """
-        Handle updates from the model.
+        Handle updates from the model. None needed, since the model doesn't retain any data.
         :return None:
         """
         print(f"DataGridDemotkViewManager received a model update notification.")
@@ -334,11 +480,11 @@ class DataGridDemotkViewManager(tkViewManager):
                         if i == new_rec_idx:
                             self._initialize_one_record(i)
                         else:
-                            # This is a previously existing record, that need's its 'Record Index' field updated
+                            # This is a previously existing record, that needs its 'Record Index' field updated
                             self._dg.set_grid_element_value('Record Index', i, str(i))
                 elif isinstance(hint, DataGridDeleteRecordUpdateHint):
                     # An existing record has been deleted from the data grid.
-                    # Nothing needs to be done in this case, because the model does not have a list of records.
+                    # Nothing needs to be done in this case, because the model does not retaibn a list of records.
                     pass
                 elif isinstance(hint, DataGridChangedRecordUpdateHint):
                     # Determine the field name and record index of the modified element.
@@ -347,8 +493,8 @@ class DataGridDemotkViewManager(tkViewManager):
                     if record_index > -1:
                         # The update is for a record element and not for a field header element, and is thus a value change.
                         modified_value = self._dg.get_grid_element_value(field_name, record_index)
-                        # print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
-                        # Raise an error for invalid entry, if the modified element's value 9.9999e99 as float.
+                        print(f"View manager informed of data grid widget element update from grid element at (field name = {field_name}, record index = {record_index}). Element\'s value is {modified_value}.")
+                        # Raise an error for invalid entry, if the modified element's value is exactly 9.9999e99 as float.
                         # This is just to test the handling of invalid entries that can only be recognized as invalid by the data grid
                         # widget's client.
                         if modified_value == 9.999e99:
@@ -365,7 +511,7 @@ class DataGridDemotkViewManager(tkViewManager):
                                 # Ask the model to compute a result based on the values from the record's fields.
                                 # This result is in base units (meters).
                                 result = self.getModel().compute_result(base_val, multiply_by_val)
-                                # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result
+                                # Update the 'Result' field of the record with the result from the model, IFF it is different from the current result.
                                 # This prevents an infinite loop of updates.
                                 if result != current_result:
                                     self._dg.set_grid_element_value('Result', record_index, result)
@@ -409,7 +555,7 @@ The Data Grid Demo Application is the same as the code shown above in the Usage 
 
 ## Unittests
 
-Unittests for the tkAppFramework are in the tests directory, with filenames starting with test_. To run the unittests,
+Unittests for the tkDataGridWidget and related classes are in the tests directory, with filenames starting with test_. To run the unittests,
 type ```python -m unittest discover -s ..\..\tests -v``` in a terminal window in the src\tkAppFramework directory.
 
 ## License

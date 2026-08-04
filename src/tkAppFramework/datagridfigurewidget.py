@@ -37,7 +37,6 @@ class DataGridFigureTemplate(object):
     """
     def __init__(self, x_label = '', y_label = ''):
         """
-        :parameter figure_widget: The tkDataGridFigureWidget object which HAS this DataGridFigureTemplate object.
         :parameter x_label: Text label to place on the figure's x-axis, as string
         :parameter y_label: Text label to place on the figure's y-axis, as string
         """
@@ -75,7 +74,6 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
     """
     def __init__(self, x_label='', y_label='', x_field='', y_fields=[], symbols=[]):
         """
-        :parameter figure_widget: The tkDataGridFigureWidget object which HAS this DataGridFigureTemplate object.
         :parameter x_label: Text label to place on the figure's x-axis, as string
         :parameter y_label: Text label to place on the figure's y-axis, as string
         :parammeter x_field: Name of the field in the data grid to use for the x-axis values, as string
@@ -127,7 +125,6 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
     """
     def __init__(self, x_label='', y_label='', x_field='', y_fields=[], colors=[]):
         """
-        :parameter figure_widget: The tkDataGridFigureWidget object which HAS this DataGridFigureTemplate object.
         :parameter x_label: Text label to place on the figure's x-axis, as string
         :parameter y_label: Text label to place on the figure's y-axis, as string
         :parammeter x_field: Name of the field in the data grid to use for the x-axis values, as string

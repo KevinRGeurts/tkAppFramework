@@ -1294,7 +1294,7 @@ class FieldConfiguration:
                               or does nothing if the value is valid for the field. Set to None if there is no validation for the field,
                               or if the field is not a TEXT field. As callable|None
         :parameter unit_group: The unit group ID for the field, or None if not applicable, as Any|None
-        :parameter unit_group: The current unit ID for the field, or None if not applicable, as Any|None
+        :parameter unit_id: The current unit ID for the field, or None if not applicable, as Any|None
         :parameter unit_name: The current unitname for the field, as string ('' if not applicable)
         """
         self._field_name = name
