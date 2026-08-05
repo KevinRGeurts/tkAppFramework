@@ -569,7 +569,10 @@ class tkDGElementList(tkDGElement):
         :paramter w: The width of the element in the data grid in inches, as float
         :paramter h: The height of the element in the data grid in inches, as float
         """
-        super().__init__(parent, x, y, w, h)        
+        super().__init__(parent, x, y, w, h)
+        # Store the list of available choices that appear in the OptionMenu so that when set_state() is called,
+        # the parameter value can be checked against the available choices.
+        self._choices = tuple()
 
     def _create_element_value(self):
         """
@@ -607,18 +610,21 @@ class tkDGElementList(tkDGElement):
         """
         Set the state of the element.
         :paramter value: The value to set in the element.
+            Note: If value is not in the current list of available menu choices, the state will silently not
+            be changed.
         :parameter hints: An optional list of hints passed to observers to specify what types of 
                           updates have occurred and details about them, as [ObserverPatterBase.UpdateHint object]
         :return: None
         """
         assert(type(value)==str)
-        # TODO: Check that value is in the list of options for the OptionMenu.
-        _hints=hints
-        if _hints is None:
-            _hints=[]
-        _hints.append(RecordElementValueUpdateHint(prev_value=self.get_state()[1], new_value=value))
-        self._element_value.set(value)
-        super().set_state(hints=_hints)
+        # Check that value is in the list of choices for the OptionMenu.
+        if value in self._choices:
+            _hints=hints
+            if _hints is None:
+                _hints=[]
+            _hints.append(RecordElementValueUpdateHint(prev_value=self.get_state()[1], new_value=value))
+            self._element_value.set(value)
+            super().set_state(hints=_hints)
         return None
 
     def clear_element_value(self, hints=None):
@@ -637,13 +643,14 @@ class tkDGElementList(tkDGElement):
         :parameter choices: The choices to set for the OptionMenu, as tuple of strings
         """
         assert(type(choices)==tuple)
+        self._choices = choices
         # See: https://stackoverflow.com/questions/17580218/changing-the-options-of-a-optionmenu-when-clicking-a-button
         self._element_value.set('')
         self._element_widget['menu'].delete(0, 'end')
-        for choice in choices:
+        for choice in self._choices:
             self._element_widget['menu'].add_command(label=choice, command=tk._setit(self._element_value, choice,
                                                                                      callback=partial(self.onOptionSelected, self._canvas_id) ) )
-        self.set_state(choices[0])
+        self.set_state(self._choices[0])
         return None
 
 
@@ -720,8 +727,6 @@ class tkDGElementText(tkDGElement):
         self.OnEntryChanged(self._canvas_id)
         return None
 
-    # TODO: Modify logic to make this more parallel to numeric element, where set_state is called. In particular, 
-    # want notify() to be called differently so it has a record element value change hint.
     def OnEntryChanged(self, canvas_id):
         """
         Event handler for changes to text entry.
@@ -913,8 +918,6 @@ class tkDGElementFieldHeader(tkDGElement):
         :parameter unit_name: The name of the unit of the element, as string (could be '')
         :return: None
         """
-        #TODO: This code will result in an exception down the call stack if the unitID is the same as the previous unitID, but the unitName is different.
-        # This should not happen.
         assert(isinstance(unit_name, str))
         _hint = None
         if self._field_config.fieldUnitID is not None:
@@ -924,7 +927,13 @@ class tkDGElementFieldHeader(tkDGElement):
         if unit_name != self._field_config.fieldUnitName:
             self._field_config.fieldUnitName = unit_name
             # Force a change in the units displayed in the element's text widget
-            self.set_state(self._raw_state, [_hint]) 
+            if _hint is not None:
+                # On this branch, the unit id changed, so conversion of record values is required, so send the hint
+                self.set_state(self._raw_state, [_hint])
+            else:
+                # On this branch, the unit name has changed to a synonym, but the unit id hasn't changed, so conversion of record values
+                # is NOT required, so no hint is sent.
+                self.set_state(self._raw_state)
         return None
 
 

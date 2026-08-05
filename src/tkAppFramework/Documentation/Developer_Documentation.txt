@@ -147,3 +147,15 @@ then available to all users of the framework.
 (9) Address TODO comments in code.
 
 (10) Bar graphs do not like None values. Investigate.
+
+(11) Using a chain of responsibility design pattern, implement handlers for help and tooltips as mix-in classes.
+     These classes will be mixed into tkViewManager children and view mangager child widget classes, and possibly tkApp child classes.
+	 For tooltip: They will have a dict that maps widget references onto either strings or callables that return strings, or possibly any
+	 object that defines __str__(). They will have a setup function (invoked during registering a widget in the dict?) that
+	 binds necessary events (Enter, Leave) to the widget, and will have the callable that gets invoked when the timer expires.
+	 For help: They will have a path to an approriate help topic .md, .html, .txt file, and be able to launch tkHelpApp on a
+	 separate thread.
+
+(12) Implement ability to specify row height and column width for all rows and columns.
+
+(13) Specify ability to change the row height and/or column width for one particular row or column.
