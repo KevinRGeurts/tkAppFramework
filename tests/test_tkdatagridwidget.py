@@ -21,6 +21,9 @@ class Test_tkDataGridWidget(unittest.TestCase):
                                 FieldConfiguration('Read Only Number Field',FieldType.NUMBER,'read_only')]
         self._dgw = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2)
         self._dgw.grid()
+        # Create another data grid widget, but for this one, the fields are rows
+        self._dgw_fr = tkDataGridWidget(self._root, fields_config=field_configurations, num_records=2, fields_are_cols=False)
+        self._dgw_fr.grid()
 
     def tearDown(self):
         if self._root:
@@ -45,7 +48,7 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._dgw.onFocusIn(new_element)
         self.assertEqual(self._dgw._focused_element, new_element)
 
-    def test_onArrowKeys(self):
+    def test_onArrowKeys_fields_as_cols(self):
         # Test moving around in record elements with the arrow keys
         self._dgw.onKeyPressDown(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][1])
@@ -64,6 +67,26 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(self._dgw._focused_element, self._dgw._header_elements[0])
         self._dgw.onKeyPressDown(None)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
+
+    def test_onArrowKeys_fields_as_rows(self):
+        # Test moving around in record elements with the arrow keys
+        self._dgw_fr.onKeyPressRight(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._grid_elements['Editable Text Field'][1])
+        self._dgw_fr.onKeyPressDown(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._grid_elements['Editable Bool Field'][1])
+        self._dgw_fr.onKeyPressLeft(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._grid_elements['Editable Bool Field'][0])
+        self._dgw_fr.onKeyPressUp(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._grid_elements['Editable Text Field'][0])
+        # Test moving in, around, and our of header elements with the arrow keys
+        self._dgw_fr.onKeyPressLeft(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._header_elements[0])
+        self._dgw_fr.onKeyPressDown(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._header_elements[1])
+        self._dgw_fr.onKeyPressUp(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._header_elements[0])
+        self._dgw_fr.onKeyPressRight(None)
+        self.assertEqual(self._dgw_fr._focused_element, self._dgw_fr._grid_elements['Editable Text Field'][0])
         
     def test_get_field_unitID(self):
         unit_id = self._dgw.get_field_unitID('Editable Text Field')
@@ -147,14 +170,24 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(self._dgw._element_has_units(ge), False)
 
     def test_deleteRecord(self):
+        # Test deleting a record when it is a row of a data grid
         self.assertEqual(self._dgw.num_records, 2)
         self._dgw._deleteRecord(0)
         self.assertEqual(self._dgw.num_records, 1)
+        # Test deleting a record when it is a column of a data grid
+        self.assertEqual(self._dgw_fr.num_records, 2)
+        self._dgw_fr._deleteRecord(0)
+        self.assertEqual(self._dgw_fr.num_records, 1)
 
     def test_insertRecordAfter(self):
+        # Test inserting a record when it is a row of a data grid
         self.assertEqual(self._dgw.num_records, 2)
         self._dgw._insertRecordAfter(0)
         self.assertEqual(self._dgw.num_records, 3)
+        # Test inserting a record when it is a column of a data grid
+        self.assertEqual(self._dgw_fr.num_records, 2)
+        self._dgw_fr._insertRecordAfter(0)
+        self.assertEqual(self._dgw_fr.num_records, 3)
 
     def test_onDestroy(self):
         ge = self._dgw._get_grid_element('Editable Text Field', 0)

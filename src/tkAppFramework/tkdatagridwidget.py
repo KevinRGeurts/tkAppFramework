@@ -44,7 +44,7 @@ from enum import IntEnum
 from os import getcwd
 from multiprocessing import Process
 import sysconfig
-from math import isclose
+from math import e, isclose
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
@@ -1412,7 +1412,7 @@ class DataGridChangedRecordUpdateHint(UpdateHint):
         self.changed_record_field = kwargs.get('changed_record_field') # string
 
 
-# The main class for the data grid widget
+# * The main class for the data grid widget *
 
 class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
     """
@@ -1432,7 +1432,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         :parameter uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
         :parameter fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows
-                                    in the grid. Only True is currently supported. As boolean.
+                                    in the grid. As boolean.
         :parameter user_abilities: Controls abilities a user has using contextual menu, as DataGridUserAbilities object
         """
         Subject.__init__(self)
@@ -1521,7 +1521,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         # Set up the data grid with the appropriate number of records and fields.
         self._draw_element_separator_lines()
         self._setup_data_grid()
-
+        
         # Create a dictionary to store figure templates for the data grid
         # key = name of figure (e.g., 'temperature vs depth'), as str
         # value = DataGridFigureTemplate child object
@@ -1960,7 +1960,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 insert_menu_obj.entryconfigure('Column left', state=tk.DISABLED)
                 insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
         # Disable Restore default value if element has no default value or is for a read-only field.
-        if element._element_widget['state']==tk.DISABLED or element._element_widget['state']=='readonly' or element._default_value is None:
+        if element.elementWidget['state']==tk.DISABLED or element.elementWidget['state']=='readonly' or element.get_default_value() is None:
             context_menu.entryconfigure('Restore Default Value', state=tk.DISABLED)
         # Disable Show graph if no figure templates have been registered
         if len(self._fig_temps) == 0:
@@ -2060,7 +2060,29 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Context menu option to delete column of grid element with canvas ID {element.canvasID} was selected.")
-        # TODO: Implement column deletion, but ONLY when columns are records.
+        (field_name, record_index) = self._get_element_coords(element)
+        if self._fields_are_cols:
+            # Columns are fields, so delete a field
+            # TODO: Implement deleting a field
+            pass
+        else:
+            # Columns are records, so delete a record
+            if record_index >= 0:
+                # Element is NOT a field header element, so okay to delete its column
+                self._deleteRecord(record_index)
+                # Set focus to an element for the same field in the record...
+                new_focus_element = None
+                if self._num_records == 0:
+                    # We've just deleted the last record, so then put the focus on the field header
+                    new_focus_element = [he for he in self._header_elements if he._field_config.fieldName==field_name][0]
+                elif record_index == 0:
+                    # We've deleted what was the first record, so then put the  focus on what has become the new first record
+                    new_focus_element = self._grid_elements[field_name][record_index]
+                else:
+                    # We've deleted a record that has a remaining record to the right of it, so then put the focus on that record
+                    new_focus_element = self._grid_elements[field_name][record_index-1]
+                new_focus_element.elementWidget.focus_set()
+                self._focused_element = new_focus_element
         return None
 
     def onDeleteRowContextMenuOptionSelected(self, element):
@@ -2076,10 +2098,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(self._fields_are_cols)
         if self._fields_are_cols:
             # Rows are records, so delete a record
-            if record_index is not None:
+            if record_index >= 0:
                 # Element is NOT a field header element, so okay to delete its row
                 self._deleteRecord(record_index)
-                # Set focus to the element for the same field in the record...
+                # Set focus to an element for the same field in the record...
                 new_focus_element = None
                 if self._num_records == 0:
                     # We've just deleted the last record, so then put the focus on the field header
@@ -2090,8 +2112,12 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 else:
                     # We've deleted a record that has a remaining record above it, so then put the focus on that record
                     new_focus_element = self._grid_elements[field_name][record_index-1]
-                new_focus_element._element_widget.focus_set()
+                new_focus_element.elementWidget.focus_set()
                 self._focused_element = new_focus_element
+        else:
+            # TODO: Implement deleting a field
+            pass
+
         return None
 
     def _deleteRecord(self, index):
@@ -2100,33 +2126,37 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter index: The record index of the recrod which will be deleted, as int
         :return: None
         """
-        assert(self._fields_are_cols)
         # First, delete all of the element/cell separators/borders on the canvas
         self._dg_canvas.delete('tag_element_separator_line')
+        # Second, delete from the grid's canvas the elements that make up the index-th record.
+        # Iterate through fields and remove from the canvas the element widgets for the index-th record.
+        for (field_name, record_list) in self._grid_elements.items():
+            element = record_list[index]
+            self._dg_canvas.delete(element.canvasID)
         if self._fields_are_cols:
-            # Second, delete from the grid's canvas the elements that make up the index-th record.
-            # Iterate through fields and remove from the canvas the element widgets for the index-th record.
-            for (field_name, record_list) in self._grid_elements.items():
-                element = record_list[index]
-                self._dg_canvas.delete(element.canvasID)
             # Third, Move all record elements after index up a row
-            # Calculate how far up, in -y-direction we need to move each element.
+            # Calculate how far up, in -y-direction, we need to move each element.
             # Note: This logic works IFF each row is the same height, which is expected to remain the case.
             y_add = -(self._row_h + self._sep_w)
             # Iterate through fields and records and make the moves.
             for (field_name, record_list) in self._grid_elements.items():
                 for reci in range(index+1, len(record_list)):
                     self._dg_canvas.move(record_list[reci].canvasID, 0, f'{y_add}i')
-            else:
-                # Move all record elements after index over a column
-                # Not currently implemented
-                pass
-            # Forth, remove elements for the deleted record from the field record lists.
-            self._delete_record_elements(index)
-            # Fifth, regenerate the element separator lines.
-            self._draw_element_separator_lines()
-            # Sixth, notify observers that a row has been deleted.
-            self.notify([DataGridDeleteRecordUpdateHint(deleted_record_index=index)])
+        else:
+            # Third, Move all record elements after index left a column
+            # Calculate how far left, in -x-direction, we need to move each element.
+            # Note: This logic works IFF each column is the same width, which may not remain the case.
+            x_add = -(self._col_w + self._sep_w)
+            # Iterate through fields and records and make the moves.
+            for (field_name, record_list) in self._grid_elements.items():
+                for reci in range(index+1, len(record_list)):
+                    self._dg_canvas.move(record_list[reci].canvasID, f'{x_add}i', 0)
+        # Forth, remove elements for the deleted record from the field record lists.
+        self._delete_record_elements(index)
+        # Fifth, regenerate the element separator lines.
+        self._draw_element_separator_lines()
+        # Sixth, notify observers that a row has been deleted.
+        self.notify([DataGridDeleteRecordUpdateHint(deleted_record_index=index)])
         return None
 
     def _delete_record_elements(self, index):
@@ -2135,7 +2165,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter index: The record index at which the insertion should be done, as int
         :return: None
         """
-        assert(self._fields_are_cols)
         for (field_name, record_list) in self._grid_elements.items():
             # Remove the record element from the list of record elements for the field
             removed_element = record_list.pop(index)
@@ -2162,22 +2191,17 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Context menu option to insert row {where} grid element with canvas ID {element.canvasID} was selected.")
         (field_name, record_index) = self._get_element_coords(element)
-
-        assert(self._fields_are_cols)
         if self._fields_are_cols:
             # Rows are records, so insert a record
             if where=='below':
-                if record_index is None:
-                    # Assume that element is a field header element
-                    record_index = -1
                 self._insertRecordAfter(record_index)
             elif where=='above':
-                if record_index is not None:
+                if record_index >= 0:
                     # Only allow insert 'above' if element is NOT a header element
                     self._insertRecordAfter(record_index-1)
         else:
             # Rows are fields, so insert a field
-            # Not currently implemented
+            # TODO: Implement inserting a field
             pass
         return None
 
@@ -2188,7 +2212,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter index: The record index after which the insertion should be done, as int
         :return: None
         """
-        assert(self._fields_are_cols)
         # First, delete all of the element/cell separators/borders on the canvas
         self._dg_canvas.delete('tag_element_separator_line')
         # Second, move all record elements after index down a row, or over a column.
@@ -2203,8 +2226,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     self._dg_canvas.move(record_list[reci].canvasID, 0, f'{y_add}i')
         else:
             # Move all record elements after index over a column
-            # Not currently implemented
-            pass
+            # Calculate how far right, in +x-direction we need to move each element.
+            # Note: This logic works IFF each column is the same width, which will not necessarily remain the case.
+            x_add = self._col_w + self._sep_w
+            # Iterate through fields and records and make the moves.
+            for (field_name, record_list) in self._grid_elements.items():
+                for reci in range(index+1, len(record_list)):
+                    self._dg_canvas.move(record_list[reci].canvasID, f'{x_add}i', 0)
         # Third, create elements for the new record and insert them into the field record lists.
         self._create_new_record(index+1)
         # Fourth, regenerate the element separator lines.
@@ -2220,7 +2248,6 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :parameter index: The record index at which the insertion should be done, as int
         :return: None
         """
-        assert(self._fields_are_cols)
         # Widget height and width, in inches
         wid_h = self._row_h 
         wid_w = self._col_w
@@ -2229,11 +2256,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         field_index = 0
         for field in self._fields_config:
             if self._fields_are_cols:
+                # Records are rows
                 next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
                 next_y = ((index + 1) * wid_h) + ((index + 2) * self._sep_w)
             else:
-                # Not currently implemented
-                pass
+                # Records are columns
+                next_x = ((index + 1) * wid_w) + ((index + 2) * self._sep_w)
+                next_y = (field_index * wid_h) + ((field_index + 1) * self._sep_w)
             field_name = field.fieldName
             field_type = field.fieldType
             field_format = field.fieldFormat
@@ -2263,7 +2292,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             field_index += 1
         # Set focus to the 0-th field_index element for the new record
         if new_focus_element is not None:
-            new_focus_element._element_widget.focus_set()
+            new_focus_element.elementWidget.focus_set()
             self._focused_element = new_focus_element
         # Increment the number of records for the grid
         # TODO: Consider refactoring such that the number of records is determined from the length of the lists
@@ -2280,7 +2309,19 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Context menu option to insert column to the {where} of grid element with canvas ID {element.canvasID} was selected.")
-        # TODO: Implement column insertion
+        (field_name, record_index) = self._get_element_coords(element)
+        if self._fields_are_cols:
+            # Columns are fields, so insert a field
+            # TODO: Implement inserting a field
+            pass
+        else:
+            #  Columns are records, so insert a record
+            if where=='right':
+                self._insertRecordAfter(record_index)
+            elif where=='left':
+                if record_index >= 0:
+                    # Only allow insert 'left' if element is NOT a header element
+                    self._insertRecordAfter(record_index-1)
         return None
 
     def onExportPostscriptContextMenuOptionSelected(self):
@@ -2374,16 +2415,22 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         logger.debug(f"tkDataGridWidget received KeyPress-Up event.")
         if self._focused_element is not None:
             logger.debug(f"     focused element has canvas ID {self._focused_element.canvasID}.")
-            (field_name, record_index) = self._get_element_coords(self._focused_element)
             next_element = None
-            if record_index > 0:
-                next_element = self._get_grid_element(field_name, record_index - 1)
-            elif record_index == 0:
-                # If the focused element is in the first record, then move focus to the field header element for the same field.
-                next_element = [elem for elem in self._header_elements if elem._raw_state == field_name][0]
+            (field_name, record_index) = self._get_element_coords(self._focused_element)
+            if self._fields_are_cols:
+                if record_index > 0:
+                    next_element = self._get_grid_element(field_name, record_index - 1)
+                elif record_index == 0:
+                    # If the focused element is in the first record, then move focus to the field header element for the same field.
+                    next_element = [elem for elem in self._header_elements if elem._raw_state == field_name][0]
+            else: # fields are rows
+                field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
+                field_index = self._fields_config.index(field_config[0])
+                if field_index > 0:
+                    next_element = self._get_grid_element(self._fields_config[field_index-1].fieldName, record_index)
             if next_element is not None:
                 self._ensure_element_widget_visible(next_element)
-                next_element._element_widget.focus_set()
+                next_element.elementWidget.focus_set()
                 self._focused_element = next_element
         return None
 
@@ -2435,13 +2482,20 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
+            next_element = None
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            if record_index < self._num_records - 1:
-                next_element = self._get_grid_element(field_name, record_index + 1)
-                if next_element is not None:
-                    self._ensure_element_widget_visible(next_element)
-                    next_element._element_widget.focus_set()
-                    self._focused_element = next_element
+            if self._fields_are_cols:
+                if record_index < self._num_records - 1:
+                    next_element = self._get_grid_element(field_name, record_index + 1)
+            else: # fields are rows
+                field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
+                field_index = self._fields_config.index(field_config[0])
+                if field_index < len(self._fields_config) - 1:
+                    next_element = self._get_grid_element(self._fields_config[field_index+1].fieldName, record_index)
+            if next_element is not None:
+                self._ensure_element_widget_visible(next_element)
+                next_element.elementWidget.focus_set()
+                self._focused_element = next_element
         return None
 
     def onKeyPressRight(self, event):
@@ -2451,15 +2505,20 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
+            next_element = None
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
-            field_index = self._fields_config.index(field_config[0])
-            if field_index < len(self._fields_config) - 1:
-                next_element = self._get_grid_element(self._fields_config[field_index+1].fieldName, record_index)
-                if next_element is not None:
-                    self._ensure_element_widget_visible(next_element)
-                    next_element._element_widget.focus_set()
-                    self._focused_element = next_element
+            if self._fields_are_cols:
+                field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
+                field_index = self._fields_config.index(field_config[0])
+                if field_index < len(self._fields_config) - 1:
+                    next_element = self._get_grid_element(self._fields_config[field_index+1].fieldName, record_index)
+            else: # fields are rows
+                if record_index < self._num_records - 1:
+                    next_element = self._get_grid_element(field_name, record_index + 1)
+            if next_element is not None:
+                self._ensure_element_widget_visible(next_element)
+                next_element.elementWidget.focus_set()
+                self._focused_element = next_element
         return None
 
     def onKeyPressLeft(self, event):
@@ -2469,15 +2528,23 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         if self._focused_element is not None:
+            next_element = None
             (field_name, record_index) = self._get_element_coords(self._focused_element)
-            field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
-            field_index = self._fields_config.index(field_config[0])
-            if field_index > 0:
-                next_element = self._get_grid_element(self._fields_config[field_index-1].fieldName, record_index)
-                if next_element is not None:
-                    self._ensure_element_widget_visible(next_element)
-                    next_element._element_widget.focus_set()
-                    self._focused_element = next_element
+            if self._fields_are_cols:
+                field_config = [fc for fc in self._fields_config if fc.fieldName==field_name]
+                field_index = self._fields_config.index(field_config[0])
+                if field_index > 0:
+                    next_element = self._get_grid_element(self._fields_config[field_index-1].fieldName, record_index)
+            else: # fields are rows
+                if record_index > 0:
+                    next_element = self._get_grid_element(field_name, record_index - 1)
+                elif record_index == 0:
+                    # If the focused element is in the first record, then move focus to the field header element for the same field.
+                    next_element = [elem for elem in self._header_elements if elem._raw_state == field_name][0]
+            if next_element is not None:
+                self._ensure_element_widget_visible(next_element)
+                next_element.elementWidget.focus_set()
+                self._focused_element = next_element
         return None
 
     # * Utility functions for the data grid *
@@ -2560,10 +2627,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         assert(isinstance(element, tkDGElement))
         if elem_format in self._element_formats:
             text_color, cell_color, read_only, default_cell_color = self._element_formats[elem_format]
-            element._element_widget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
+            element.elementWidget.configure(background=cell_color, highlightcolor=cell_color, foreground=text_color)
             # TODO: Fix this horribly non-OO code.
             if element.get_state()[0] == tkDGElementFieldHeader:
-                element._element_widget.configure(font=font.nametofont('TkHeadingFont'))
+                element.elementWidget.configure(font=font.nametofont('TkHeadingFont'))
             if element.get_state()[0] == tkDGElementText or element.get_state()[0] == tkDGElementNumber:
                 element.elementWidget.configure(readonlybackground=cell_color)
             element.disable_element(read_only)
@@ -2647,18 +2714,18 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                                 # TODO: Not very OO to indirectly infer element type.
                                 # Handling tkDGElementNumber elements
                                 if isclose(value, default_value, rel_tol=1e-7):
-                                    element._element_widget.configure(background=elem_format[3])
+                                    element.elementWidget.configure(background=elem_format[3])
                                 else:
-                                    element._element_widget.configure(background=elem_format[1])
+                                    element.elementWidget.configure(background=elem_format[1])
                             else:
                                 # Handling other element types
                                 if value == default_value:
-                                    element._element_widget.configure(background=elem_format[3])
+                                    element.elementWidget.configure(background=elem_format[3])
                                 else:
-                                    element._element_widget.configure(background=elem_format[1])
+                                    element.elementWidget.configure(background=elem_format[1])
                         else:
                             # value is None and default_value is not None, so background should NOT be the default color
-                            element._element_widget.configure(background=elem_format[1])
+                            element.elementWidget.configure(background=elem_format[1])
                             
                 # Create a hint for notifying the client of the data grid widget that a particular field of a particular record has changed value. 
                 if isinstance(hint, RecordElementValueUpdateHint):
@@ -2691,99 +2758,165 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                                          tags='tag_focus_rectangle')
         return None
     
-    # TODO: Enhance so that fields can be columns instead of rows.
     def _draw_element_separator_lines(self):
         """
-        This utility function is used to draw the lines on the canvas which visuall separate the elements
+        This utility function is used to draw the lines on the canvas which visually separate the elements
         into a grid.
         :return: None
         """
-        # Note: start_x, start_y, end_x, end_y are coordinates (canvas?) where lines should start and end, in inches
-        # First, draw vertical lines to separate fields/columns.
-        start_y = 0.0
-        # Remember that we need to account for the field header row, hence the +1's and +2's below.
-        end_y = ((self._num_records+1) * self._row_h) + ((self._num_records+2)*self._sep_w)
-        for field_i in range(len(self._fields_config) + 1):
-                start_y = 0.0
-                start_x = (field_i * self._col_w) + (field_i * self._sep_w)
-                self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{start_x}i", f"{end_y}i",
-                                            width=f"{self._sep_w}i", tags='tag_element_separator_line')
-        # Second, draw horizontal lines to separate records/rows.
-        end_x = (len(self._fields_config) * self._col_w) + ((len(self._fields_config) +1)*self._sep_w)
-        start_x = 0.0
-        for rec_i in range(self._num_records + 2):
-                start_y = (rec_i * self._row_h) + (rec_i * self._sep_w)
-                self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{end_x}i", f"{start_y}i",
-                                            width=f"{self._sep_w}i", tags='tag_element_separator_line')
+        # Note: start_x, start_y, end_x, end_y are canvas coordinates where lines should start and end, in inches
+
+        if self._fields_are_cols:
+            # First, draw vertical lines to separate fields/columns.
+            start_y = 0.0
+            # Remember that we need to account for the field header row, hence the +1's and +2's below.
+            end_y = ((self._num_records+1) * self._row_h) + ((self._num_records+2)*self._sep_w)
+            for field_i in range(len(self._fields_config) + 1):
+                    start_x = (field_i * self._col_w) + (field_i * self._sep_w)
+                    self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{start_x}i", f"{end_y}i",
+                                                width=f"{self._sep_w}i", tags='tag_element_separator_line')
+            # Second, draw horizontal lines to separate records/rows.
+            start_x = 0.0
+            end_x = (len(self._fields_config) * self._col_w) + ((len(self._fields_config) +1)*self._sep_w)
+            for rec_i in range(self._num_records + 2):
+                    start_y = (rec_i * self._row_h) + (rec_i * self._sep_w)
+                    self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{end_x}i", f"{start_y}i",
+                                                width=f"{self._sep_w}i", tags='tag_element_separator_line')
+        else:
+            # First, draw vertical lines to separate records/columns.
+            start_y = 0.0
+            end_y = (len(self._fields_config) * self._row_h) + ((len(self._fields_config) +1)*self._sep_w)
+            for rec_i in range(self._num_records + 2):
+                    start_x = (rec_i * self._col_w) + (rec_i * self._sep_w)
+                    self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{start_x}i", f"{end_y}i",
+                                                width=f"{self._sep_w}i", tags='tag_element_separator_line')
+            # Second, draw horizontal lines to separate fields/rows.
+            start_x = 0.0
+            # Remember that we need to account for the field header row, hence the +1's and +2's below.
+            end_x = ((self._num_records+1) * self._col_w) + ((self._num_records+2)*self._sep_w)
+            for field_i in range(len(self._fields_config) + 1):
+                    start_y = (field_i * self._row_h) + (field_i * self._sep_w)
+                    self._dg_canvas.create_line(f"{start_x}i", f"{start_y}i", f"{end_x}i", f"{start_y}i",
+                                                width=f"{self._sep_w}i", tags='tag_element_separator_line')
 
         return None
     
-    # TODO: Enhance so that fields can be columns instead of rows.
     def _setup_data_grid(self):
         """
         Set up the data grid with the appropriate array of tkDGElement widgets for the fields and records.
         :return: None
         """
-        # Note: next_x, next_y are coordinates (canvas?) where next widget should be inserted, in inches
+        # Note: next_x, next_y are canvas coordinates where next widget should be inserted, in inches
         # Must set width and height for all widgets, so that these coordinates can be appropriately calculated.
         # Widget height and width, in inches
         wid_h = self._row_h 
         wid_w = self._col_w
         # Add widgets...
         upper_left_element = None
-        field_index = 0
-        for field in self._fields_config:
-            next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
-            field_name = field.fieldName
-            field_type = field.fieldType
-            field_format = field.fieldFormat
-            field_unit_grp = field.fieldUnitGroup
-            # Handle the field header element for this field/column.
-            element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h, field_config=field)
-            self.register_subject(element, partial(self.handle_element_update, element))
-            self._wids.append(element.canvasID)
-            if field_unit_grp is not None:
-                uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
-                unames = self._uom.get_unit_names_for_unit(uids[0])
-                element.set_state(field_name)
-                element.set_units(field_unit_grp, uids[0], unames[0])
-            else:
-                element.set_state(field_name)
-            self._apply_element_format_to_one_element('field_header', element)
-            self._header_elements.append(element)
-            # End handling the field header element for this field/column.
-            rec_list = []
-            for rec_i in range(self._num_records):
-                next_y = ((rec_i + 1) * wid_h) + ((rec_i + 2) * self._sep_w)
-                # TODO: Well, this is ugly, non-OO code...
-                element = None
-                match field_type:
-                    case FieldType.BOOL:
-                        element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-                    case FieldType.LIST:
-                        element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-                    case FieldType.TEXT:
-                        element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-                    case FieldType.NUMBER:
-                        element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-                # Tag the element's canvas ID with the field name, so we can "adress" all of a field's elements as a group.
-                # TODO: This may turn out to not actually be useful/needed.
-                self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)
-                if upper_left_element is None:
-                    upper_left_element = element
+        if self._fields_are_cols:
+            field_index = 0
+            for field in self._fields_config:
+                next_x = (field_index * wid_w) + ((field_index + 1) * self._sep_w)
+                field_name = field.fieldName
+                field_type = field.fieldType
+                field_format = field.fieldFormat
+                field_unit_grp = field.fieldUnitGroup
+                # Handle the field header element for this field/column.
+                element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h, field_config=field)
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
-                rec_list.append(element)
-            # Store the list of tkDGElement objects for this field in the _grid_elements dictionary.
-            self._grid_elements[field_name] = rec_list
-            # Configure the field's element widgets with the appropriate format.
-            self._apply_element_format_to_field_elements(field_format, field_name)
-            # Advance field_index for next iteration of field loop.
-            field_index += 1
+                if field_unit_grp is not None:
+                    uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
+                    unames = self._uom.get_unit_names_for_unit(uids[0])
+                    element.set_state(field_name)
+                    element.set_units(field_unit_grp, uids[0], unames[0])
+                else:
+                    element.set_state(field_name)
+                self._apply_element_format_to_one_element('field_header', element)
+                self._header_elements.append(element)
+                # End handling the field header element for this field/column.
+                rec_list = []
+                for rec_i in range(self._num_records):
+                    next_y = ((rec_i + 1) * wid_h) + ((rec_i + 2) * self._sep_w)
+                    # TODO: Well, this is ugly, non-OO code...
+                    element = None
+                    match field_type:
+                        case FieldType.BOOL:
+                            element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.LIST:
+                            element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.TEXT:
+                            element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.NUMBER:
+                            element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                    # Tag the element's canvas ID with the field name, so we can "adress" all of a field's elements as a group.
+                    # TODO: This may turn out to not actually be useful/needed.
+                    self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)
+                    if upper_left_element is None:
+                        upper_left_element = element
+                    self.register_subject(element, partial(self.handle_element_update, element))
+                    self._wids.append(element.canvasID)
+                    rec_list.append(element)
+                # Store the list of tkDGElement objects for this field in the _grid_elements dictionary.
+                self._grid_elements[field_name] = rec_list
+                # Configure the field's element widgets with the appropriate format.
+                self._apply_element_format_to_field_elements(field_format, field_name)
+                # Advance field_index for next iteration of field loop.
+                field_index += 1
+        else: # On this branch, the fields are rows in the grid
+            field_index = 0
+            for field in self._fields_config:
+                next_y = (field_index * wid_h) + ((field_index + 1) * self._sep_w)
+                field_name = field.fieldName
+                field_type = field.fieldType
+                field_format = field.fieldFormat
+                field_unit_grp = field.fieldUnitGroup
+                # Handle the field header element for this field/column.
+                element = tkDGElementFieldHeader(self, x=self._sep_w, y=next_y, w=wid_w, h=wid_h, field_config=field)
+                self.register_subject(element, partial(self.handle_element_update, element))
+                self._wids.append(element.canvasID)
+                if field_unit_grp is not None:
+                    uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
+                    unames = self._uom.get_unit_names_for_unit(uids[0])
+                    element.set_state(field_name)
+                    element.set_units(field_unit_grp, uids[0], unames[0])
+                else:
+                    element.set_state(field_name)
+                self._apply_element_format_to_one_element('field_header', element)
+                self._header_elements.append(element)
+                # End handling the field header element for this field/row.
+                rec_list = []
+                for rec_i in range(self._num_records):
+                    next_x = ((rec_i + 1) * wid_w) + ((rec_i + 2) * self._sep_w)
+                    # TODO: Well, this is ugly, non-OO code...
+                    element = None
+                    match field_type:
+                        case FieldType.BOOL:
+                            element = tkDGElementBool(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.LIST:
+                            element = tkDGElementList(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.TEXT:
+                            element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                        case FieldType.NUMBER:
+                            element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
+                    # Tag the element's canvas ID with the field name, so we can "adress" all of a field's elements as a group.
+                    # TODO: This may turn out to not actually be useful/needed.
+                    self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)
+                    if upper_left_element is None:
+                        upper_left_element = element
+                    self.register_subject(element, partial(self.handle_element_update, element))
+                    self._wids.append(element.canvasID)
+                    rec_list.append(element)
+                # Store the list of tkDGElement objects for this field in the _grid_elements dictionary.
+                self._grid_elements[field_name] = rec_list
+                # Configure the field's element widgets with the appropriate format.
+                self._apply_element_format_to_field_elements(field_format, field_name)
+                # Advance field_index for next iteration of field loop.
+                field_index += 1
         
         # Set focus to upper left widget in data grid, if it exists.
         if upper_left_element is not None:
-            upper_left_element._element_widget.focus_set()
+            upper_left_element.elementWidget.focus_set()
             self._focused_element = upper_left_element
 
         return None

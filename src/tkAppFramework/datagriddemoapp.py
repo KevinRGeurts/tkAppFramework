@@ -186,7 +186,7 @@ class DataGridDemotkViewManager(tkViewManager):
                                                can_delete_record=True)
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.INFO, uom_adapter=DemoUoMSysAdapter(),
-                                    user_abilities=_user_abilities)
+                                    user_abilities=_user_abilities, fields_are_cols = False)
         # Attach self as an observer of the subject demo widget
         self._dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget

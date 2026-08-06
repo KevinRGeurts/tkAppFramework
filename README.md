@@ -472,7 +472,7 @@ The available choices also depend on abilities that are granted to the user by t
 application, it would not make sense for the user to be able to delete a field from the data grid, but it would make
 sense for them to be able to delete a record.
 
-- Delete | Column: Not currently implemented
+- Delete | Column: Delete the selected element's column, it is is a data grid record
 - Delete | Row: Delete the selected element's row, if it is a data grid record
 - Edit | Copy: Copy text content selected within the cell to the clipboard
 - Edit | Paste: Paste content from the clipboard into the cell's text content at the insertion point
@@ -480,8 +480,8 @@ sense for them to be able to delete a record.
 - Export | JSON: Save the values in the grid's cells to a Java Scipt Object Notation file. Not currently implemented. 
 - Export | PostScript: Create a printable Encapsulated PostScript file of the grid
 - Help on Data Grid: Display this help content
-- Insert | Column Left: Not currently implemented
-- Insert | Column Right: Not currently implemented
+- Insert | Column Left: Insert a column to the left of the selected element's column, if it is a data grid record
+- Insert | Column Right: Insert a column to the right of the selected element's column, if it is a data grid record
 - Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
 - Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
 - Restore Default Value: Restore the default value for the selected cell, if it has a default value, and is not read-only
