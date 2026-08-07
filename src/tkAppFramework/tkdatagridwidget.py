@@ -44,7 +44,7 @@ from enum import IntEnum
 from os import getcwd
 from multiprocessing import Process
 import sysconfig
-from math import e, isclose
+from math import isclose
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
@@ -1052,8 +1052,7 @@ class tkDGElementNumber(tkDGElement):
             validator = field_config.fieldValidator
             if validator is not None:
                 try:
-                    # TODO: The validator needs to handle unit conversions, otherwise error messages for min/max violations aren't meaningful.
-                    validator(proposed_entry = _proposed_entry)
+                    validator(proposed_entry = _proposed_entry, element=self)
                 except tkDGElementTextInvalidEntryError as e:
                     showerror(title='Data Grid Number Entry Error', message=e.args[0], parent=self._element_widget.master)
                     return False

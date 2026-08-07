@@ -169,7 +169,10 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
             else:
                 _leg = f"{yf})"
             for reci in range(_dg.num_records):
-                yvals.append(_dg.get_grid_element_value_display_units(yf, reci))
+                y = _dg.get_grid_element_value_display_units(yf, reci)
+                if y is None:
+                    y = float('nan')
+                yvals.append(y)
             _heights[_leg]=yvals
             _colors.append(color)
         graph = figure_widget.axes.grouped_bar(heights=_heights, tick_labels=xvals, colors=_colors)

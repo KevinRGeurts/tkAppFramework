@@ -146,7 +146,7 @@ then available to all users of the framework.
 
 (9) Address TODO comments in code.
 
-(10) Bar graphs do not like None values. Investigate.
+(10) Bar graphs do not like None values. Investigate. {Completed}
 
 (11) Using a chain of responsibility design pattern, implement handlers for help and tooltips as mix-in classes.
      These classes will be mixed into tkViewManager children and view mangager child widget classes, and possibly tkApp child classes.

@@ -175,7 +175,7 @@ class DataGridDemotkViewManager(tkViewManager):
         field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
                                 FieldConfiguration('Compute Result', FieldType.BOOL, 'editable', None, None, None, None),
                                 FieldConfiguration('Base', FieldType.NUMBER, 'editable',
-                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=None),
+                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
                                                    'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
                                 FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm'),
@@ -186,7 +186,7 @@ class DataGridDemotkViewManager(tkViewManager):
                                                can_delete_record=True)
         self._dg = tkDataGridWidget(self, title='Demo Data Grid', fields_config=field_configurations, num_records=5,
                                     log_level = logging.INFO, uom_adapter=DemoUoMSysAdapter(),
-                                    user_abilities=_user_abilities, fields_are_cols = False)
+                                    user_abilities=_user_abilities, fields_are_cols = True)
         # Attach self as an observer of the subject demo widget
         self._dg.attach(self)
         # Register a handler function for updates from the subject datagrid widget
