@@ -689,6 +689,7 @@ class tkDGElementText(tkDGElement):
         Factory method to create the tk.Entry element widget.
         :return: The tkinter widget that is the element widget, as tkinter widget object
         """
+        # Note: If validate parameter is changed here, then it must also be changed in onKeyPressReturnEnter()
         widget = tk.Entry(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
                           takefocus=1, validate='focusout')
         return widget
@@ -724,7 +725,14 @@ class tkDGElementText(tkDGElement):
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        # Briefly disable validation of the Entry widget on focus out, because, if the validation that
+        # takes place in OnEntryChanged() raises an exception, the use of a messgae box to display an error message
+        # to the user will take the focus out of this element, and cause OnEntryChanged to be called a second time.
+        # To the user, this will result in the error message appearing twice.
+        self._element_widget['validate']='none'
         self.OnEntryChanged(self._canvas_id)
+        # Restore validation.
+        self._element_widget['validate']='focusout'
         return None
 
     def OnEntryChanged(self, canvas_id):
@@ -975,6 +983,7 @@ class tkDGElementNumber(tkDGElement):
         Factory method to create the tk.Entry element widget.
         :return: The tkinter widget that is the element widget, as tkinter widget object
         """
+        # Note: If validate parameter is changed here, then it must also be changed in onKeyPressReturnEnter()
         widget = tk.Entry(self._observers[0].canvas, justify=tk.CENTER, borderwidth=0, relief="flat",
                           takefocus=1, validate='focusout')
         return widget
@@ -1010,7 +1019,14 @@ class tkDGElementNumber(tkDGElement):
         :parameter event: The tkinter event object for the key press event
         :return: None
         """
+        # Briefly disable validation of the Entry widget on focus out, because, if the validation that
+        # takes place in OnEntryChanged() raises an exception, the use of a messgae box to display an error message
+        # to the user will take the focus out of this element, and cause OnEntryChanged to be called a second time.
+        # To the user, this will result in the error message appearing twice.
+        self._element_widget['validate']='none'
         self.OnEntryChanged(self._canvas_id)
+        # Restore validation.
+        self._element_widget['validate']='focusout'
         return None
 
     def onKeyPressF3(self, event):
