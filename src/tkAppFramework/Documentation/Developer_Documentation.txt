@@ -144,7 +144,7 @@ then available to all users of the framework.
 
 (8) tkDataGridWidget needs much more extensive unit testing.
 
-(9) Address TODO comments in code.
+(9) Address TODO comments in code. {Not completed, but most important ones have been addressed.}
 
 (10) Bar graphs do not like None values. Investigate. {Completed}
 
@@ -159,3 +159,6 @@ then available to all users of the framework.
 (12) Implement ability to specify row height and column width for all rows and columns.
 
 (13) Specify ability to change the row height and/or column width for one particular row or column.
+
+(14) tkDGElementList instances handle default value formating oddly, because the active background color is also white, when it
+should be green in this case.

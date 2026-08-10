@@ -384,11 +384,6 @@ class tkDGElement(Subject):
                 _hints.append(RecordElementValueUpdateHint(prev_value=self._element_value.get(), new_value=self._default_value))
                 self._element_value.set(self._default_value)
                 self.notify(_hints)
-            else:
-                _prev_value = self._element_value.get()
-                self.clear_element_value()
-                # TODO: Confirm that should not notify on this branch because clear_element_value will handle it.
-                # self.notify(_hints)
         return None
 
     def onContextMenu(self, event):
@@ -884,6 +879,18 @@ class tkDGElementFieldHeader(tkDGElement):
                 self._element_widget['state']=tk.NORMAL
         return None
 
+    def set_default_value(self, def_value=None):
+        """
+        Override the parent's method so that it is not possible to set a default value for this child
+        As it makes no sense to have a default value for a field header.
+        :parameter def_value: The default value for the element, as None
+            Note: Method will assert if def_value is not None
+        :return: None
+        """
+        assert(def_value is None)
+        # Do nothing.
+        return None
+
     def set_state(self, value=None, hints=None):
         """
         Set the state of the text element.
@@ -918,10 +925,20 @@ class tkDGElementFieldHeader(tkDGElement):
         # DON'T call super().clear_element_value(), because set_state() already calls notify().
         return None
 
-    def set_units(self, unit_group_id=None, unit_id=None, unit_name=''):
+    # TODO: Consider if there is too high a coupling with the existence of self._field_config. Or maybe low cohesion?
+    # When tkDataGridWidget needs the field configuration for an element, it looks up it's field, and then the field
+    # configuration for that field. It does not work directly through the field header element, except to get it's raw
+    # state to get the name of the field. self._field_config was added to support a unit change operation by the user through
+    # the GUI without directly referencing the grid, but rather notifying the gird of a unit change update.
+    # This works as is, but does seem kind of fragile.
+    def set_units(self, unit_id=None, unit_name=''):
         """
-        :parameter unit_group_id: The ID of the unit group of the element, as Any or None
-            Note: Only once can the unit_group_id not be None
+        Set the unit id and unit name of the field.
+        WARNING: This method does not consistency check the parameter values.
+        For example, it does not check that the unit id is valid for the current unit group id of the field, nor does it
+        check that the unit name is valid for the given unit id. This checking is the responsibility of the tkDataGridWidget
+        methods that call this method. The fact that responsibility is assigned like this is due to the fact that the
+        tkDataGridWidget knows what units of measurement system is being used, but this tkDGElementFieldHeader does not.
         :parameter unit_id: The ID of the unit of the element, as Any or None
         :parameter unit_name: The name of the unit of the element, as string (could be '')
         :return: None
@@ -1038,13 +1055,19 @@ class tkDGElementNumber(tkDGElement):
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
         logger.debug(f"Request to restore default of Entry with canvas ID {self._canvas_id}.")
+        self._restoreDefaultValue()
+        return None
+
+    def _restoreDefaultValue(self):
+        """
+        Restore the element's value to it's default, if one exists.
+        Note: If element is for a field that is read-only format, nothing is done.
+        :return: None
+        """
         # If the element is for a field that is read-only format, do nothing.
         if self._element_widget['state']!=tk.DISABLED and self._element_widget['state']!='readonly':
             if self._default_value is not None:
-                default_value = self._default_value
-                self.set_state(default_value)
-            else:
-                self.clear_element_value()
+                self.set_state(self._default_value)    
         return None
 
     def OnEntryChanged(self, canvas_id):
@@ -1103,7 +1126,7 @@ class tkDGElementNumber(tkDGElement):
         """
         # Keep focus on the Entry widget, so that user can correct the invalid entry.
         self._element_widget.focus_set()
-        # TODO: Reseacch if this notify is needed.
+        # TODO: Research if this notify is needed.
         self.notify()
         return None
 
@@ -1231,9 +1254,13 @@ class tkDGElementNumber(tkDGElement):
         (disp_val, disp_units) = self.get_value_in_display_units()
         (disp_def_val, disp_def_units) = self.get_default_value_in_display_units()
 
-        tooltip_txt = f"Value: {disp_val} ({disp_units})"
+        tooltip_txt = f"Value: {disp_val}"
+        if len(disp_units)>0:
+            tooltip_txt += f" ({disp_units})"
         if self.get_default_value()is not None:
-            tooltip_txt += f"\nDefault: {disp_def_val} ({disp_def_units})"
+            tooltip_txt += f"\nDefault: {disp_def_val}"
+            if len(disp_def_units)>0:
+                tooltip_txt += f" ({disp_def_units})"
         return tooltip_txt
 
     def get_value_in_display_units(self):
@@ -2844,7 +2871,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
                     unames = self._uom.get_unit_names_for_unit(uids[0])
                     element.set_state(field_name)
-                    element.set_units(field_unit_grp, uids[0], unames[0])
+                    element.set_units(uids[0], unames[0])
                 else:
                     element.set_state(field_name)
                 self._apply_element_format_to_one_element('field_header', element)
@@ -2894,7 +2921,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
                     unames = self._uom.get_unit_names_for_unit(uids[0])
                     element.set_state(field_name)
-                    element.set_units(field_unit_grp, uids[0], unames[0])
+                    element.set_units(uids[0], unames[0])
                 else:
                     element.set_state(field_name)
                 self._apply_element_format_to_one_element('field_header', element)

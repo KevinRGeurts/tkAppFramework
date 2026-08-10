@@ -445,8 +445,8 @@ From the viewpoint of an application's user, the data grid provides the followin
 #### Understanding the colors of grid cells:
 
 - White: The cell value can be changed by the user. Typically this is a cell where you should enter an input value.
-- Blue: The cell value cannot be changed by the user. Typically this cell displays the results of a computation.
-- Cyan: The current cell value is a default value. If it is changed by the user, the cell color will change to white. The user can select the cell and click F3 key to restore the default value.
+- Blue (Cyan): The cell value cannot be changed by the user. Typically this cell displays the results of a computation.
+- Green: The current cell value is a default value. If it is changed by the user, the cell color will change to white. The user can select the cell and click F3 key to restore the default value.
 - Grey: The field header cells with the names of grid fields are colored grey.
 
 #### Moving around in the grid:
