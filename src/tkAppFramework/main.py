@@ -40,7 +40,7 @@ from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
 from tkAppFramework.sim_adapter import SimulatorAdapter
-from tkAppFramework.datagriddemoapp import DataGridDemotkApp
+from tkAppFramework.datagriddemoapp import DataGridDemotkApp, DemoUoMSysAdapter, FieldConfiguration
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
 from UserResponseCollector.UserQueryCommand import askForFloat, askForMenuSelection, UserQueryCommandMenu
 import UserResponseCollector.UserQueryReceiver
@@ -271,11 +271,18 @@ def debug():
     # app = tkAppFramework.tkApp._launch_help_app(help_file, help_format)
 
     _root = tk.Tk()
-    _dgw = tkDataGridWidget(_root, fields_config=[('A Text Field', FieldType.TEXT, 'editable', None, None)], num_records=1)
+    _uom = DemoUoMSysAdapter()
+    field_configurations = [FieldConfiguration('Editable Text Field',FieldType.TEXT,'editable'),
+                            FieldConfiguration('Editable Bool Field',FieldType.BOOL,'editable'),
+                            FieldConfiguration('Default List Field',FieldType.LIST,'editable'),
+                            FieldConfiguration('Read Only Text Field',FieldType.TEXT,'read_only'),
+                            FieldConfiguration('Read Only Number Field',FieldType.NUMBER,'read_only', None, 'gid_length', 'uid_foot', 'ft')]
+    _dgw = tkDataGridWidget(_root, fields_config=field_configurations, num_records=2, uom_adapter=_uom)
     _dgw.grid()
-    _header_element = _dgw._header_elements[0]  # Get the header element for the first field.
-    e = _header_element
-    e.set_state('Text Field Name')
+    
+    ge = _dgw._get_grid_element('Read Only Number Field', 1)
+    ge.set_state(7.9)
+    gev = _dgw.get_grid_element_value_display_units('Read Only Number Field', 1)
 
     return None
     

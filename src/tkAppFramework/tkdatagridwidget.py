@@ -1554,8 +1554,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         # Bindings for mouse wheel scrolling on the canvas.
         # Reference: https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
-        self._dg_canvas.bind('<Enter>', self._bound_to_mousewheel)
-        self._dg_canvas.bind('<Leave>', self._unbound_to_mousewheel)
+        self._dg_canvas.bind_all('<MouseWheel>', self._onMousewheel, '+')
 
         # Store currently focused element widget, as tkDGElement object.
         self._focused_element = None
@@ -1849,30 +1848,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
     # ** Methods NOT intended for client use **
 
-    # * Mouse wheel scrolling methods for the data grid canvas *
+    # * Mouse wheel scrolling method for the data grid canvas *
     
-    def _bound_to_mousewheel(self, event):
-        """
-        Called when data grid canvase is entered with the mouse pointer. Binds the mouse wheel to the canvas scroll.
-        :parameter event: The tkinter event object for the event
-        :return: None
-        """
-        logger = logging.getLogger('tkDataGridWidget_logger')
-        logger.debug(f"tkDataGridWidget is binding to mouse wheel events.")
-        self._dg_canvas.bind_all('<MouseWheel>', self._onMousewheel)
-        return None
-
-    def _unbound_to_mousewheel(self, event):
-        """
-        Called when data grid canvase is left by the mouse pointer. Unbinds the mouse wheel from the canvas scroll.
-        :parameter event: The tkinter event object for the event
-        :return: None
-        """
-        logger = logging.getLogger('tkDataGridWidget_logger')
-        logger.debug(f"tkDataGridWidget is unbinding from mouse wheel events.")
-        self._dg_canvas.unbind_all('MouseWheel>')
-        return None
-
     def _onMousewheel(self, event):
         """
         Called when data grid recieves mouse scroll event. Scrolls the data grid canvas.
@@ -1880,8 +1857,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         :return: None
         """
         logger = logging.getLogger('tkDataGridWidget_logger')
-        logger.debug(f"tkDataGridWidget received mouse wheel event for event delta of {event.delta}.")
-        self._dg_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
+        logger.debug(f"tkDataGridWidget received mouse wheel event from widget {event.widget} for event delta of {event.delta}.")
+        # Most likely event.widget will be one of the grid's element's widets
+        children = self._dg_canvas.winfo_children()
+        # Only scroll if the MouseWheel event originated with the canvas or one of its children.
+        # This check is needed because of the bind_all().
+        if (event.widget) in children or (event.widget == self._dg_canvas):
+            self._dg_canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
         return None
 
     # * Contextual menu methods for the data grid *
@@ -2659,7 +2641,19 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                     break
         return (field_name, record_index)
 
-    def _apply_element_format_to_one_element(self, elem_format='a_field_header', element=None):
+    def _get_field_header_element(self, field_name='a field name'):
+        """
+        Return the tkDGElementFieldHeader associated with the paramter field_name.
+        :parameter field_name: The name of a field in the data grid, as string
+        :return: The tkDGElementFieldHeader associated with the paramter field_name, as tkDGElementFieldHeader instance
+        """
+        head_elem = None
+        hel = [he for he in self._header_elements if he._raw_state == field_name]
+        if len(hel)>0:
+            head_elem = hel[0]
+        return head_elem
+
+    def _apply_element_format_to_one_element(self, elem_format='a_field_format', element=None):
         """
         Apply a named element format to one element widget.
         :parameter elem_format: The name of the format to apply, as string
@@ -2863,15 +2857,15 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 field_type = field.fieldType
                 field_format = field.fieldFormat
                 field_unit_grp = field.fieldUnitGroup
+                field_unit_id = field.fieldUnitID
+                field_unit_name = field.fieldUnitName
                 # Handle the field header element for this field/column.
                 element = tkDGElementFieldHeader(self, x=next_x, y=self._sep_w, w=wid_w, h=wid_h, field_config=field)
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 if field_unit_grp is not None:
-                    uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
-                    unames = self._uom.get_unit_names_for_unit(uids[0])
                     element.set_state(field_name)
-                    element.set_units(uids[0], unames[0])
+                    element.set_units(field_unit_id, field_unit_name)
                 else:
                     element.set_state(field_name)
                 self._apply_element_format_to_one_element('field_header', element)
@@ -2913,15 +2907,15 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 field_type = field.fieldType
                 field_format = field.fieldFormat
                 field_unit_grp = field.fieldUnitGroup
+                field_unit_id = field.fieldUnitID
+                field_unit_name = field.fieldUnitName
                 # Handle the field header element for this field/column.
                 element = tkDGElementFieldHeader(self, x=self._sep_w, y=next_y, w=wid_w, h=wid_h, field_config=field)
                 self.register_subject(element, partial(self.handle_element_update, element))
                 self._wids.append(element.canvasID)
                 if field_unit_grp is not None:
-                    uids = self._uom.get_unit_ids_of_unit_group(field_unit_grp)
-                    unames = self._uom.get_unit_names_for_unit(uids[0])
                     element.set_state(field_name)
-                    element.set_units(uids[0], unames[0])
+                    element.set_units(field_unit_id, field_unit_name)
                 else:
                     element.set_state(field_name)
                 self._apply_element_format_to_one_element('field_header', element)

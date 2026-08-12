@@ -257,6 +257,7 @@ class Test_tkDGElementNumber(unittest.TestCase):
         he = self._units_header_element
         he.set_units('uid_foot','ft')
         e._element_value.set('9.23')
+        e.OnEntryChanged(e.canvasID)
         self.assertEqual(e.get_state()[1], 9.23*0.3048)
 
 
