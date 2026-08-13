@@ -55,7 +55,6 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertEqual(len(self._dgw._header_elements), 5)
         self.assertEqual(len(self._dgw._grid_elements), 5)
         self.assertEqual(len(self._dgw._grid_elements['Editable Text Field']), 2)
-        self.assertEqual(len(self._dgw._wids), 15)
         self.assertEqual(len(self._dgw._subjects), 15)
         self.assertEqual(self._dgw._focused_element, self._dgw._grid_elements['Editable Text Field'][0])
         self.assertEqual(self._dgw.canvas, self._dgw._dg_canvas)
@@ -63,6 +62,10 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self.assertTrue(isinstance(self._dgw._user_abilities, DataGridUserAbilities))
         self.assertEqual(self._dgw.uomAdapter, self._uom)
         self.assertIsNone(self._dgw._help_process)
+        # tests method _draw_element_separator_lines()
+        self.assertTrue(len(self._dgw.canvas.find_withtag('tag_element_separator_line')), 8)
+        # tests method __setup_data_grid()
+        self.assertEqual(len(self._dgw._wids), 15)
 
     def test_bindings(self):
         # Bindings on the tkDataGridWidget as a LabelFrame

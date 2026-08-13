@@ -46,6 +46,8 @@ from multiprocessing import Process
 import sysconfig
 from math import isclose
 
+from pygments import highlight
+
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
@@ -2669,6 +2671,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 element.elementWidget.configure(font=font.nametofont('TkHeadingFont'))
             if element.get_state()[0] == tkDGElementText or element.get_state()[0] == tkDGElementNumber:
                 element.elementWidget.configure(readonlybackground=cell_color)
+            if element.get_state()[0] == tkDGElementList:
+                element.elementWidget.configure(activebackground=cell_color)
+                element.elementWidget['menu'].config(background=cell_color, activebackground='blue')
             element.disable_element(read_only)
         return None
 
@@ -2754,11 +2759,20 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                                 else:
                                     element.elementWidget.configure(background=elem_format[1])
                             else:
+                                # TODO: Fix non-OO code below.
                                 # Handling other element types
                                 if value == default_value:
-                                    element.elementWidget.configure(background=elem_format[3])
+                                    if element.get_state()[0] == tkDGElementList:
+                                        element.elementWidget.configure(background=elem_format[3], activebackground=elem_format[3], highlightbackground=elem_format[3], highlightcolor=elem_format[3])
+                                        element.elementWidget['menu'].config(background=elem_format[3])
+                                    else:
+                                        element.elementWidget.configure(background=elem_format[3])
                                 else:
-                                    element.elementWidget.configure(background=elem_format[1])
+                                    if element.get_state()[0] == tkDGElementList:
+                                        element.elementWidget.configure(background=elem_format[1], activebackground=elem_format[1], highlightbackground=elem_format[1], highlightcolor=elem_format[1])
+                                        element.elementWidget['menu'].config(background=elem_format[1])
+                                    else:
+                                        element.elementWidget.configure(background=elem_format[1])
                         else:
                             # value is None and default_value is not None, so background should NOT be the default color
                             element.elementWidget.configure(background=elem_format[1])

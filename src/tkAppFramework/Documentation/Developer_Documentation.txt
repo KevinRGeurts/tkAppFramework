@@ -142,7 +142,7 @@ Maybe just have the boolean element control whether or not the app computes a re
 (7) Implement in the tkAppFramework a UOM adapter based on PyPi units-of-measure package. This would be a "default" UOM adapter
 then available to all users of the framework.
 
-(8) tkDataGridWidget needs much more extensive unit testing.
+(8) tkDataGridWidget needs much more extensive unit testing. {Completed}
 
 (9) Address TODO comments in code. {Not completed, but most important ones have been addressed.}
 
@@ -161,4 +161,5 @@ then available to all users of the framework.
 (13) Specify ability to change the row height and/or column width for one particular row or column.
 
 (14) tkDGElementList instances handle default value formating oddly, because the active background color is also white, when it
-should be green in this case.
+should be green in this case. {Completed}
+see answer with 7 votes: https://stackoverflow.com/questions/6178153/how-to-change-menu-background-color-of-tkinters-optionmenu-widget
