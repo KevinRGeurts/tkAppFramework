@@ -501,7 +501,7 @@ dgw = tkDataGridWidget(parent, title='Data Grid', fields_config=[], num_records=
 - num_records: The number of records to display in the data grid, as int
 - log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
 - uom_adapter: The Units of Measure System Adapter to be used by the data grid, as UoMSysAdapter object or None
-- fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows in the grid. Only True is currently supported. As boolean.
+- fields_are_cols: True if the fields are the columns in the grid. False if the fields are the rows in the grid.
 - user_abilities: Controls abilities a user has using contextual menu, as DataGridUserAbilities object
 
 A logger named 'tkDataGridWidget_logger' is created and configured.

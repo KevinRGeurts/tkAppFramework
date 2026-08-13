@@ -46,7 +46,6 @@ from multiprocessing import Process
 import sysconfig
 from math import isclose
 
-from pygments import highlight
 
 # Local imports
 from tkAppFramework.ObserverPatternBase import Subject, Observer, UpdateHint
