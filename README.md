@@ -800,7 +800,7 @@ class DataGridDemotkViewManager(tkViewManager):
         field_configurations = [FieldConfiguration('Record Index', FieldType.TEXT, 'read_only', None, None, None, ''),
                                 FieldConfiguration('Compute Result', FieldType.BOOL, 'editable', None, None, None, None),
                                 FieldConfiguration('Base', FieldType.NUMBER, 'editable',
-                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=None),
+                                                   partial(tkDGTextElemValidator.validate_entry_is_float, min_value=0, max_value=1000),
                                                    'gid_length', 'uid_meter', 'm'),
                                 FieldConfiguration('Multiply by', FieldType.LIST, 'editable', None, None, None, ''),
                                 FieldConfiguration('Result', FieldType.NUMBER, 'read_only', None, 'gid_length', 'uid_meter', 'm'),
