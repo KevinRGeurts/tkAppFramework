@@ -305,10 +305,19 @@ class tkApp(ttk.Frame):
         # Pop up tkFileDialog for open
         response = filedialog.askopenfilename(defaultextension=self._fileTypes[0][1], filetypes=self._fileTypes,
                                               initialdir=initial_dir, title='Select file to open')
+
+        # Show a wait cursor, since this could be a long-ish operation.
+        self.master.config(cursor='watch')
+        self.master.update()
+
         if len(response)>0: # User did not cancel
             with open(response) as f:
                 self._model.readModelFromFile(f, os.path.splitext(response)[1])
                 self._savePath = response
+
+        # Put the cursor back to normal.
+        self.master.config(cursor='')
+
         return None
 
     def onFileSave(self):

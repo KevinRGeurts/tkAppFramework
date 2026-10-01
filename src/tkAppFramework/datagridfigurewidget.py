@@ -80,10 +80,7 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
         :parameter y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
         :parameter symbols: List of matplotlib symbols (e.g. 'bo-' for blue circles connected with a solid line) to use for each y_field, as list of strings
         """
-        assert(isinstance(x_label, str))
-        self._x_label = x_label
-        assert(isinstance(y_label, str))
-        self._y_label = y_label
+        super().__init__(x_label, y_label)
         assert(isinstance(x_field, str))
         self._x_field = x_field
         assert(isinstance(y_fields, list))
@@ -131,10 +128,7 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
         :parameter y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
         :parameter colors: List of matplotlib colors (e.g. 'b' for blue bars) to use for each y_field, as list of any valid matplotlib color format
         """
-        assert(isinstance(x_label, str))
-        self._x_label = x_label
-        assert(isinstance(y_label, str))
-        self._y_label = y_label
+        super().__init__(x_label, y_label)
         assert(isinstance(x_field, str))
         self._x_field = x_field
         assert(isinstance(y_fields, list))
@@ -176,6 +170,83 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
             _heights[_leg]=yvals
             _colors.append(color)
         graph = figure_widget.axes.grouped_bar(heights=_heights, tick_labels=xvals, colors=_colors)
+        figure_widget.axes.legend()
+        figure_widget.axes.grid(visible=True, which='major')
+        return None
+
+
+class BoxPlotFieldsFigureTemplate(DataGridFigureTemplate):
+    """
+    Child of DataGridFigureTemplate that makes a box plot of two or more fields in the data grid.
+    """
+    def __init__(self, y_label='', y_fields=[]):
+        """
+        :parameter y_label: Text label to place on the figure's y-axis, as string
+        :parameter y_fields: List of names of the fields in the data grid to use for the y-axis values, as list of strings
+        """
+        super().__init__('', y_label)
+        assert(isinstance(y_fields, list))
+        for yf in y_fields:
+            assert(isinstance(yf, str))
+        self._y_fields = y_fields
+        
+    def make_figure(self, figure_widget):
+        """
+        Make the figure with calls to matplotlib, relying on calls to figure_widget to obtain required data values.
+        :parameter figure_widget: The figure widget to use to obtain data values and to make the plot. 
+        :return: None
+        """
+        super().make_figure(figure_widget)
+        # Get the data grid widget associated with the figure
+        _dg=figure_widget.master
+        # Iterate through the y_fields and get the data for each field, packaged as a sequence of sequences.
+        boxplot_x = []
+        boxplot_labels = []
+        for yf in self._y_fields:
+            yvals=[]
+            for reci in range(_dg.num_records):
+                y = _dg.get_grid_element_value_display_units(yf, reci)
+                yvals.append(y)
+            boxplot_x.append(yvals)
+            label = f"{yf} ({_dg.get_field_unit_name(yf)})" if _dg.get_field_unitID(yf) is not None else f"{yf}"
+            boxplot_labels.append(label)
+        graph = figure_widget.axes.boxplot(x=boxplot_x, tick_labels=boxplot_labels)
+        figure_widget.axes.grid(visible=True, which='major')
+        return None
+
+
+class HistogramPlotFieldsFigureTemplate(DataGridFigureTemplate):
+    """
+    Child of DataGridFigureTemplate that makes a histogram plot of one field in the data grid.
+    """
+    def __init__(self, y_label='', y_field=''):
+        """
+        :parameter y_label: Text label to place on the figure's y-axis, as string
+        :parameter y_field: Names of the field in the data grid to use for the y-axis value, as string
+        """
+        super().__init__('', y_label)
+        assert(isinstance(y_field, str))
+        self._y_field = y_field
+        
+    def make_figure(self, figure_widget):
+        """
+        Make the figure with calls to matplotlib, relying on calls to figure_widget to obtain required data values.
+        :parameter figure_widget: The figure widget to use to obtain data values and to make the plot. 
+        :return: None
+        """
+        super().make_figure(figure_widget)
+        # Get the data grid widget associated with the figure
+        _dg=figure_widget.master
+        # Get the data for the desired field, packaged as a sequence.
+        yvals=[]
+        for reci in range(_dg.num_records):
+            y = _dg.get_grid_element_value_display_units(self._y_field, reci)
+            yvals.append(y)
+        _label = f"{self._y_field} ({_dg.get_field_unit_name(self._y_field)})" if _dg.get_field_unitID(self._y_field) is not None else f"{self._y_field}"
+        # Compute the number of bins to use for the histogram, based on a desire to have at least (on average) 10 records
+        # per bin, but at least 1 bin.
+        _num_bins = max([int(_dg.num_records/(max(yvals) - min(yvals))/10),10])
+        graph = figure_widget.axes.hist(x=yvals, label=_label, bins=_num_bins)
         figure_widget.axes.legend()
         figure_widget.axes.grid(visible=True, which='major')
         return None

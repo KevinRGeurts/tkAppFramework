@@ -35,7 +35,7 @@ from tkAppFramework.tkdatagridwidget import DataGridDeleteRecordUpdateHint, Data
 from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.tkdgelementtextvalidators import tkDGTextElemValidator
 from tkAppFramework.uomsysadapter import UoMSysAdapter
-from tkAppFramework.datagridfigurewidget import ScatterPlotFieldsFigureTemplate, BarPlotFieldsFigureTemplate
+from tkAppFramework.datagridfigurewidget import ScatterPlotFieldsFigureTemplate, BarPlotFieldsFigureTemplate, BoxPlotFieldsFigureTemplate, HistogramPlotFieldsFigureTemplate
 
 
 class DemoUoMSystem:
@@ -215,6 +215,12 @@ class DataGridDemotkViewManager(tkViewManager):
         ft = BarPlotFieldsFigureTemplate(x_label='Record Index', y_label='Y-Value', x_field='Record Index',
                                              y_fields=['Base', 'Result'], colors=['b', 'r'])
         self._dg.register_figure_template('Bar: Base and Result vs Record Index', ft)
+        # Create box plot figure template
+        ft = BoxPlotFieldsFigureTemplate(y_label='Y-Value', y_fields=['Base', 'Result'])
+        self._dg.register_figure_template('Box: Base and Result', ft)
+        # Create histogram plot figure template
+        ft = HistogramPlotFieldsFigureTemplate(y_label='Count', y_field='Result')
+        self._dg.register_figure_template('Histogram: Result', ft)
         return None
 
     def _initialize_one_record(self, index):

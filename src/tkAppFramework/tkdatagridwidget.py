@@ -2035,7 +2035,16 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self._figure.grid()
         # Get the figure template for the selected figure
         ft = self._fig_temps[which]
+
+        # Show a wait cursor, since this could be a long-ish operation.
+        self.master.master.master.config(cursor='watch')
+        self.master.master.master.update()       
+        
         self._figure.draw_figure(ft)
+        
+        # Put the cursor back to normal.
+        self.master.master.master.config(cursor='')
+
         self._figure.focus_figure_canvas()
         return None
 
