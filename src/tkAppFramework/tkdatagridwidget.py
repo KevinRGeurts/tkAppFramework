@@ -2154,6 +2154,40 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
 
         return None
 
+    def _deleteAllRecords(self):
+        """
+        Utility function that deletes all records in the data grid.
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        # Delete all of the element/cell separators/borders on the canvas
+        self._dg_canvas.delete('tag_element_separator_line')
+        old_num_records = self._num_records
+        # Iterate through fields and the elements that make up the records of the field.
+        for (field_name, record_list) in self._grid_elements.items():
+            for index in range(old_num_records-1, -1, -1):
+                # Remove the record element from the list of record elements for the field
+                element = record_list.pop()
+                logger.debug(f"Deleting element with canvas ID {element.canvasID} for field {field_name}.")
+                # Remove from the grid's canvas the element widgets for the records.
+                self._dg_canvas.delete(element.canvasID)
+                # Remove the record element's widget's ID on the data grid's canvas from the list of canvas ID's maintained
+                # by the data grid.
+                self._wids.remove(element.canvasID)
+                # Detach the data grid as an observer of the record element
+                element.detach(self)
+                # Destroy the element's widget.
+                # If the element's widget is not destroyed, then it will continue to receive tkinter events, which
+                # is problematic, in particular the entry change event.
+                element.elementWidget.destroy()
+        # Zero out the number of records in the data grid
+        self._num_records = 0
+        # Notify observers that all records have been deleted.
+        for index in range(old_num_records-1, -1, -1):
+            self.notify([DataGridDeleteRecordUpdateHint(deleted_record_index=index)])
+            logger.debug(f"Notified observers that record {index} was deleted.")
+        return None
+
     def _deleteRecord(self, index):
         """
         Utility function that deletes the index-th record.
@@ -2907,7 +2941,7 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                             element = tkDGElementText(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
                         case FieldType.NUMBER:
                             element = tkDGElementNumber(self, x=next_x, y=next_y, w=wid_w, h=wid_h)
-                    # Tag the element's canvas ID with the field name, so we can "adress" all of a field's elements as a group.
+                    # Tag the element's canvas ID with the field name, so we can "address" all of a field's elements as a group.
                     # TODO: This may turn out to not actually be useful/needed.
                     self._dg_canvas.addtag_withtag(f"tag_{field_name}", element.canvasID)
                     if upper_left_element is None:

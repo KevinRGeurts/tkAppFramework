@@ -278,6 +278,15 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._dgw_fr._deleteRecord(0)
         self.assertEqual(self._dgw_fr.num_records, 1)
 
+    def test_deleteAllRecord(self):
+        self.assertEqual(self._dgw.num_records, 2)
+        self.assertEqual(len(self._dgw._wids), 15)
+        self._dgw._deleteAllRecords()
+        self.assertEqual(self._dgw.num_records, 0)
+        self.assertEqual(len(self._dgw._wids), 5) # Only the field header elements remain
+        for (field_name, record_list) in self._dgw._grid_elements.items():
+            self.assertEqual(len(record_list), 0)
+        
     def test_onDeleteColumnContextMenuOptionSelected(self):
         # When columns are records
         ge = self._dgw_fr._get_grid_element('Read Only Text Field', 1)
