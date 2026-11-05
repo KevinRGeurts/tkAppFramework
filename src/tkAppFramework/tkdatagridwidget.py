@@ -53,8 +53,9 @@ from tkAppFramework.exceptions import tkDGElementTextInvalidEntryError
 from tkAppFramework.uomsysadapter import UoMSysAdapter
 from tkAppFramework.tkdgw_unitselect_dlg import tkUnitSelectDlg
 from tkAppFramework.tkApp import tkHelpApp
-from tkAppFramework.datagridfigurewidget import tkDataGridFigureWidget, DataGridFigureTemplate
+from tkAppFramework.datagridfigurewidget import tkDataGridFigureWidget, DataGridFigureTemplate, ScatterPlotFieldsFigureTemplate, BarPlotFieldsFigureTemplate, BoxPlotFieldsFigureTemplate, HistogramPlotFieldsFigureTemplate
 from tkAppFramework.tkdgw_tooltip_tlw import tkTooltipWidget
+from tkAppFramework.tkdgw_bldfig_dlg import tkBuildFigureDlg
 
 
 # This function cannot be a method of tkDataGridWidget, due to Process using pickle.
@@ -1944,6 +1945,9 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         for (fn, ft) in self._fig_temps.items():
             graph_menu_obj.add_command(label=fn, command=partial(self.onShowGraphContextMenuOptionSelected, fn, element))
 
+        # Create "Build graph" command on context menu
+        context_menu.add_command(label='Build graph', command=self.onBuildGraphContextMenuOptionSelected)
+
         # Create "Unit change" command on context menu
         context_menu.add_command(label='Unit change', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
 
@@ -2001,6 +2005,69 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         #      context_menu.add_command(label=i, command=partial(self.onClientContextMenuOptionSelected, i))
 
         return context_menu
+
+    def onBuildGraphContextMenuOptionSelected(self):
+        """
+        Handler called when Build graph is selected from the contextual menu.
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to build graph was selected.")
+        # Build the dialog input dictionary
+        _dlg_input={'fig_types':['scatter', 'bar', 'box', 'histogram'], 'x_fields':[], 'y_fields':[]}
+        # Find the fields that are numeric and add them to the x_fields and y_fields lists in the dialog input dictionary
+        for fc in self._fields_config:
+            if fc.fieldType == FieldType.NUMBER:
+                _dlg_input['x_fields'].append(fc.fieldName)
+                _dlg_input['y_fields'].append(fc.fieldName)
+        # Display the build graph dialog
+        # Note: master is the tkDataGridWidget
+        dgw = self.master
+        tkBuildFigureDlg(dgw, dlg_input=_dlg_input, apply_callback=self._add_graph)
+        # Note: If dialog is "Okayed" then apply_callback will have been called to create the new graph.        
+        return None
+
+    def _add_graph(self, dlg_output):
+        """
+        Callback method to add a new graph.
+        :parameter dlg_output: The output from the build graph dialog, as dictionary
+        :return: None
+        """
+        # TODO: Add more error checking on the dlg_output dictionary to make sure it has the expected keys and values.
+        match dlg_output['fig_type']:
+            case 'scatter':
+                ft_name = f"Scatter: {self._string_list_to_comma_separated_string(dlg_output['y_fields'])} vs {dlg_output['x_field']}"
+                ft = ScatterPlotFieldsFigureTemplate(x_label=dlg_output['x_field'], y_label='Y-Value',
+                                                     x_field=dlg_output['x_field'], y_fields=dlg_output['y_fields'],
+                                                     symbols=dlg_output['symbol_color'])
+            case 'bar':
+                ft_name = f"Bar: {self._string_list_to_comma_separated_string(dlg_output['y_fields'])} vs {dlg_output['x_field']}"
+                ft = BarPlotFieldsFigureTemplate(x_label=dlg_output['x_field'], y_label='Y-Value',
+                                                 x_field=dlg_output['x_field'], y_fields=dlg_output['y_fields'],
+                                                 colors=dlg_output['symbol_color'])
+            case 'box':
+                ft_name = f"Box: {self._string_list_to_comma_separated_string(dlg_output['y_fields'])}"
+                ft = BoxPlotFieldsFigureTemplate(y_label='Y-Value',y_fields=dlg_output['y_fields'])
+            case 'histogram':
+                ft_name = f"Histogram: {dlg_output['y_fields'][0]}"
+                ft = HistogramPlotFieldsFigureTemplate(y_label='Y-Value',y_fields=dlg_output['y_fields'])
+            case _:
+                logger = logging.getLogger('tkDataGridWidget_logger')
+                logger.error(f"Unknown figure type {dlg_output['fig_type']} specified in build graph dialog output.")
+                return None
+        # Add the new figure template to the available figure templates for the data grid
+        self.register_figure_template(ft_name, ft)
+        return None
+
+    def _string_list_to_comma_separated_string(self, str_list):
+        """
+        Utility method to convert a list of strings to a single string with the strings separated by commas.
+        :parameter str_list: The list of strings, as list of strings
+        :return: A single string with the strings separated by commas, as string
+        """
+        assert(isinstance(str_list, list))
+        assert(all(isinstance(s, str) for s in str_list))
+        return ', '.join(str_list)
 
     def _figure_asks_show_grid(self):
         """

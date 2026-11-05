@@ -55,6 +55,7 @@
     <Compile Include="tkdgelementtextvalidators.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tkdgw_bldfig_dlg.py" />
     <Compile Include="tkdgw_tooltip_tlw.py">
       <SubType>Code</SubType>
     </Compile>
@@ -62,6 +63,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tkHelpViewManager.py" />
+    <Compile Include="tkModalDialog.py" />
     <Compile Include="tkxhtmlviewerwidget.py">
       <SubType>Code</SubType>
     </Compile>

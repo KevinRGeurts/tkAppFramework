@@ -19,8 +19,6 @@ Exported Functions:
 import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
-from tkinter.simpledialog import _setup_dialog
-from functools import partial
 
 # Local imports
 from tkAppFramework.uomsysadapter import UoMSysAdapter

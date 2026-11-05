@@ -39,6 +39,7 @@ from tkAppFramework.tkViewManager import tkViewManager
 from tkAppFramework.ObserverPatternBase import Subject
 from tkAppFramework.model import Model
 import tkAppFramework.tkApp
+import tkAppFramework.tkModalDialog
 from tkAppFramework.sim_adapter import SimulatorAdapter
 from tkAppFramework.datagriddemoapp import DataGridDemotkApp, DemoUoMSysAdapter, FieldConfiguration
 from tkAppFramework.tkdatagridwidget import tkDataGridWidget, FieldType
@@ -83,6 +84,12 @@ class DemoWidget(ttk.LabelFrame, Subject):
         self._lbl=tk.StringVar()
         self._lbl.set('Start')
         btn['textvariable']=self._lbl
+
+        # Create a button to launch a modal dialog box
+        btn_launch_dialog = ttk.Button(self, text='Launch Dialog...', command=self.OnLaunchDialog)
+        btn_launch_dialog.grid(column=0, row=1)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
         
         self._is_started = False
 
@@ -114,6 +121,14 @@ class DemoWidget(ttk.LabelFrame, Subject):
         # Notify observers
         self.notify()
 
+        return None
+
+    def OnLaunchDialog(self):
+        """
+        Event handler for launch dialog button click.
+        :return None:
+        """
+        tkAppFramework.tkModalDialog.launch_modal_dialog(title='Demo Modal Dialog', help_format='md')
         return None
 
 

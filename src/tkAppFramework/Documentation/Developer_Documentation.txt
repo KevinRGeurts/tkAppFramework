@@ -163,3 +163,23 @@ then available to all users of the framework. {Logged as issue on GitHub}
 (14) tkDGElementList instances handle default value formating oddly, because the active background color is also white, when it
 should be green in this case. {Completed}
 see answer with 7 votes: https://stackoverflow.com/questions/6178153/how-to-change-menu-background-color-of-tkinters-optionmenu-widget
+
+*** 20-October-2026: Design a modal dialog for a user to specify a figure template.
+(1) Select the type of figure (scatter, bar, box, histogram...
+(2) Select the inputs required for the selected figure type
+	Scatter plot:
+		x_field (select from numeric fields only)
+		y_fields (multiselect from numeric fields only)
+		symbols (for each of y_fields, select color, symbol, line style)
+	Bar plot:
+		x_field (select from numeric fields only)
+		y_fields (multiselect from numeric fields only)
+		colors (for each of y_fields, select color)
+	Box plot:
+		y_fields (multiselect from numeric fields only)
+	Histogram:
+		y_field (select from numeric fields only)
+
+I wonder if I can use a tkDataGridWidget to display the figure template specification?
+This could fail since virtual events aren't processed by the modal dialog (I think).
+	
