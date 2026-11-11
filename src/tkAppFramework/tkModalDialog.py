@@ -2,20 +2,15 @@
 Defines the abstract base class tkModalDialog, from which concrete tkinter modal dialogs can be derived.
 
 Concrete implementation child classes must:
-    (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
-        which will create and manage the widgets of the application.
-Concrete implementation child classes likely will:
-    (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
-    (4) Pass menu_dict into super.__init__() to set up the app's menubar.
-    (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
-    (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
-        OnFileSaveAs, OnFileExit, OnViewHelp, and OnHelpAbout.
+    (1) Implement the body(...) method to create the widgets of the dialog.
+    (2) Implement the _get_dialog_output_dict(...) method to return a dictionary of output results for the dialog, which will be passed to the apply callback.
 Concrete implementation child classes may:
-    (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
-    (8) Extend logging setup in _setup_logging(...) if application specific logging is desired.
+    (3) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
+        The default buttonbox(...) method creates "OK", "Cancel", and "Help" buttons.
 
 Exported Classes:
-    tkModalDialog -- Interface (abstract base) class for tkinter modal dialogs. tkModalDialog is a ttk.Frame.
+    tkModalDialog -- Interface (abstract base) class for tkinter modal dialogs.
+                     tkModalDialog is a tkinter.simpledialog.Dialog.
 
 Exported Exceptions:
     None    
@@ -34,60 +29,11 @@ Logging:
 import logging
 import tkinter as tk
 from tkinter import ttk
+from tkinter import simpledialog
 from multiprocessing import Process
 
 # local imports
 from tkAppFramework.tkApp import tkHelpApp
-
-
-# This function cannot be a method of tkModalDialog, due to Process using pickle.
-def launch_modal_dialog(title = '', help_file = '', help_format='', dlg_input={}, log_level = logging.INFO):
-    """
-    Launch tkinter modal dialog for collecting choices/information from user.
-    :parameter title: The title of the dialog, to appear on the dialog window, string
-    :parameter help_file: Path to the help file to be opened and displayed when Help button is clicked, string
-    :parameter help_format: Format of content in help file (must be 'txt', 'xhtml', or 'md'), string
-    :param dlg_input: A dictionary of input parameters for the dialog, default is empty dictionary
-    :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
-    :return: None
-    """
-    dlg_process = Process(target=_launch_modal_dialog_helper, name='Modal Dialog Process',
-                          kwargs={'title':title, 'help_file':help_file, 'help_format':help_format,
-                                  'dlg_input':dlg_input, 'log_level':log_level})
-    dlg_process.start()
-    dlg_process.join() # Wait for the dialog process to finish before returning
-    return None
-
-
-def _launch_modal_dialog_helper(title = '', help_file = '', help_format='', dlg_input={}, log_level = logging.INFO):
-    """
-    Launch helper function for tkinter modal dialog.
-    :parameter title: The title of the dialog, to appear on the dialog window, string
-    :parameter help_file: Path to the help file to be opened and displayed when Help button is clicked, string
-    :parameter help_format: Format of content in help file (must be 'txt', 'xhtml', or 'md'), string
-    :param dlg_input: A dictionary of input parameters for the dialog, default is empty dictionary
-    :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
-    :return: None
-    """
-    assert(isinstance(title, str))
-    assert(isinstance(help_file, str))
-    assert(isinstance(help_format, str))
-    assert(help_format in ['txt', 'xhtml', 'md'])
-    assert(isinstance(dlg_input, dict))
-
-    # Create and configure the modal dialog
-    root = tk.Tk()
-    dlg = tkModalDialog(root, title, help_file, help_format, dlg_input, log_level)
-    dlg.wait_visibility()
-    dlg.grab_set_global()
-
-    # Start the dialog's event loop running
-    dlg.mainloop()
-
-    dlg.grab_release() # Release the grab before destroying the dialog
-    dlg.destroy() # Destroy the dialog after the event loop ends
-
-    return None
 
 
 # This function cannot be a method of tkModalDialog, due to Process using pickle.
@@ -110,129 +56,117 @@ def _launch_help_app(help_file = '', help_format = 'txt'):
     myapp.mainloop()
     return myapp
 
-
-class tkModalDialog(ttk.Frame):
+# Reference: https://github.com/python/cpython/blob/3.14/Lib/tkinter/simpledialog.py
+# Note that the tkModalDialog will not process virtual events, like a listbox selection). This appears to be a
+# limitation of the tkinter simpledialog.Dialog class, which tkModalDialog inherits from.
+class tkModalDialog(simpledialog.Dialog):
     """
     Abstract base class for modal dialogs built using tkinter.
     Concrete implementation child classes must:
-        (1) Implement the factory method _createViewManager() to create and return a tkViewManager instance,
-            which will create and manage the widgets of the application.
-    Concrete implementation child classes likely will:
-        (3) Pass AboutAppInfo named tuple into super.__init__() to set up the app's About dialog.
-        (4) Pass menu_dict into super.__init__() to set up the app's menubar.
-        (5) Pass file_types into super.__init__() to set up the file types for file dialogs.
-        (6) Define and implement handler functions for menubar selections, beyond OnFileOpen, OnFileSave,
-            OnFileSaveAs, OnFileExit, and OnHelpAbout.
+        (1) Implement the body(...) method to create the widgets of the dialog.
+        (2) Implement the _get_dialog_output_dict(...) method to return a dictionary of output results for the dialog, which will be passed to the apply callback.
     Concrete implementation child classes may:
-        (7) Extend _setup_child_widgets() if the tkViewManager does not create all of the app's widgets
+        (3) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
+            The default buttonbox(...) method creates "OK", "Cancel", and "Help" buttons.
     """
-    def __init__(self, parent, title = '', help_file = '', help_format='', dlg_input={}, log_level = logging.INFO) -> None:
+    def __init__(self, parent, title = '', help_file = '', dlg_input={}, apply_callback=None, log_level = logging.INFO) -> None:
         """
         :parameter parent: The top-level tkinter widget, typicaly the return value from tkinter.Tk()
         :parameter title: The title of the dialog, to appear on the dialog window, string
         :parameter help_file: Path to the help file to be opened and displayed when Help button is clicked, string
-        :parameter help_format: Format of content in help file (must be 'txt', 'xhtml', or 'md'), string
         :param dlg_input: A dictionary of input parameters for the dialog, default is empty dictionary
+        :parameter apply_callback: A callable that will be called to apply the dialog settings, as callable
         :param log_level: The logging level to set for the logger, e.g., logging.DEBUG, logging.INFO, etc.
         """
-        super().__init__(parent)
-
         assert(isinstance(title, str))
+        self._title = title
         assert(isinstance(help_file, str))
         self._help_file = help_file
-        assert(isinstance(help_format, str))
-        assert(help_format in ['txt', 'xhtml', 'md'])
-        self._help_format = help_format
-
-        self.grid(column=0, row=0, sticky='NWES') # Grid-0
-        # Weights control the relative "stretch" of each column and row as the frame is resized
-        parent.columnconfigure(0, weight=1) # Grid-0
-        parent.rowconfigure(0, weight=1) # Grid-0
-        parent.option_add('*tearOff', False) # Prevent menus from tearing off
-        parent.title(title)
-
-        # Create and initialize the model of the app
         assert(isinstance(dlg_input, dict))
-        self._input = dlg_input
-        
-        # Create and setup the child widgets of the dialog, including the view manager self._view_manager
-        self._setup_child_widgets()
+        self._dlg_input = dlg_input
+        assert(callable(apply_callback))
+        self._apply_callback = apply_callback
         
         # Process running the HelpApp
         self._help_process = None
 
-        # If the user X's the dialog window, make sure we clean up 
-        parent.protocol("WM_DELETE_WINDOW", self.onFileExit)
-
-        # Set up logging for this app
+        # Set up logging for the dialog
         self._setup_logging(log_level)
 
-    def _setup_child_widgets(self):
-        """
-        Utility function to be called by __init__ to set up the child widgets of the dialog.
-        This function calls the factory method _createViewManager() to create a tkViewManager instance for the dialog.
-        It is expected that the tkViewManager will create all other widgets of the dialog. If this is not the case
-        then this method should be extended by the child class.
-        :return: None
-        """
-        # self._view_manager = self._createViewManager()
-        # self._view_manager.grid(column=0, row=0, columnspan=3, sticky='NWES') # Grid-1
-        # self.columnconfigure(0, weight=1) # Grid-1
-        # self.rowconfigure(0, weight=1) # Grid-1
+        # Call super class' __init__ to create the dialog window and run the dialog
+        super().__init__(parent, self._title)
 
-        # Set up the standard buttons for the dialog, which are OK, Cancel, and Help.self
-        self._btn_OK = ttk.Button(self, text='OK', command=self.onFileExit)
-        self._btn_OK.grid(column=0, row=1, sticky='S')
-        self._btn_Cancel = ttk.Button(self, text='Cancel', command=self.onFileExit)
-        self._btn_Cancel.grid(column=1, row=1, sticky='S')
-        self._btn_Help = ttk.Button(self, text='Help', command=self.onViewHelp)
-        self._btn_Help.grid(column=2, row=1, sticky='S')
+
+    def body(self, master):
+        """
+        Create dialog body.
+        :parameter master: The parent tkinter window for the dialog
+        :return: widget that should have initial focus
+        This method should be overridden. It is called by the Dialog.__init__ method.
+        """
+        # Create a dummy Label widget, just as an illustration.
+        self._lbl_dummy = ttk.Label(master, text="Actual widgets should be constructed, initialized, and packed here.")
+        self._lbl_dummy.pack()
         
-        return None
+        return self._lbl_dummy  # initial focus
 
-    def _createViewManager(self):
-        """
-        This is an abstract factory method called to create and return a tkViewManager instance.
-        Must be implemented by children to create a child of tkViewManager.
-        Will raise NotImplementedError if called.
-        :return: An instance of a concrete implementation child class of tkViewManager
-        """
-        # raise NotImplementedError
-        return None
+    def buttonbox(self):
+        '''
+        Add button box with "OK", "Cancel", "Help".
+        Override if you do not want these buttons.
+        '''
 
-    def onFileExit(self):
-        """
-        Method called when menu item File | Exit is selected.
-        :return: None
-        """
-        # Get the logger 'tkApp_logger'
-        logger = logging.getLogger('tkModalDialog_logger')
+        box = ttk.Frame(self)
 
-        if self._help_process:
-            logger.debug(f"Help Process {self._help_process.name} is alive={self._help_process.is_alive()}")
+        w = ttk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w = ttk.Button(box, text="Cancel", width=10, command=self.cancel)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
+        w = ttk.Button(box, text="Help", width=10, command=self.onHelpButton)
+        w.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.master.destroy()
-        return None
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
 
-    def onViewHelp(self):
+        box.pack()
+
+    def onHelpButton(self):
         """
-        Method called when menu item Help | View Help is selected. Launch help app to view help.
+        Method called when dialog's Help button is clicked. Launch help app to view dialog's help.
         :return: None
         """
         if not self._help_process or not self._help_process.is_alive():
             # Help app is not running, so launch it
             
             # Get the help format by looking at the help file extension
-            if self._appInfo.help_file.endswith('md'):
+            if self._help_file.endswith('md'):
                 help_format='md'
-            elif self._appInfo.help_file.endswith('xhtml'):
+            elif self._help_file.endswith('xhtml'):
                 help_format='xhtml'
             else:
                 help_format='txt'
 
-            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':self._appInfo.help_file, 'help_format':help_format})
+            self._help_process = Process(target=_launch_help_app, name='HelpApp Process', kwargs={'help_file':self._help_file, 'help_format':help_format})
             self._help_process.start()
         return None
+
+    def _get_dialog_output_dict(self):
+        """
+        This method is called by apply() to get the dialog output dictionary, which is then passed to the apply callback.
+        This method should be overridden by concrete implementation child classes to return the dialog output dictionary.
+        :return: dlg_output, a dictionary of output results for the dialog, default is empty dictionary.
+        """
+        dlg_output={}
+        return dlg_output
+    
+    def apply(self):
+        """
+        Process the input obtained from the dialog.
+        This method is an override of the base class method and is called automatically to process the input, *after*
+        the dialog is destroyed.
+        """
+        dlg_output = self._get_dialog_output_dict()
+        self._apply_callback(dlg_output)
 
     def _setup_logging(self, log_level=logging.INFO):
         """

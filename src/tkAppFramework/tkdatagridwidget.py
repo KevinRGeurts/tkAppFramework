@@ -2049,8 +2049,8 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 ft_name = f"Box: {self._string_list_to_comma_separated_string(dlg_output['y_fields'])}"
                 ft = BoxPlotFieldsFigureTemplate(y_label='Y-Value',y_fields=dlg_output['y_fields'])
             case 'histogram':
-                ft_name = f"Histogram: {dlg_output['y_fields'][0]}"
-                ft = HistogramPlotFieldsFigureTemplate(y_label='Y-Value',y_fields=dlg_output['y_fields'])
+                ft_name = f"Histogram: {dlg_output['y_fields']}"
+                ft = HistogramPlotFieldsFigureTemplate(y_label='Y-Value',y_field=dlg_output['y_fields'])
             case _:
                 logger = logging.getLogger('tkDataGridWidget_logger')
                 logger.error(f"Unknown figure type {dlg_output['fig_type']} specified in build graph dialog output.")

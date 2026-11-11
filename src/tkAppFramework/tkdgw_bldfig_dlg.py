@@ -1,9 +1,9 @@
 """
-This module defines the tkBuildFigureDlg class. It is a tkinter TopLevel window that enables the user to construct an instance
-of one of the children of DataGridFigureTemplate. The window grabs input and blocks until destoyed, so it acts as a modal dialog.
+This module defines the tkBuildFigureDlg class.
+It is a concrete implementation of the tkModalDialog class that enables the user to construct an instance of one of the children of DataGridFigureTemplate.
 
 Exported Classes:
-    tkBuildFigureDlg -- A tkinter TopLevel window that enables the user to construct an instance
+    tkBuildFigureDlg -- A concrete implementation of tkModalDialog that enables the user to construct an instance
                         of one of the children of DataGridFigureTemplate
 
 Exported Exceptions:
@@ -15,22 +15,20 @@ Exported Functions:
 
 
 # Standard imports
+import logging
+import sysconfig
 import tkinter as tk
 from tkinter import ttk
-from tkinter import simpledialog
-from tkinter.simpledialog import _setup_dialog
+
 
 # Local imports
+from tkAppFramework.tkModalDialog import tkModalDialog
 
 
-# Reference: https://github.com/python/cpython/blob/3.14/Lib/tkinter/simpledialog.py
-# Note that the dialog does not process events (at least not virtual ones, like a listbox selection), but the Okay
-# and Cancel buttons do work.
-class tkBuildFigureDlg(simpledialog.Dialog):
+class tkBuildFigureDlg(tkModalDialog):
     """
-    This class represents a tkinter TopLevel window that enables the user to construct an instance
+    This class represents a tkModalDialog that enables the user to construct an instance
     of one of the children of DataGridFigureTemplate.
-    The window grabs input and blocks until destoyed, so it acts as a modal dialog.
     """
     def __init__(self, parent, dlg_input={}, apply_callback=None):
         """
@@ -47,9 +45,11 @@ class tkBuildFigureDlg(simpledialog.Dialog):
         assert(callable(apply_callback))
         self._apply_callback = apply_callback
         
-        # Provide a title for the dialog, and call super classes' __init__
+        # Call super classes' __init__
         dialog_title = 'Build Data Grid Figure'
-        simpledialog.Dialog.__init__(self, parent, dialog_title)
+        help_file_path = sysconfig.get_path('data') + '\\Help\\tkAppFramework\\BuildFigureDialog_HelpFile.md'
+        super().__init__(parent, title = dialog_title, help_file = help_file_path,
+                         dlg_input=self._dlg_input, apply_callback=self._apply_callback, log_level = logging.INFO)
 
     def body(self, master):
         """
@@ -93,11 +93,10 @@ class tkBuildFigureDlg(simpledialog.Dialog):
         
         return self._ent_figure_type  # initial focus
 
-    def apply(self):
+    def _get_dialog_output_dict(self):
         """
-        Process the input obtained from the dialog.
-        This method is an override of the base class method and is called automatically to process the input, *after*
-        the dialog is destroyed. It makes the unit change in the field header element.
+        This method is an override of the base class method and is called by apply() to get the dialog output dictionary, which is then passed to the apply callback.
+        :return: dlg_output, a dictionary of output results for the dialog, default is empty dictionary.
         """
         # Get the figure type from the entry field
         figure_type = self._value_figure_type.get()
@@ -131,7 +130,7 @@ class tkBuildFigureDlg(simpledialog.Dialog):
             dlg_output['x_field'] = None
             dlg_output['y_fields'] = None
             dlg_output['symbol_color'] = None
-        self._apply_callback(dlg_output)
+        return dlg_output
 
     def _comma_separated_string_to_list(self, s):
         """
