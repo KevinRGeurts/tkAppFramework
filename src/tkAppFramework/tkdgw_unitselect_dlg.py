@@ -81,8 +81,8 @@ class tkUnitSelectDlg(simpledialog.Dialog):
     def apply(self):
         """
         Process the input obtained from the dialog.
-        This method is an override of the base class method and is called automatically to process the input, *after*
-        the dialog is destroyed. It makes the unit change in the field header element.
+        This method is an override of the base class method and is called automatically by tkinter.simpledialog.Dialog.ok(...) to process the input.
+        It makes the unit change in the field header element.
         """
         current_selection = self._lb_units.curselection()[0]
         self._selected_unit_id = self._units_item_data[current_selection]

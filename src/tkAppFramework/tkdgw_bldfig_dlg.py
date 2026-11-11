@@ -19,7 +19,10 @@ import logging
 import sysconfig
 import tkinter as tk
 from tkinter import ttk
+from tkinter.messagebox import showerror
 
+# Third-party imports
+from matplotlib.colors import BASE_COLORS
 
 # Local imports
 from tkAppFramework.tkModalDialog import tkModalDialog
@@ -131,6 +134,103 @@ class tkBuildFigureDlg(tkModalDialog):
             dlg_output['y_fields'] = None
             dlg_output['symbol_color'] = None
         return dlg_output
+
+    def validate(self):
+        '''
+        Validate the data entered into the dialog.
+        This method is called automatically to validate the data by tkinter.simpledialog.Dialog.ok(...).
+        If this method returns 0, the dialog will not be destroyed.
+        '''
+        ret_val = super().validate()
+        if ret_val == 0:
+            return 0 # Validation failed in base clase.
+
+        # Custom validation logic for the dialog data
+
+        # TODO: Can the logic be simplified, for example to reduce the number of times showerror(...) is called.
+        # TODO : Can the logic be simplified, for example to reduce the number of times y_fields is checked.
+
+        # Get the figure type from the entry field
+        figure_type = self._value_figure_type.get()
+        if figure_type not in self._dlg_input['fig_types']:
+            error_msg = f"Figure type '{figure_type}' is not in the allowed list of figure types: {self._dlg_input['fig_types']}"
+            showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+            return 0 # Custom validation failed: figure type not in allowed list.
+        
+        match figure_type:
+            case 'scatter':
+                x_field = self._value_x_field.get()
+                if x_field not in self._dlg_input['x_fields']:
+                    error_msg = f"X-axis field name '{x_field}' is not in the allowed list of X-axis field names: {self._dlg_input['x_fields']}"
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                y_fields = self._comma_separated_string_to_list(self._value_y_fields.get())
+                if len(y_fields) < 1:
+                    error_msg = f"At least one Y-axis field name must be provided."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                for y_field in y_fields:
+                    if y_field not in self._dlg_input['y_fields']:
+                        error_msg = f"Y-axis field name '{y_field}' is not in the allowed list of Y-axis field names: {self._dlg_input['y_fields']}"
+                        showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                        return 0
+                symbol = self._comma_separated_string_to_list(self._value_symbol_color.get())
+                if len(symbol) != len(y_fields):
+                    error_msg = f"The number of symbols/colors must match the number of Y-axis fields."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                # TODO: Any possible validation for symbol/color? For now, just accept any string.
+            case 'bar':
+                x_field = self._value_x_field.get()
+                if x_field not in self._dlg_input['x_fields']:
+                    error_msg = f"X-axis field name '{x_field}' is not in the allowed list of X-axis field names: {self._dlg_input['x_fields']}"
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                y_fields = self._comma_separated_string_to_list(self._value_y_fields.get())
+                if len(y_fields) < 1:
+                    error_msg = f"At least one Y-axis field name must be provided."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                for y_field in y_fields:
+                    if y_field not in self._dlg_input['y_fields']:
+                        error_msg = f"Y-axis field name '{y_field}' is not in the allowed list of Y-axis field names: {self._dlg_input['y_fields']}"
+                        showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                        return 0
+                colors = self._comma_separated_string_to_list(self._value_symbol_color.get())
+                if len(colors) != len(y_fields):
+                    error_msg = f"The number of symbols/colors must match the number of Y-axis fields."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                valid_colors = BASE_COLORS.keys()
+                for color in colors:
+                    if color not in valid_colors:
+                        error_msg = f"Color '{color}' is not in the allowed list of colors: {valid_colors}"
+                        showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                        return 0
+            case 'box':
+                y_fields = self._comma_separated_string_to_list(self._value_y_fields.get())
+                if len(y_fields) < 1:
+                    error_msg = f"At least one Y-axis field name must be provided."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                for y_field in y_fields:
+                    if y_field not in self._dlg_input['y_fields']:
+                        error_msg = f"Y-axis field name '{y_field}' is not in the allowed list of Y-axis field names: {self._dlg_input['y_fields']}"
+                        showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                        return 0
+            case 'histogram':
+                y_field = self._comma_separated_string_to_list(self._value_y_fields.get())
+                if len(y_field) != 1:
+                    error_msg = f"Exactly one Y-axis field name must be provided."
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+                y_field=y_field[0]
+                if y_field not in self._dlg_input['y_fields']:
+                    error_msg = f"Y-axis field name '{y_field}' is not in the allowed list of Y-axis field names: {self._dlg_input['y_fields']}"
+                    showerror(title='Build Data Grid Figure Error', message=error_msg, parent=self)
+                    return 0
+
+        return 1 # Validation passed
 
     def _comma_separated_string_to_list(self, s):
         """

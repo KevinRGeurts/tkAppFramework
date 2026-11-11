@@ -1936,9 +1936,10 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         insert_menu_obj.add_command(label='Column right', command=partial(self.onInsertColumnContextMenuOptionSelected, 'right', element))
 
         # Create "Restore default value" command on context menu
-        context_menu.add_command(label='Restore Default Value', command=partial(element.onKeyPressF3, event))
+        context_menu.add_command(label='Restore default value', command=partial(element.onKeyPressF3, event))
 
         # Create "Show graph" command on the context menu
+        context_menu.add_separator()
         graph_menu_obj=tk.Menu(context_menu)
         context_menu.add_cascade(menu=graph_menu_obj, label='Show graph')
         # Create commands under "Show graph"
@@ -1946,10 +1947,18 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
             graph_menu_obj.add_command(label=fn, command=partial(self.onShowGraphContextMenuOptionSelected, fn, element))
 
         # Create "Build graph" command on context menu
-        context_menu.add_command(label='Build graph', command=self.onBuildGraphContextMenuOptionSelected)
+        context_menu.add_command(label='Build graph...', command=self.onBuildGraphContextMenuOptionSelected)
+        
+        # Create "Delete graph" command on the context menu
+        graph_menu_obj=tk.Menu(context_menu)
+        context_menu.add_cascade(menu=graph_menu_obj, label='Delete graph')
+        # Create commands under "Delete graph"
+        for (fn, ft) in self._fig_temps.items():
+            graph_menu_obj.add_command(label=fn, command=partial(self.onDeleteGraphContextMenuOptionSelected, fn, element))
+        context_menu.add_separator()
 
         # Create "Unit change" command on context menu
-        context_menu.add_command(label='Unit change', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
+        context_menu.add_command(label='Unit change...', command=partial(self.onUnitChangeContextMenuOptionSelected, element))
 
         # Disable menu commands as required by specified user abilities or based on which element is selected in the grid
         elemement_is_header = isinstance(element, tkDGElementFieldHeader)
@@ -1990,13 +1999,13 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
                 insert_menu_obj.entryconfigure('Column right', state=tk.DISABLED)
         # Disable Restore default value if element has no default value or is for a read-only field.
         if element.elementWidget['state']==tk.DISABLED or element.elementWidget['state']=='readonly' or element.get_default_value() is None:
-            context_menu.entryconfigure('Restore Default Value', state=tk.DISABLED)
+            context_menu.entryconfigure('Restore default value', state=tk.DISABLED)
         # Disable Show graph if no figure templates have been registered
         if len(self._fig_temps) == 0:
             context_menu.entryconfigure('Show graph', state=tk.DISABLED)
         # Disable Unit change if element's field does not have units configured
         if not self._element_has_units(element):
-            context_menu.entryconfigure('Unit change', state=tk.DISABLED)
+            context_menu.entryconfigure('Unit change...', state=tk.DISABLED)
 
         # For adding options that do not have a built-in event, use a partial to call a handler method in this tkDataGridWidget class, and pass in the option as an argument to the handler method.
         # TODO: Generalize by passing in a dictionary to the tkDataGridWidget constructor that defines labels and handlers.
@@ -2113,6 +2122,21 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         self.master.master.master.config(cursor='')
 
         self._figure.focus_figure_canvas()
+        return None
+
+    def onDeleteGraphContextMenuOptionSelected(self, which, element):
+        """
+        Handler called when Delete graph is selected from the contextual menu.
+        :parameter which: The graph to delete, as string
+        :parameter element: The tkDGElement object that Has the element widget that received the contextual menu event, as tkDGElement object
+        :return: None
+        """
+        logger = logging.getLogger('tkDataGridWidget_logger')
+        logger.debug(f"Context menu option to delete graph {which} for element with canvas ID {element.canvasID} was selected.")
+
+        # Remove the figure template for the selected figure
+        self._fig_temps.pop(which)
+
         return None
 
     def onHelpOnDataGridContextMenuOptionSelected(self, element):

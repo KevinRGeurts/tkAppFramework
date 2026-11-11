@@ -109,7 +109,7 @@ class ScatterPlotFieldsFigureTemplate(DataGridFigureTemplate):
             if _dg.get_field_unitID(yf) is not None:
                 _leg = f"{yf} ({_dg.get_field_unit_name(yf)})"
             else:
-                _leg = f"{yf})"
+                _leg = f"{yf}"
             graph = figure_widget.axes.plot(xvals, yvals, sym, label=_leg)
         figure_widget.axes.legend()
         figure_widget.axes.grid(visible=True, which='major')
@@ -161,7 +161,7 @@ class BarPlotFieldsFigureTemplate(DataGridFigureTemplate):
             if _dg.get_field_unitID(yf) is not None:
                 _leg = f"{yf} ({_dg.get_field_unit_name(yf)})"
             else:
-                _leg = f"{yf})"
+                _leg = f"{yf}"
             for reci in range(_dg.num_records):
                 y = _dg.get_grid_element_value_display_units(yf, reci)
                 if y is None:

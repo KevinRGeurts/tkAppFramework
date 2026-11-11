@@ -484,9 +484,11 @@ sense for them to be able to delete a record.
 - Insert | Column Right: Insert a column to the right of the selected element's column, if it is a data grid record
 - Insert | Row Above: Insert a row above the selected element's row, if it is a data grid record
 - Insert | Row Below: Insert a row below the selected element's row, if it is a data grid record
-- Restore Default Value: Restore the default value for the selected cell, if it has a default value, and is not read-only
-- Show Graph | {graph name}: Show the graph with the given name, based on data in the data grid. Return to the data grid by pressing the escape key.
-- Unit Change: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
+- Restore default value: Restore the default value for the selected cell, if it has a default value, and is not read-only
+- Show graph | {graph name}: Show the graph with the given name, based on data in the data grid. Return to the data grid by pressing the escape key.
+- Build graph... | {graph name}: Launch the Build Data Grid Figure Dialog to build a new graph for the data grid. The new graph will be available to show.
+- Delete graph | {graph name}: Delete the graph with the given name from the data grid. The graph will no longer be available to show.
+- Unit change...: Launch the unit of measurement selection dialog for the selected element's field, if the field has units
  
 ### Creating a tkDataGridWidget instance
 

@@ -5,7 +5,8 @@ Concrete implementation child classes must:
     (1) Implement the body(...) method to create the widgets of the dialog.
     (2) Implement the _get_dialog_output_dict(...) method to return a dictionary of output results for the dialog, which will be passed to the apply callback.
 Concrete implementation child classes may:
-    (3) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
+    (3) Override the validate(...) method to add custom validation logic for the dialog data.
+    (4) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
         The default buttonbox(...) method creates "OK", "Cancel", and "Help" buttons.
 
 Exported Classes:
@@ -66,7 +67,8 @@ class tkModalDialog(simpledialog.Dialog):
         (1) Implement the body(...) method to create the widgets of the dialog.
         (2) Implement the _get_dialog_output_dict(...) method to return a dictionary of output results for the dialog, which will be passed to the apply callback.
     Concrete implementation child classes may:
-        (3) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
+        (3) Override the validate(...) method to add custom validation logic for the dialog data.
+        (4) Override the buttonbox(...) method to create a different set of buttons for the dialog, if desired.
             The default buttonbox(...) method creates "OK", "Cancel", and "Help" buttons.
     """
     def __init__(self, parent, title = '', help_file = '', dlg_input={}, apply_callback=None, log_level = logging.INFO) -> None:
@@ -96,6 +98,17 @@ class tkModalDialog(simpledialog.Dialog):
         # Call super class' __init__ to create the dialog window and run the dialog
         super().__init__(parent, self._title)
 
+    def destroy(self):
+        '''
+        Destroy the window.
+        Kill the help app process if it is running, then call the base class destroy() method.
+        '''
+        if self._help_process is not None and self._help_process.is_alive():
+            self._help_process.terminate()
+            self._help_process.close()
+        super().destroy()
+
+    # Construction hooks
 
     def body(self, master):
         """
@@ -130,6 +143,8 @@ class tkModalDialog(simpledialog.Dialog):
 
         box.pack()
 
+    # Standard button semantics
+
     def onHelpButton(self):
         """
         Method called when dialog's Help button is clicked. Launch help app to view dialog's help.
@@ -150,6 +165,29 @@ class tkModalDialog(simpledialog.Dialog):
             self._help_process.start()
         return None
 
+    # Command hooks
+
+    def apply(self):
+        """
+        Process the input obtained from the dialog.
+        This method is an override of the base class method and is called automatically to process the input by
+        tkinter.simpledialog.Dialog.ok(...).
+        """
+        dlg_output = self._get_dialog_output_dict()
+        self._apply_callback(dlg_output)
+
+    def validate(self):
+        '''
+        Validate the data entered into the dialog.
+        This method is called automatically to validate the data by tkinter.simpledialog.Dialog.ok(...).
+        If this method returns 0, the dialog will not be destroyed.
+        By default, it calls the base class validate() method, which always validates OK.
+        Concrete implementation child classes may override this method to add custom validation logic for the dialog data.
+        '''
+        return super().validate()
+
+    # Other methods
+
     def _get_dialog_output_dict(self):
         """
         This method is called by apply() to get the dialog output dictionary, which is then passed to the apply callback.
@@ -158,15 +196,6 @@ class tkModalDialog(simpledialog.Dialog):
         """
         dlg_output={}
         return dlg_output
-    
-    def apply(self):
-        """
-        Process the input obtained from the dialog.
-        This method is an override of the base class method and is called automatically to process the input, *after*
-        the dialog is destroyed.
-        """
-        dlg_output = self._get_dialog_output_dict()
-        self._apply_callback(dlg_output)
 
     def _setup_logging(self, log_level=logging.INFO):
         """
