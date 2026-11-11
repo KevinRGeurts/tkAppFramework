@@ -394,6 +394,33 @@ class Test_tkDataGridWidget(unittest.TestCase):
         self._dgw.onDestroy(None)
         self.assertEqual(len(ge._observers), 0)
 
+    def test_add_graph_onDeleteGraphContextMenuOptionSelected(self):
+        # A weak test, but we will make sure the number of figure templates has increased by 1.
+        num_templates_before = len(self._dgw._fig_temps)
+        dlg_output = {'fig_type': 'scatter', 'x_field': 'Read Only Number Field', 'y_fields': ['Read Only Number Field'], 'symbol_color': ['bo-']}
+        self._dgw._add_graph(dlg_output)
+        num_templates_after = len(self._dgw._fig_temps)
+        self.assertEqual(num_templates_after, num_templates_before + 1)
+        # A weak test, but we will make sure the number of figure templates has decreased by 1.
+        ge = self._dgw._get_grid_element('Default List Field', 1)
+        num_templates_before = len(self._dgw._fig_temps)
+        self._dgw.onDeleteGraphContextMenuOptionSelected('Scatter: Read Only Number Field vs Read Only Number Field', ge)
+        num_templates_after = len(self._dgw._fig_temps)
+        self.assertEqual(num_templates_after, num_templates_before - 1)
+
+    def test_string_list_to_comma_separated_string(self):
+        lst = ['a', 'b', 'c']
+        result = self._dgw._string_list_to_comma_separated_string(lst)
+        self.assertEqual(result, 'a, b, c')
+        # Empty list
+        lst = []
+        result = self._dgw._string_list_to_comma_separated_string(lst)
+        self.assertEqual(result, '')
+        # A list with  non-string element
+        lst = ['a', 1, 'c']
+        with self.assertRaises(AssertionError):
+            self._dgw._string_list_to_comma_separated_string(lst)
+
 
 if __name__ == '__main__':
     unittest.main()
