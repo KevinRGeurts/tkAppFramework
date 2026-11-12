@@ -86,7 +86,8 @@ class tkModalDialog(simpledialog.Dialog):
         self._help_file = help_file
         assert(isinstance(dlg_input, dict))
         self._dlg_input = dlg_input
-        assert(callable(apply_callback))
+        if apply_callback is not None:
+            assert(callable(apply_callback))
         self._apply_callback = apply_callback
         
         # Process running the HelpApp
@@ -105,6 +106,7 @@ class tkModalDialog(simpledialog.Dialog):
         '''
         if self._help_process is not None and self._help_process.is_alive():
             self._help_process.terminate()
+            self._help_process.join() # So that we wait for the process to terminate before closing it.
             self._help_process.close()
         super().destroy()
 
@@ -174,7 +176,8 @@ class tkModalDialog(simpledialog.Dialog):
         tkinter.simpledialog.Dialog.ok(...).
         """
         dlg_output = self._get_dialog_output_dict()
-        self._apply_callback(dlg_output)
+        if self._apply_callback is not None:
+            self._apply_callback(dlg_output)
 
     def validate(self):
         '''

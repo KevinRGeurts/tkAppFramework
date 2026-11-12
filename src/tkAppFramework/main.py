@@ -128,9 +128,8 @@ class DemoWidget(ttk.LabelFrame, Subject):
         Event handler for launch dialog button click.
         :return None:
         """
-        tkAppFramework.tkModalDialog.launch_modal_dialog(title='Demo Modal Dialog', help_format='md')
+        tkAppFramework.tkModalDialog.tkModalDialog(self, title='Demo Modal Dialog')
         return None
-
 
 class DemotkViewManager(tkViewManager):
     """
