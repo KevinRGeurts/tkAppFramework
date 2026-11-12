@@ -2508,8 +2508,40 @@ class tkDataGridWidget(Subject, Observer, ttk.Labelframe):
         response = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[('Comma Separated Values file', '*.csv')],
                                                 initialdir=initial_dir, title='Select file to write CSV to')
         if len(response)>0: # User did not cancel
-            # TODO: Convert the data grid to csv and write to the selected file
-            pass
+            with open(response, 'w') as csvfile:
+                self.write_to_csv(csvfile)
+        return None
+
+    def write_to_csv(self, file):
+        """
+        Write the data grid content to a CSV file.
+        :parameter file: The file to write to, as file-like object
+        :return: None
+        """
+        # first write the header row
+        field_names = [fc.fieldName for fc in self._fields_config]
+        header_row = []
+        for fn in field_names:
+            fhe = self._get_field_header_element(fn)
+            val = fhe._raw_state # This is the field name, without any units.
+            ugrpid=uid=uname=None
+            if self._element_has_units(fhe):
+                ugrpid = self.get_field_unit_group(fn)
+                uid = self.get_field_unitID(fn)
+                uname = self.get_field_unit_name(fn)
+                header_row.append(f"{val} ({ugrpid}:{uid}:{uname})")
+            else:
+                header_row.append(f"{val}")
+        header_row=','.join(header_row) + '\n'
+        file.write(header_row)
+        # Next write the record rows
+        for reci in range(self._num_records):
+            record_row = []
+            for fn in field_names:
+                ge = self._get_grid_element(fn, reci)
+                record_row.append(f"{self.get_grid_element_value_display_units(fn,reci)}") # In display units, not in base units
+            record_row=','.join(record_row) + '\n'
+            file.write(record_row)
         return None
 
     def onExportJSONContextMenuOptionSelected(self):

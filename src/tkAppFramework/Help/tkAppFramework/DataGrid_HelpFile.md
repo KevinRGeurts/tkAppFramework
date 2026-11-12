@@ -36,7 +36,7 @@ sense for them to be able to delete a record.
 - Delete | Row: Delete the selected element's row, if it is a data grid record
 - Edit | Copy: Copy text content selected within the cell to the clipboard
 - Edit | Paste: Paste content from the clipboard into the cell's text content at the insertion point
-- Export | CSV: Save the values in the grid's cells to a Comma Separated Value file. Not currently implemented.
+- Export | CSV: Save the values in the grid's cells to a Comma Separated Value file.
 - Export | JSON: Save the values in the grid's cells to a Java Scipt Object Notation file. Not currently implemented. 
 - Export | PostScript: Create a printable Encapsulated PostScript file of the grid
 - Help on Data Grid: Display this help content

@@ -7,6 +7,7 @@ This module provides unit tests for tkDataGridWidget class.
 import unittest
 import tkinter as tk
 from math import isclose
+import io
 
 # Local
 from tkAppFramework.tkdatagridwidget import tkDGElementText, tkDataGridWidget, FieldType, tkDGElementBool, tkDGElementList, tkDGElementFieldHeader, FieldConfiguration
@@ -420,6 +421,26 @@ class Test_tkDataGridWidget(unittest.TestCase):
         lst = ['a', 1, 'c']
         with self.assertRaises(AssertionError):
             self._dgw._string_list_to_comma_separated_string(lst)
+
+    def test_write_to_csv(self):
+        write_buffer = io.StringIO()
+        # Set some values in the data grid's elements.
+        ge = self._dgw._get_grid_element('Editable Text Field', 0)
+        ge.set_state('Test Text Value')
+        self._dgw.set_grid_element_list_choices('Default List Field', 0, ('Test Option 1', 'Test Option 2'))
+        ge = self._dgw._get_grid_element('Default List Field', 0)
+        ge.set_state('Test Option 2')
+        ge = self._dgw._get_grid_element('Read Only Text Field', 0)
+        ge.set_state('Test Text Value 2')
+        ge = self._dgw._get_grid_element('Read Only Number Field', 0)
+        ge.set_state(1.5)
+        # Write to csv file like object (buffer) and check the contents of the buffer.)
+        self._dgw.write_to_csv(write_buffer)
+        exp_val = 'Editable Text Field,Editable Bool Field,Default List Field,Read Only Text Field,Read Only Number Field (gid_length:uid_meter:m)\n'
+        exp_val += 'Test Text Value,False,Test Option 2,Test Text Value 2,1.5\n'
+        exp_val += ',False,,,None\n'
+        act_val = write_buffer.getvalue()
+        self.assertEqual(exp_val, act_val)
 
 
 if __name__ == '__main__':
